@@ -52,7 +52,16 @@
   --color-brand-cyan: #136986;
   --color-brand-light-cyan: #16a4c0;
   --color-brand-golden: #dead2d;
+
+  /* Motion tokens. Built-in CSS easings are too weak; these replace them. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Hover and color changes keep the plain CSS `ease` curve. */
+  --ease-hover: ease;
 }
+
+@custom-variant reduced-transparency (@media (prefers-reduced-transparency: reduce));
 
 :root {
   --background: oklch(1 0 0);
@@ -132,5 +141,44 @@
   }
   html {
     @apply font-sans;
+    /* Mobile baseline: no gray tap flash, no font inflation in landscape. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  button,
+  a,
+  [role="button"] {
+    /* Fire click immediately on touch instead of waiting for a double-tap. */
+    touch-action: manipulation;
+  }
+  input,
+  textarea,
+  select {
+    /* Under 16px iOS Safari zooms into the field and never zooms back. */
+    font-size: max(16px, 1em);
+  }
+}
+
+@layer components {
+  /*
+   * Site header hairline: hidden at the top of the page, fades in over the
+   * first 32px of scroll. Scroll-driven, no JS. Browsers without
+   * animation-timeline just keep the border on.
+   */
+  .site-header {
+    border-bottom: 1px solid var(--border);
+  }
+  @supports (animation-timeline: scroll()) {
+    .site-header {
+      border-bottom-color: transparent;
+      animation: site-header-edge linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 32px;
+    }
+  }
+  @keyframes site-header-edge {
+    to {
+      border-bottom-color: var(--border);
+    }
   }
 }
