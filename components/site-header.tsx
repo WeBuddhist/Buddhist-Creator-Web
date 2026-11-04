@@ -8,11 +8,8 @@ export function SiteHeader() {
   return (
     <header
       className={[
-        "site-header sticky top-0 z-40 w-full",
-        // Translucent material: content scrolls underneath. Falls back to a
-        // solid surface when the user asks for less transparency.
-        "bg-background/75 backdrop-blur-xl backdrop-saturate-150",
-        "reduced-transparency:bg-background reduced-transparency:backdrop-blur-none",
+        "sticky top-0 z-40 w-full",
+        "bg-background",
         "pt-[env(safe-area-inset-top,0px)]",
       ].join(" ")}
     >

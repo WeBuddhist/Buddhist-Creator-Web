@@ -158,27 +158,3 @@
     font-size: max(16px, 1em);
   }
 }
-
-@layer components {
-  /*
-   * Site header hairline: hidden at the top of the page, fades in over the
-   * first 32px of scroll. Scroll-driven, no JS. Browsers without
-   * animation-timeline just keep the border on.
-   */
-  .site-header {
-    border-bottom: 1px solid var(--border);
-  }
-  @supports (animation-timeline: scroll()) {
-    .site-header {
-      border-bottom-color: transparent;
-      animation: site-header-edge linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0 32px;
-    }
-  }
-  @keyframes site-header-edge {
-    to {
-      border-bottom-color: var(--border);
-    }
-  }
-}

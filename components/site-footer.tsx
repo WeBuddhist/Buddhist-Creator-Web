@@ -38,8 +38,8 @@ const link =
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <div className="grid gap-12 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1.2fr] md:gap-8">
+      <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1.2fr] md:gap-8">
           {/* Brand */}
           <div className="max-w-xs">
             <Link
@@ -62,7 +62,7 @@ export function SiteFooter() {
               A community of creators sharing the Dharma through film, writing,
               music and design.
             </p>
-            <ul className="mt-6 flex items-center gap-2">
+            <ul className="mt-5 flex items-center gap-2">
               {SOCIAL.map(({ label, href, Icon }) => (
                 <li key={label}>
                   <a
@@ -109,7 +109,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-16 flex flex-col gap-4 border-t border-border pt-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {COPYRIGHT_YEAR} {SITE_NAME}. All rights reserved.
           </p>
@@ -135,7 +135,7 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
   return (
     <div>
       <h2 className="text-sm font-semibold">{title}</h2>
-      <ul className="mt-3 flex flex-col">
+      <ul className="mt-2 flex flex-col">
         {links.map((item) => (
           <li key={item.href}>
             <Link href={item.href} className={link}>
