@@ -46,7 +46,7 @@ const RINGS = [64, 48, 32, 16];
 const ROWS = 5;
 const COLS = 5;
 
-function WaveCorner({ className }: { className?: string }) {
+export function WaveCorner({ className }: { className?: string }) {
   const circles: { cx: number; cy: number }[] = [];
   for (let row = 0; row < ROWS; row++) {
     const offset = row % 2 === 0 ? 0 : R;

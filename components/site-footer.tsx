@@ -59,7 +59,7 @@ export function SiteFooter() {
                 alt=""
                 width={40}
                 height={40}
-                className="size-10 mix-blend-multiply dark:invert dark:mix-blend-screen"
+                className="size-10 mix-blend-multiply"
               />
               <span className="text-[15px] font-semibold tracking-[-0.01em]">
                 {SITE_NAME}

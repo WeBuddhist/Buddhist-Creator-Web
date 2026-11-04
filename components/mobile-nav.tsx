@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Drawer } from "@base-ui/react/drawer";
-import { ListIcon, XIcon } from "@phosphor-icons/react";
+import { ArrowUpRightIcon, ListIcon, XIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
 
@@ -38,7 +38,7 @@ export function MobileNav() {
         <Drawer.Backdrop
           className={cn(
             "fixed inset-0 z-50 min-h-dvh bg-black supports-[-webkit-touch-callout:none]:absolute",
-            "[--backdrop-opacity:0.25] dark:[--backdrop-opacity:0.6]",
+            "[--backdrop-opacity:0.25]",
             "opacity-[calc(var(--backdrop-opacity)*(1-var(--drawer-swipe-progress)))]",
             "transition-opacity duration-[450ms] ease-drawer",
             "data-starting-style:opacity-0 data-ending-style:opacity-0",
@@ -52,7 +52,7 @@ export function MobileNav() {
               // exposing a gap behind it.
               "[--bleed:3rem] relative -mr-[3rem] flex h-full w-[calc(min(20rem,100vw-3.5rem)+3rem)] flex-col",
               "bg-background pr-[3rem] text-foreground outline-none",
-              "border-l border-border shadow-[-24px_0_48px_-24px] shadow-black/20 dark:shadow-none",
+              "border-l border-border shadow-[-24px_0_48px_-24px] shadow-black/20",
               "pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]",
               "overflow-y-auto overscroll-contain touch-auto",
               // Tracks the finger 1:1 while swiping, then settles on the
@@ -118,29 +118,48 @@ export function MobileNav() {
                           <ul className="mb-2 flex flex-col">
                             {item.children.map((child) => {
                               const childActive =
-                                pathname === child.href ||
-                                pathname.startsWith(`${child.href}/`);
+                                !child.external &&
+                                (pathname === child.href ||
+                                  pathname.startsWith(`${child.href}/`));
+                              const childClass = cn(
+                                "flex min-h-11 select-none items-center justify-between gap-3 rounded-xl py-2 ps-6 pe-3 text-base font-medium leading-[1.3]",
+                                "transition-[background-color,transform] duration-150 ease-hover",
+                                "active:scale-[0.98] active:bg-muted",
+                                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                                childActive ? "text-foreground" : "text-muted-foreground",
+                              );
                               return (
                                 <li key={child.href}>
-                                  <Link
-                                    href={child.href}
-                                    aria-current={childActive ? "page" : undefined}
-                                    className={cn(
-                                      "flex min-h-11 select-none items-center justify-between gap-3 rounded-xl py-2 ps-6 pe-3 text-base font-medium leading-[1.3]",
-                                      "transition-[background-color,transform] duration-150 ease-hover",
-                                      "active:scale-[0.98] active:bg-muted",
-                                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                                      childActive ? "text-foreground" : "text-muted-foreground",
-                                    )}
-                                  >
-                                    {child.label}
-                                    {childActive && (
-                                      <span
+                                  {child.external ? (
+                                    <a
+                                      href={child.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={childClass}
+                                    >
+                                      {child.label}
+                                      <ArrowUpRightIcon
                                         aria-hidden
-                                        className="size-1.5 rounded-full bg-brand-golden"
+                                        className="size-4 shrink-0"
+                                        weight="bold"
                                       />
-                                    )}
-                                  </Link>
+                                      <span className="sr-only">(opens in new tab)</span>
+                                    </a>
+                                  ) : (
+                                    <Link
+                                      href={child.href}
+                                      aria-current={childActive ? "page" : undefined}
+                                      className={childClass}
+                                    >
+                                      {child.label}
+                                      {childActive && (
+                                        <span
+                                          aria-hidden
+                                          className="size-1.5 rounded-full bg-brand-golden"
+                                        />
+                                      )}
+                                    </Link>
+                                  )}
                                 </li>
                               );
                             })}

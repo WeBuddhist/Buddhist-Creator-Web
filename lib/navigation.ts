@@ -2,6 +2,8 @@ export type NavChild = {
   label: string;
   href: string;
   description?: string;
+  /** Absolute URL off this site. Opens in a new tab with an external cue. */
+  external?: true;
 };
 
 export type NavItem = {
@@ -19,18 +21,21 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       {
         label: "WeBuddhist",
-        href: "/products/webuddhist",
+        href: "https://webuddhist.com/",
         description: "A home for Dharma teachings, practice and community online.",
+        external: true,
       },
       {
         label: "WeBuddhist App",
-        href: "/products/webuddhist-app",
+        href: "https://apps.apple.com/in/app/webuddhist/id6745810914",
         description: "Teachings, prayers and daily practice in your pocket.",
+        external: true,
       },
       {
-        label: "Sherab",
-        href: "/products/sherab",
-        description: "Study tools that make Buddhist texts easier to explore.",
+        label: "WeBuddhist Academy",
+        href: "https://apps.webuddhistacademy.com/catalog/",
+        description: "Structured courses on Buddhist study and practice.",
+        external: true,
       },
     ],
   },
@@ -39,9 +44,9 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/convention",
     children: [
       {
-        label: "Buddhist Creators Convention 2025",
-        href: "/convention/2025",
-        description: "Talks, awards and masterclasses from last year's gathering.",
+        label: "Buddhist Creators Convention 2026",
+        href: "/convention/2026",
+        description: "Nine days in Bodh Gaya: talks, a masterclass and awards.",
       },
     ],
   },

@@ -12,7 +12,7 @@ export function ConventionFlyer() {
           alt=""
           width={112}
           height={112}
-          className="size-20 mix-blend-multiply sm:size-24 dark:invert dark:mix-blend-screen"
+          className="size-20 mix-blend-multiply sm:size-24"
         />
 
         <p className="mt-6 text-lg text-foreground sm:text-xl lg:text-2xl">

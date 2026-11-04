@@ -56,7 +56,7 @@ export function Hero() {
           height={2366}
           preload
           sizes="(min-width: 1024px) 40vw, 20rem"
-          className="mx-auto h-auto w-full max-w-xs brightness-0 lg:max-w-none dark:invert"
+          className="mx-auto h-auto w-full max-w-xs brightness-0 lg:max-w-none"
         />
       </div>
     </section>

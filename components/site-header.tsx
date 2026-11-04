@@ -24,14 +24,14 @@ export function SiteHeader() {
           ].join(" ")}
         >
           {/* The JPG has a white background; multiply hides it on any light
-              surface, invert+screen does the same in dark mode. */}
+              surface. */}
           <Image
             src="/logo.jpg"
             alt=""
             width={40}
             height={40}
             preload
-            className="size-10 mix-blend-multiply dark:invert dark:mix-blend-screen"
+            className="size-10 mix-blend-multiply"
           />
           <span className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">
             {SITE_NAME}

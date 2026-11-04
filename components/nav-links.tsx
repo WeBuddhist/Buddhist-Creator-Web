@@ -4,7 +4,7 @@ import * as React from "react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { ArrowUpRightIcon, CaretDownIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/navigation";
 
@@ -89,16 +89,40 @@ export function NavLinks() {
                   {item.children.map((child) => (
                     <li key={child.href}>
                       <NavigationMenu.Link
-                        render={<NextLink href={child.href} />}
-                        aria-current={isActive(pathname, child.href) ? "page" : undefined}
+                        render={
+                          child.external ? (
+                            <a
+                              href={child.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            />
+                          ) : (
+                            <NextLink href={child.href} />
+                          )
+                        }
+                        aria-current={
+                          !child.external && isActive(pathname, child.href)
+                            ? "page"
+                            : undefined
+                        }
                         className={cn(
                           "flex flex-col gap-0.5 rounded-lg px-3 py-2.5 text-sm",
                           "transition-[background-color] duration-150 ease-hover hover:bg-muted",
                           "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                         )}
                       >
-                        <span className="font-medium text-foreground">
+                        <span className="flex items-center justify-between gap-2 font-medium text-foreground">
                           {child.label}
+                          {child.external && (
+                            <>
+                              <ArrowUpRightIcon
+                                aria-hidden
+                                className="size-3.5 shrink-0 text-muted-foreground"
+                                weight="bold"
+                              />
+                              <span className="sr-only">(opens in new tab)</span>
+                            </>
+                          )}
                         </span>
                         {child.description && (
                           <span className="text-pretty text-[13px] leading-[1.4] text-muted-foreground">
@@ -129,7 +153,6 @@ export function NavLinks() {
               // Outer radius 12px = inner 8px + 4px padding (concentric with the links).
               "rounded-xl border border-transparent bg-popover text-popover-foreground outline-none",
               "shadow-[0_0_0_1px_--alpha(var(--color-black)/6%),0_1px_2px_-1px_--alpha(var(--color-black)/6%),0_8px_24px_-8px_--alpha(var(--color-black)/12%)]",
-              "dark:shadow-[0_0_0_1px_--alpha(var(--color-white)/8%)]",
               "transition-[opacity,scale,width,height] duration-200 ease-out",
               "data-starting-style:scale-95 data-starting-style:opacity-0",
               "data-ending-style:scale-95 data-ending-style:opacity-0 data-ending-style:duration-150",

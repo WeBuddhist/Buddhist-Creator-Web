@@ -67,24 +67,28 @@ export function Stats() {
               key={label}
               data-animate
               style={{ animationDelay: `${index * 100}ms` }}
+              // Two nested rings read as a double border: a muted frame with a
+              // hairline ring, then the white card with ring plus lift inside it.
               // Outer radius 16px = inner 12px + 4px padding (concentric).
-              className="stat-card rounded-2xl border border-transparent bg-card p-1 shadow-[0_0_0_1px_--alpha(var(--color-black)/6%),0_1px_2px_-1px_--alpha(var(--color-black)/6%),0_2px_4px_0_--alpha(var(--color-black)/4%)] dark:shadow-[0_0_0_1px_--alpha(var(--color-white)/8%)]"
+              className="group/stat stat-card rounded-2xl border border-transparent bg-muted/40 p-1 shadow-ring"
             >
-              <div className="aspect-[16/10] overflow-hidden rounded-xl bg-muted/60">
-                <Illustration />
+              <div className="overflow-hidden rounded-xl border border-transparent bg-card shadow-border">
+                <div className="aspect-[16/10] overflow-hidden bg-muted/60">
+                  <Illustration />
+                </div>
+                <div className="flex flex-col-reverse px-4 pt-5 pb-4">
+                  <dt className="mt-1 text-sm font-medium text-foreground">
+                    {label}
+                  </dt>
+                  <dd className="text-4xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-brand-cyan lg:text-5xl">
+                    {value}
+                  </dd>
+                  <p className="order-first mb-4 hidden" aria-hidden />
+                </div>
+                <p className="px-4 pb-5 text-sm leading-[1.5] text-muted-foreground">
+                  {description}
+                </p>
               </div>
-              <div className="flex flex-col-reverse px-4 pt-5 pb-4">
-                <dt className="mt-1 text-sm font-medium text-foreground">
-                  {label}
-                </dt>
-                <dd className="text-4xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-brand-cyan lg:text-5xl">
-                  {value}
-                </dd>
-                <p className="order-first mb-4 hidden" aria-hidden />
-              </div>
-              <p className="px-4 pb-5 text-sm leading-[1.5] text-muted-foreground">
-                {description}
-              </p>
             </div>
           ))}
         </dl>
@@ -93,8 +97,19 @@ export function Stats() {
   );
 }
 
-/* Illustrations. Each is a 320×200 SVG; animations are driven by the
-   `stat-*` classes in globals.css and start when the section is visible. */
+/* Illustrations. Each is a 320×200 SVG; entrance animations are driven by
+   the `stat-*` classes in globals.css and start when the section is visible.
+
+   Hover is a hover-effect on a marketing card, seen tens of times a day at
+   most, so each card gets one quiet response: the accent marks grow a step
+   and the fill deepens, 150ms on the `ease` hover token. The scale sits on
+   leaf circles that carry no entrance keyframes, so transition and animation
+   never fight. `group-hover` compiles under `@media (hover: hover)`, and
+   `motion-safe` keeps the fill and background change but drops the scale
+   under reduced motion. */
+
+const halo =
+  "origin-center [transform-box:fill-box] transition-transform duration-150 ease-hover motion-safe:group-hover/stat:scale-140";
 
 const svgProps = {
   viewBox: "0 0 320 200",
@@ -119,7 +134,7 @@ function EngagementChart() {
       ))}
       <path
         d={`${line} L296 172 L24 172 Z`}
-        className="stat-fill fill-brand-cyan/10"
+        className="stat-fill fill-brand-cyan/10 transition-[fill] duration-150 ease-hover group-hover/stat:fill-brand-cyan/16"
         data-animate
         style={{ animationDelay: "500ms" }}
       />
@@ -134,7 +149,7 @@ function EngagementChart() {
         style={{ animationDelay: "200ms" }}
       />
       <g data-animate className="stat-pop" style={{ animationDelay: "1300ms" }}>
-        <circle cx="296" cy="30" r="10" className="fill-brand-golden/25" />
+        <circle cx="296" cy="30" r="10" className={`${halo} fill-brand-golden/25`} />
         <circle cx="296" cy="30" r="5" className="fill-brand-golden" />
       </g>
     </svg>
@@ -149,7 +164,11 @@ const MARKERS: Array<[number, number]> = [
 function CountriesGlobe() {
   return (
     <svg {...svgProps}>
-      <g fill="none" className="stroke-foreground/12" strokeWidth="1">
+      <g
+        fill="none"
+        strokeWidth="1"
+        className="stroke-foreground/12 transition-[stroke] duration-150 ease-hover group-hover/stat:stroke-foreground/20"
+      >
         <circle cx="160" cy="104" r="70" />
         <ellipse cx="160" cy="104" rx="70" ry="24" />
         <ellipse cx="160" cy="104" rx="70" ry="50" />
@@ -163,7 +182,14 @@ function CountriesGlobe() {
           className="stat-pop"
           style={{ animationDelay: `${300 + i * 80}ms` }}
         >
-          <circle cx={x} cy={y} r="7" className="fill-brand-golden/25" />
+          {/* Halos ripple outward from the first marker, 20ms apart. */}
+          <circle
+            cx={x}
+            cy={y}
+            r="7"
+            className={`${halo} fill-brand-golden/25`}
+            style={{ transitionDelay: `${i * 20}ms` }}
+          />
           <circle cx={x} cy={y} r="3.5" className="fill-brand-golden" />
         </g>
       ))}
@@ -191,15 +217,21 @@ function CreatorsGrid() {
         const col = i % COLS;
         const row = Math.floor(i / COLS);
         return (
-          <circle
+          <g
             key={i}
-            cx={44 + col * 33}
-            cy={58 + row * 42}
-            r="11"
             data-animate
-            className={`stat-pop ${TONES[(i * 5) % TONES.length]}`}
+            className="stat-pop"
             style={{ animationDelay: `${200 + i * 30}ms` }}
-          />
+          >
+            {/* A wave left to right: one step up, 15ms per column. */}
+            <circle
+              cx={44 + col * 33}
+              cy={58 + row * 42}
+              r="11"
+              className={`origin-center [transform-box:fill-box] transition-transform duration-150 ease-hover motion-safe:group-hover/stat:scale-110 ${TONES[(i * 5) % TONES.length]}`}
+              style={{ transitionDelay: `${col * 15}ms` }}
+            />
+          </g>
         );
       })}
     </svg>

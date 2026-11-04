@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -104,42 +102,6 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  --shadow-ring: 0 0 0 1px oklch(1 0 0 / 10%);
-  --shadow-border: 0 0 0 1px oklch(1 0 0 / 10%), 0 1px 2px oklch(0 0 0 / 40%);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -149,6 +111,9 @@
   }
   html {
     @apply font-sans;
+    /* The site header is sticky and 4rem tall, so anchored headings and
+       focused elements scroll into view below it instead of under it. */
+    scroll-padding-block-start: calc(4rem + env(safe-area-inset-top, 0px));
     /* Mobile baseline: no gray tap flash, no font inflation in landscape. */
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
@@ -207,6 +172,51 @@
       animation-duration: 600ms;
     }
     .stat-pop {
+      animation-name: stat-fade-in;
+    }
+  }
+
+  /*
+   * Hero entrance on the convention page. Title, lede, stats and actions
+   * stagger 100ms apart via inline animation-delay. The hidden state lives in
+   * the `from` keyframe, so anything whose animation never runs stays visible.
+   */
+  .reveal {
+    animation: stat-fade-in 300ms var(--ease-out) both;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation-name: stat-fade-in-up;
+    }
+  }
+  /*
+   * Convention hero illustration. Lines draw themselves in on first paint,
+   * reusing the stats keyframes; inline animation-delay staggers the groups.
+   * Reduced motion keeps a fade only.
+   */
+  .hero-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: stat-draw 900ms var(--ease-out) both;
+    /* The delay comes from a custom property so a group can stagger its
+       children without the dash itself being inherited from the group. */
+    animation-delay: var(--hero-delay, 0ms);
+  }
+  .hero-fade {
+    animation: stat-fade-in 600ms var(--ease-out) both;
+  }
+  .hero-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: stat-pop 300ms var(--ease-out) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-draw {
+      stroke-dashoffset: 0;
+      animation-name: stat-fade-in;
+      animation-duration: 600ms;
+    }
+    .hero-pop {
       animation-name: stat-fade-in;
     }
   }
