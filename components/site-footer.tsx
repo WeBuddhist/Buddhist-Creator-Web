@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MailIcon, MapPinIcon } from "lucide-react";
+import {
+  EnvelopeIcon,
+  FacebookLogoIcon,
+  InstagramLogoIcon,
+  MapPinIcon,
+  XLogoIcon,
+  YoutubeLogoIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { SITE_NAME } from "@/lib/navigation";
 
 type FooterLink = { label: string; href: string };
@@ -26,10 +33,10 @@ const RESOURCES: FooterLink[] = [
 ];
 
 const SOCIAL = [
-  { label: "Instagram", href: "https://instagram.com", Icon: InstagramIcon },
-  { label: "YouTube", href: "https://youtube.com", Icon: YouTubeIcon },
-  { label: "Facebook", href: "https://facebook.com", Icon: FacebookIcon },
-  { label: "X", href: "https://x.com", Icon: XIcon },
+  { label: "Instagram", href: "https://instagram.com", Icon: InstagramLogoIcon },
+  { label: "YouTube", href: "https://youtube.com", Icon: YoutubeLogoIcon },
+  { label: "Facebook", href: "https://facebook.com", Icon: FacebookLogoIcon },
+  { label: "X", href: "https://x.com", Icon: XLogoIcon },
 ];
 
 const link =
@@ -62,7 +69,7 @@ export function SiteFooter() {
               A community of creators sharing the Dharma through film, writing,
               music and design.
             </p>
-            <ul className="mt-5 flex items-center gap-2">
+            <ul className="mt-5 flex items-center gap-3">
               {SOCIAL.map(({ label, href, Icon }) => (
                 <li key={label}>
                   <a
@@ -70,9 +77,11 @@ export function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-[color,border-color,transform] duration-150 ease-hover hover:border-foreground/30 hover:text-foreground active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="group/social flex shrink-0 items-center justify-center rounded-[8px] border border-transparent bg-muted p-0.5 shadow-ring transition-transform duration-150 ease-hover active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <Icon className="size-4" />
+                    <span className="flex size-10 shrink-0 select-none items-center justify-center overflow-hidden rounded-[5px] border border-transparent bg-card text-muted-foreground shadow-border transition-colors duration-150 ease-hover group-hover/social:text-foreground">
+                      <Icon className="size-5" />
+                    </span>
                   </a>
                 </li>
               ))}
@@ -87,17 +96,19 @@ export function SiteFooter() {
             <h2 className="text-sm font-semibold">Find us</h2>
             <address className="mt-4 space-y-3 text-sm not-italic leading-[1.6] text-muted-foreground">
               <p className="flex gap-2.5">
-                <MapPinIcon className="mt-1 size-4 shrink-0" strokeWidth={1.75} />
+                <MapPinIcon className="mt-1 size-4 shrink-0" />
                 <span>
-                  Buddhist Creators
+                  Dharmaduta, Trehan Cottage
                   <br />
-                  Bodh Gaya, Bihar 824231
+                  H. No. 112, Ward No. 3, Near Delek Hospital
                   <br />
-                  India
+                  Khara Danda Road, Dharamshala
+                  <br />
+                  Distt. Kangra, HP 176215, India
                 </span>
               </p>
               <p className="flex gap-2.5">
-                <MailIcon className="mt-1 size-4 shrink-0" strokeWidth={1.75} />
+                <EnvelopeIcon className="mt-1 size-4 shrink-0" />
                 <a
                   href="mailto:hello@buddhistcreators.org"
                   className="transition-colors duration-150 ease-hover hover:text-foreground"
@@ -145,44 +156,5 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
         ))}
       </ul>
     </div>
-  );
-}
-
-/* Brand glyphs. Lucide no longer ships brand icons, so these are inline. */
-
-type IconProps = React.SVGProps<SVGSVGElement>;
-
-function InstagramIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function YouTubeIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
-      <path d="M2.5 12c0-2.6.3-4.2.6-5a2.2 2.2 0 0 1 1.5-1.4C6 5.3 9 5.2 12 5.2s6 .1 7.4.4a2.2 2.2 0 0 1 1.5 1.4c.3.8.6 2.4.6 5s-.3 4.2-.6 5a2.2 2.2 0 0 1-1.5 1.4c-1.4.3-4.4.4-7.4.4s-6-.1-7.4-.4a2.2 2.2 0 0 1-1.5-1.4c-.3-.8-.6-2.4-.6-5Z" />
-      <path d="m10 9 5 3-5 3V9Z" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function FacebookIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
-      <path d="M14 21v-7h2.5l.5-3h-3V9.2c0-.9.3-1.5 1.6-1.5H17V5.1c-.3 0-1.2-.1-2.3-.1-2.3 0-3.7 1.4-3.7 3.9V11H8.5v3H11v7" />
-    </svg>
-  );
-}
-
-function XIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
-      <path d="M4 4l16 16M20 4 4 20" />
-    </svg>
   );
 }

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Drawer } from "@base-ui/react/drawer";
-import { MenuIcon, XIcon } from "lucide-react";
+import { ListIcon, XIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
 
@@ -31,7 +31,7 @@ export function MobileNav() {
   return (
     <Drawer.Root open={open} onOpenChange={setOpen} swipeDirection="right">
       <Drawer.Trigger className={iconButton} aria-label="Open menu">
-        <MenuIcon className="size-5" strokeWidth={1.75} />
+        <ListIcon className="size-5" />
       </Drawer.Trigger>
 
       <Drawer.Portal>
@@ -75,7 +75,7 @@ export function MobileNav() {
                   {SITE_NAME}
                 </Drawer.Title>
                 <Drawer.Close className={iconButton} aria-label="Close menu">
-                  <XIcon className="size-5" strokeWidth={1.75} />
+                  <XIcon className="size-5" />
                 </Drawer.Close>
               </div>
 

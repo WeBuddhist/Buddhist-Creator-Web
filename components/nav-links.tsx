@@ -4,7 +4,7 @@ import * as React from "react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
-import { ChevronDownIcon } from "lucide-react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/navigation";
 
@@ -79,7 +79,7 @@ export function NavLinks() {
               >
                 {item.label}
                 <NavigationMenu.Icon className="transition-transform duration-150 ease-hover data-popup-open:rotate-180">
-                  <ChevronDownIcon className="size-4" strokeWidth={1.75} />
+                  <CaretDownIcon className="size-4" weight="bold" />
                 </NavigationMenu.Icon>
                 <ActiveDot active={active} />
               </NavigationMenu.Trigger>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { SITE_NAME } from "@/lib/navigation";
 
@@ -29,11 +29,11 @@ export function Hero() {
             <Button
               size="lg"
               nativeButton={false}
-              className="h-11 rounded-full bg-linear-to-br from-brand-light-cyan via-brand-cyan via-55% to-brand-cyan ps-5 pe-4 text-sm text-white shadow-[inset_0_1px_0_0_--alpha(var(--color-white)/20%)] transition-[filter,translate] hover:brightness-110"
+              className="h-11 gap-1.5 rounded-full border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan px-5 text-sm text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]"
               render={<Link href="/get-involved" />}
             >
               Get Involved
-              <ArrowUpRightIcon data-icon="inline-end" />
+              <ArrowUpRightIcon data-icon="inline-end" weight="bold" />
             </Button>
             <Button
               variant="outline"
