@@ -114,6 +114,38 @@ export function MobileNav() {
                             />
                           )}
                         </Link>
+                        {item.children && (
+                          <ul className="mb-2 flex flex-col">
+                            {item.children.map((child) => {
+                              const childActive =
+                                pathname === child.href ||
+                                pathname.startsWith(`${child.href}/`);
+                              return (
+                                <li key={child.href}>
+                                  <Link
+                                    href={child.href}
+                                    aria-current={childActive ? "page" : undefined}
+                                    className={cn(
+                                      "flex min-h-11 select-none items-center justify-between gap-3 rounded-xl py-2 ps-6 pe-3 text-base font-medium leading-[1.3]",
+                                      "transition-[background-color,transform] duration-150 ease-hover",
+                                      "active:scale-[0.98] active:bg-muted",
+                                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                                      childActive ? "text-foreground" : "text-muted-foreground",
+                                    )}
+                                  >
+                                    {child.label}
+                                    {childActive && (
+                                      <span
+                                        aria-hidden
+                                        className="size-1.5 rounded-full bg-brand-golden"
+                                      />
+                                    )}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
                       </li>
                     );
                   })}

@@ -38,9 +38,9 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden md:block">
+        <div className="hidden md:block">
           <NavLinks />
-        </nav>
+        </div>
 
         <div className="md:hidden">
           <MobileNav />
