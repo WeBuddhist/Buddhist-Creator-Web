@@ -158,3 +158,71 @@
     font-size: max(16px, 1em);
   }
 }
+
+@layer components {
+  /*
+   * Stats cards. Every animation starts paused at its hidden `from` frame and
+   * runs once the section reports itself visible, so the reveal happens in
+   * view rather than above the fold.
+   */
+  .stats [data-animate] {
+    animation-play-state: paused;
+  }
+  .stats[data-visible] [data-animate] {
+    animation-play-state: running;
+  }
+  .stat-card {
+    animation: stat-fade-in 300ms var(--ease-out) both;
+  }
+  .stat-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: stat-draw 1200ms var(--ease-out) both;
+  }
+  .stat-fill {
+    animation: stat-fade-in 600ms var(--ease-out) both;
+  }
+  .stat-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: stat-pop 300ms var(--ease-out) both;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .stat-card {
+      animation-name: stat-fade-in-up;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stat-line {
+      stroke-dashoffset: 0;
+      animation-name: stat-fade-in;
+      animation-duration: 600ms;
+    }
+    .stat-pop {
+      animation-name: stat-fade-in;
+    }
+  }
+  @keyframes stat-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes stat-fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+      filter: blur(4px);
+    }
+  }
+  @keyframes stat-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes stat-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+}

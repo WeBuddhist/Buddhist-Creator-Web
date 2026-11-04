@@ -16,11 +16,11 @@ export function ConventionFlyer() {
         />
 
         <p className="mt-6 text-lg text-foreground sm:text-xl lg:text-2xl">
-          <time dateTime="2026-02-18">
+          <time dateTime="2027-02-18">
             18<sup className="text-[0.6em]">th</sup>
           </time>
           {" – "}
-          <time dateTime="2026-02-21">
+          <time dateTime="2027-02-21">
             21<sup className="text-[0.6em]">st</sup> Feb
           </time>
           <span
