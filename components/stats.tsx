@@ -61,9 +61,9 @@ export function Stats() {
           Join us in bringing the Dharma to the digital age
         </h2>
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-3 lg:mt-16 lg:gap-6">
+        <dl className="mt-12 grid gap-4 sm:grid-cols-3 lg:mt-16 lg:gap-6">
           {STATS.map(({ value, label, description, Illustration }, index) => (
-            <li
+            <div
               key={label}
               data-animate
               style={{ animationDelay: `${index * 100}ms` }}
@@ -73,20 +73,21 @@ export function Stats() {
               <div className="aspect-[16/10] overflow-hidden rounded-xl bg-muted/60">
                 <Illustration />
               </div>
-              <div className="px-4 pt-5 pb-5">
-                <p className="text-4xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-brand-cyan lg:text-5xl">
-                  {value}
-                </p>
-                <h3 className="mt-2 text-sm font-medium text-foreground">
+              <div className="flex flex-col-reverse px-4 pt-5 pb-4">
+                <dt className="mt-1 text-sm font-medium text-foreground">
                   {label}
-                </h3>
-                <p className="mt-2 text-pretty text-sm leading-[1.5] text-muted-foreground">
-                  {description}
-                </p>
+                </dt>
+                <dd className="text-4xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-brand-cyan lg:text-5xl">
+                  {value}
+                </dd>
+                <p className="order-first mb-4 hidden" aria-hidden />
               </div>
-            </li>
+              <p className="px-4 pb-5 text-sm leading-[1.5] text-muted-foreground">
+                {description}
+              </p>
+            </div>
           ))}
-        </ul>
+        </dl>
       </div>
     </section>
   );
