@@ -48,6 +48,12 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  --color-brand-cyan: #136986;
+  --color-brand-light-cyan: #16a4c0;
+  --color-brand-golden: #dead2d;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
