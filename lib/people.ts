@@ -7,6 +7,7 @@ import achal from "@/public/people/achal.webp";
 import jenniferYo from "@/public/people/jennifer-yo.webp";
 import karmaPhuntsokNamgyal from "@/public/people/karma-phuntsok-namgyal.webp";
 import norbuTsering from "@/public/people/norbu-tsering.webp";
+import tenzinDelek from "@/public/people/tenzin-delek.webp";
 import tenzinNoryang from "@/public/people/tenzin-noryang.webp";
 import tenzinTsering from "@/public/people/tenzin-tsering.webp";
 import yashDixit from "@/public/people/yash-dixit.webp";
@@ -200,5 +201,10 @@ export const TEAM: TeamMember[] = [
     name: "Norbu Tsering",
     role: "Social Media & Communication Associate",
     image: portrait(norbuTsering, "Norbu Tsering"),
+  },
+  {
+    name: "Tenzin Delek",
+    role: "Sofware Engineer 2",
+    image: portrait(tenzinDelek, "Tenzin Delek"),
   },
 ];
