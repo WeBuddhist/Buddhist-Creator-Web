@@ -57,6 +57,9 @@
   /* Deep burgundy for the events intro band. White measures 11.3:1 on it,
      white at 80% 7.8:1 and brand golden 5.5:1. */
   --color-brand-maroon: oklch(0.36 0.09 25);
+  /* Deep indigo for the get-involved intro band. White measures 12:1 on
+     it, white at 80% 8.3:1 and brand golden 5.8:1. */
+  --color-brand-indigo: oklch(0.34 0.07 285);
 
   /* Hairline ring, and ring + soft lift. Nested they read as a double border.
      Pair either with `border border-transparent`: forced-colors mode drops
@@ -163,6 +166,11 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
     /* The site header is sticky and 4rem tall, so anchored headings and
        focused elements scroll into view below it instead of under it. */
     scroll-padding-block-start: var(--header-height);
+    /* In-page anchors glide rather than jump, unless the reader has asked
+       for less motion. Programmatic scrollTo calls inherit this too. */
+    @media (prefers-reduced-motion: no-preference) {
+      scroll-behavior: smooth;
+    }
     /* Mobile baseline: no gray tap flash, no font inflation in landscape. */
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
