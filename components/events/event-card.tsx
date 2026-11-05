@@ -29,8 +29,7 @@ export function EventCard({ event }: { event: EventEntry }) {
             <Image
               src={image.src}
               alt={image.alt}
-              width={image.width}
-              height={image.height}
+              placeholder="blur"
               sizes="(min-width: 1024px) 22rem, (min-width: 640px) 50vw, 100vw"
               className="size-full object-cover"
             />

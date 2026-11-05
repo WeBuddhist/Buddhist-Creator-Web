@@ -23,8 +23,7 @@ function PersonFrame({
             <Image
               src={image.src}
               alt={image.alt}
-              width={image.width}
-              height={image.height}
+              placeholder="blur"
               sizes="(min-width: 1024px) 16rem, (min-width: 640px) 33vw, 50vw"
               className={cn("size-full object-cover", photo)}
             />

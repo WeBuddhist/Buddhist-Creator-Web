@@ -1,4 +1,6 @@
 import Image from "next/image";
+import logo from "@/public/logo.jpg";
+import nagalokaFooter from "@/public/nagaloka-footer.webp";
 
 export function ConventionFlyer() {
   return (
@@ -8,10 +10,11 @@ export function ConventionFlyer() {
     >
       <div className="mx-auto flex max-w-3xl flex-col items-center px-4 pt-24 text-center sm:px-6 sm:pt-28 lg:pt-36">
         <Image
-          src="/logo.jpg"
+          src={logo}
           alt=""
           width={112}
           height={112}
+          placeholder="blur"
           className="size-20 mix-blend-multiply sm:size-24"
         />
 
@@ -43,10 +46,9 @@ export function ConventionFlyer() {
           too expensive for browsers to re-render on scroll. */}
       <div className="mt-6 flex justify-center sm:mt-8 lg:mt-10">
         <Image
-          src="/nagaloka-footer.webp"
+          src={nagalokaFooter}
           alt="Crayon illustration of the Walking Buddha at Nagaloka, Nagpur"
-          width={3000}
-          height={1025}
+          placeholder="blur"
           sizes="100vw"
           className="h-auto w-full min-w-[48rem] max-w-none"
         />

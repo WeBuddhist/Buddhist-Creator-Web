@@ -2,6 +2,15 @@
    is prerendered, and a value that changes between renders would break
    that. Move an entry between the two lists when it passes. */
 
+import type { StaticImageData } from "next/image";
+import masterclass2026 from "@/public/events/masterclass-2026.webp";
+import bodhisattvaChallenge from "@/public/events/bodhisattva-challenge.webp";
+import convention2027 from "@/public/events/convention-2027.webp";
+import guruRinpocheDay from "@/public/events/guru-rinpoche-day.webp";
+import sakaDawa from "@/public/events/saka-dawa.webp";
+import conventionHero from "@/public/convention/2026/hero.webp";
+import lhababDuchen from "@/public/events/lhabab-duchen.webp";
+
 export type EventEntry = {
   title: string;
   /** Human label and, when it is a real date, the ISO dates behind it for
@@ -19,8 +28,8 @@ export type EventEntry = {
   external?: true;
   /** Label for that link. Defaults to "View details". */
   cta?: string;
-  /** Path under /public. Omitted entries show the placeholder. */
-  image?: { src: string; alt: string; width: number; height: number };
+  /** Static import, which carries its size and blur. Omitted entries show the placeholder. */
+  image?: { src: StaticImageData; alt: string };
   featured?: true;
   /** Outcome figures, shown on past and ongoing events. */
   stats?: { value: string; label: string }[];
@@ -30,8 +39,6 @@ export const EVENTS_PAGE = {
   eyebrow: "Events",
   title: "Where creators gather",
   description:
-    "Conventions, masterclasses and community practice days, in person and online. Everything we host, past and upcoming.",
-  impact:
     "Our five creator campaigns have earned over 1.26 million views, 100,000+ likes and 7,600+ shares. From 15 April to 5 November 2026, more than 9 million people viewed our social media page and profile, and 7,000+ new followers joined us. Beyond these campaigns, we also collaborate with creators on their own videos.",
 } as const;
 
@@ -43,10 +50,8 @@ export const ONGOING_EVENTS: EventEntry[] = [
     location: "Dzongsar Khyentse Chökyi Lodrö Institute, Himachal Pradesh, India",
     description: "Six days on marketing the Dharma, hosted by Khyentse Foundation.",
     image: {
-      src: "/events/masterclass-2026.webp",
+      src: masterclass2026,
       alt: "Monks in maroon robes debating on a monastery courtyard at sunset, with mountains behind the red and gold temple.",
-      width: 2048,
-      height: 1152,
     },
     featured: true,
   },
@@ -59,10 +64,8 @@ export const ONGOING_EVENTS: EventEntry[] = [
     external: true,
     cta: "Join the challenge",
     image: {
-      src: "/events/bodhisattva-challenge.webp",
+      src: bodhisattvaChallenge,
       alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
-      width: 1280,
-      height: 720,
     },
   },
 ];
@@ -74,10 +77,8 @@ export const UPCOMING_EVENTS: EventEntry[] = [
     location: "Nagaloka, Nagpur, India",
     description: "The next global gathering, building on the momentum of 2026’s first convention.",
     image: {
-      src: "/events/convention-2027.webp",
+      src: convention2027,
       alt: "Flyer for Buddhist Creators Convention 2027 with a crayon illustration of the Walking Buddha at Nagaloka, Nagpur",
-      width: 2054,
-      height: 1369,
     },
   },
 ];
@@ -89,10 +90,8 @@ export const PAST_EVENTS: EventEntry[] = [
     location: "Online",
     gist: "Guru Rinpoche Day is one of the most sacred days in Tibetan Buddhism. We ran this campaign on several Guru Rinpoche Days, in collaboration with creators who talked about who Guru Rinpoche was, why he matters, and how people can honour him. The aim was to spread awareness and share knowledge about the day with a wider audience.",
     image: {
-      src: "/events/guru-rinpoche-day.webp",
+      src: guruRinpocheDay,
       alt: "Thangka painting of Guru Rinpoche seated on a lotus, holding a vajra and skull cup, before a golden halo and mountains.",
-      width: 480,
-      height: 640,
     },
     stats: [
       { value: "18", label: "Creators" },
@@ -107,10 +106,8 @@ export const PAST_EVENTS: EventEntry[] = [
     location: "Online",
     gist: "Saka Dawa is the holiest month for many Buddhists, and it is closely linked with making merit and acts of kindness. For this challenge, we collaborated with creators who made videos about Saka Dawa and did a real act of kindness, then shared it. It turned kindness into something people could see and join in with, and it became our biggest campaign of the season.",
     image: {
-      src: "/events/saka-dawa.webp",
+      src: sakaDawa,
       alt: "Thangka painting of Shakyamuni Buddha seated on a lotus throne, one hand touching the earth, among green hills and clouds.",
-      width: 447,
-      height: 686,
     },
     stats: [
       { value: "15", label: "Videos" },
@@ -139,10 +136,8 @@ export const PAST_EVENTS: EventEntry[] = [
     href: "/convention/2026",
     cta: "Read the report",
     image: {
-      src: "/convention/2026/hero.webp",
+      src: conventionHero,
       alt: "Over a hundred creators seated together on the grounds of the Mahabodhi Temple in Bodh Gaya, the temple's spire rising behind them.",
-      width: 2048,
-      height: 1365,
     },
     stats: [
       { value: "110", label: "Creators" },
@@ -155,10 +150,8 @@ export const PAST_EVENTS: EventEntry[] = [
     location: "Online, Google Meet",
     gist: "Lhabab Düchen marks the Buddha’s descent from the heavens. We collaborated with creators who explained the story behind the day and shared its message with their audiences.",
     image: {
-      src: "/events/lhabab-duchen.webp",
+      src: lhababDuchen,
       alt: "Thangka painting of the Buddha descending a jewelled staircase from the heavens, surrounded by deities and clouds.",
-      width: 750,
-      height: 450,
     },
     stats: [
       { value: "7", label: "Creators" },

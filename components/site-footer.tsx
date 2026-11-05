@@ -10,6 +10,7 @@ import {
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
+import logo from "@/public/logo.jpg";
 
 type FooterLink = { label: string; href: string; external?: true };
 
@@ -53,10 +54,11 @@ export function SiteFooter() {
               className="inline-flex items-center gap-2.5"
             >
               <Image
-                src="/logo.jpg"
+                src={logo}
                 alt=""
                 width={40}
                 height={40}
+                placeholder="blur"
                 className="size-10 mix-blend-multiply"
               />
               <span className="text-[15px] font-semibold tracking-[-0.01em]">

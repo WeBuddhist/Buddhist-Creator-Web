@@ -2,6 +2,7 @@ import Image from "next/image";
 import { FilePdfIcon, YoutubeLogoIcon } from "@phosphor-icons/react/dist/ssr";
 import { WaveCorner } from "@/components/mission";
 import { CONVENTION, HERO_STATS } from "@/lib/convention-2026";
+import heroPhoto from "@/public/convention/2026/hero.webp";
 
 /* Byline links: underlined white text with a leading icon. */
 const bylineLink =
@@ -81,10 +82,9 @@ export function ConventionHero() {
 
         <figure className="reveal mt-10 lg:mt-14" style={{ animationDelay: "300ms" }}>
           <Image
-            src="/convention/2026/hero.webp"
+            src={heroPhoto}
             alt="Over a hundred creators seated together on the grounds of the Mahabodhi Temple in Bodh Gaya, the temple's spire rising behind them."
-            width={2048}
-            height={1365}
+            placeholder="blur"
             priority
             sizes="(min-width: 1152px) 72rem, 100vw"
             className="aspect-[3/2] w-full object-cover outline-1 -outline-offset-1 outline-white/10 sm:aspect-[2/1]"

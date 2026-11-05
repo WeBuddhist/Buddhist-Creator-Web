@@ -26,8 +26,7 @@ export function Awards() {
               <Image
                 src={featured.photo}
                 alt={`${featured.honorific} ${featured.name} receiving the Buddhist Influencer of the Year award`}
-                width={featured.width}
-                height={featured.height}
+                placeholder="blur"
                 sizes="(min-width: 1024px) 32rem, 100vw"
                 className={cn("size-full object-cover", photo)}
               />
@@ -77,8 +76,7 @@ export function Awards() {
                   <Image
                     src={src}
                     alt={`${name} receiving the ${category} award`}
-                    width={1000}
-                    height={750}
+                    placeholder="blur"
                     sizes="(min-width: 1024px) 18rem, (min-width: 640px) 50vw, 100vw"
                     className={cn("size-full object-cover", photo)}
                   />

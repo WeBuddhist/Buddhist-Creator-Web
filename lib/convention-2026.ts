@@ -1,6 +1,16 @@
 /* Content for the Buddhist Creators Convention 2026 page. Sourced from the
    BCC 2026 report and the previous buddhistcreators.com convention page. */
 
+import collaboratorShechen from "@/public/collaborator/collaborator-shechen.png";
+import collaboratorKhyentseFoundation from "@/public/collaborator/collaborator-khyentse-foundation.png";
+import collaboratorIndrajala from "@/public/collaborator/collaborator-indrajala.png";
+import collaboratorPartner from "@/public/collaborator/collaborator-partner.png";
+import awardQuinthupPemaBhutia from "@/public/convention/2026/award-quinthup-pema-bhutia.webp";
+import awardChhewangDorjee from "@/public/convention/2026/award-chhewang-dorjee.webp";
+import awardTashiChosgon from "@/public/convention/2026/award-tashi-chosgon.webp";
+import awardTenzinChime from "@/public/convention/2026/award-tenzin-chime.webp";
+import awardSonamDolma from "@/public/convention/2026/award-sonam-dolma.webp";
+
 export const CONVENTION = {
   year: 2026,
   title: "Buddhist Creators Convention 2026",
@@ -183,9 +193,7 @@ export const AWARDS = {
     honorific: "Venerable",
     name: "Quinthup Pema Bhutia",
     affiliation: "Namdroling Monastery",
-    photo: "/convention/2026/award-quinthup-pema-bhutia.webp",
-    width: 1200,
-    height: 900,
+    photo: awardQuinthupPemaBhutia,
     citation:
       "A creator whose content is dedicated entirely to the teachings of the Buddha, reaching over a million people across social media.",
     story:
@@ -201,28 +209,28 @@ export const AWARDS = {
       category: "Rising Star",
       name: "Chhewang Dorjee",
       affiliation: null,
-      photo: "/convention/2026/award-chhewang-dorjee.webp",
+      photo: awardChhewangDorjee,
       citation: "For his video Why Everybody Should Create Content.",
     },
     {
       category: "Audience Choice",
       name: "Tashi Chosgon",
       affiliation: null,
-      photo: "/convention/2026/award-tashi-chosgon.webp",
+      photo: awardTashiChosgon,
       citation: "Voted the community’s favourite, with 33% of all participant votes.",
     },
     {
       category: "Most Creative Video",
       name: "Tenzin Chime",
       affiliation: "Arunachal Pradesh",
-      photo: "/convention/2026/award-tenzin-chime.webp",
+      photo: awardTenzinChime,
       citation: "For a collaborative reel built on the message ‘Smile wherever possible, it is always possible.’",
     },
     {
       category: "Most Followers Gained",
       name: "Sonam Dolma",
       affiliation: "Spiti",
-      photo: "/convention/2026/award-sonam-dolma.webp",
+      photo: awardSonamDolma,
       citation: "For growing her following by over 16% in just eight days.",
     },
   ],
@@ -265,9 +273,9 @@ export const TESTIMONIALS = [
 ] as const;
 
 export const COLLABORATORS = [
-  { name: "Shechen Monastery", logo: "/collaborator/collaborator-shechen.png", href: null },
-  { name: "Khyentse Foundation", logo: "/collaborator/collaborator-khyentse-foundation.png", href: null },
-  { name: "Indrajala", logo: "/collaborator/collaborator-indrajala.png", href: null },
-  { name: "Sherab", logo: "/collaborator/collaborator-partner.png", href: "https://www.sherab.org" },
+  { name: "Shechen Monastery", logo: collaboratorShechen, href: null },
+  { name: "Khyentse Foundation", logo: collaboratorKhyentseFoundation, href: null },
+  { name: "Indrajala", logo: collaboratorIndrajala, href: null },
+  { name: "Sherab", logo: collaboratorPartner, href: "https://www.sherab.org" },
   { name: "Dharmaduta Services", logo: null, href: "https://dharmaduta.in/" },
 ] as const;

@@ -4,6 +4,7 @@ import { NavLinks } from "@/components/nav-links";
 import { MobileNav } from "@/components/mobile-nav";
 import { HeaderTone } from "@/components/header-tone";
 import { SITE_NAME } from "@/lib/navigation";
+import logoMark from "@/public/logo-mark.png";
 
 export function SiteHeader() {
   return (
@@ -26,8 +27,10 @@ export function SiteHeader() {
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--header-ring)",
           ].join(" ")}
         >
+          {/* No blur placeholder: .site-logo's filter applies to it too, which
+              leaves a smudge beside the name on every page. */}
           <Image
-            src="/logo-mark.png"
+            src={logoMark}
             alt=""
             width={80}
             height={80}

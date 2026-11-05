@@ -2,6 +2,18 @@
    buddhistcreators.com page with two additions: sponsoring a scholarship
    and volunteering as a trainer. */
 
+import type { StaticImageData } from "next/image";
+import bodhisattvaChallenge from "@/public/events/bodhisattva-challenge.webp";
+import dailyTipitaka from "@/public/events/daily-tipitaka.webp";
+import collaboratorShechenWide from "@/public/collaborator/collaborator-shechen-wide.webp";
+import collaboratorKhyentseFoundationTrimmed from "@/public/collaborator/collaborator-khyentse-foundation-trimmed.webp";
+import collaboratorIndrajalaWide from "@/public/collaborator/collaborator-indrajala-wide.webp";
+import collaboratorOpenpecha from "@/public/collaborator/collaborator-openpecha.webp";
+import collaboratorSherab from "@/public/collaborator/collaborator-sherab.webp";
+import collaboratorDharmaduta from "@/public/collaborator/collaborator-dharmaduta.webp";
+import collaboratorTibetanNunsProject from "@/public/collaborator/collaborator-tibetan-nuns-project.webp";
+import collaboratorBuddhaEducationalFoundation from "@/public/collaborator/collaborator-buddha-educational-foundation.webp";
+
 const EMAIL = "hello@buddhistcreators.com";
 const mailto = (subject: string) => `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}`;
 
@@ -17,8 +29,8 @@ export type Challenge = {
   body: string;
   /** Where the card goes. Both challenges run on WeBuddhist. */
   href: string;
-  /** Path under /public. Omitted entries show the placeholder. */
-  image?: { src: string; alt: string; width: number; height: number };
+  /** Static import, which carries its size and blur. Omitted entries show the placeholder. */
+  image?: { src: StaticImageData; alt: string };
 };
 
 export const CREATOR = {
@@ -33,10 +45,8 @@ export const CREATOR = {
       body: "A year-long daily practice inspired by The Way of the Bodhisattva, delivered through the WeBuddhist Creator Assistant.",
       href: "https://webuddhist.com/plans",
       image: {
-        src: "/events/bodhisattva-challenge.webp",
+        src: bodhisattvaChallenge,
         alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
-        width: 1280,
-        height: 720,
       },
     },
     {
@@ -44,10 +54,8 @@ export const CREATOR = {
       body: "A daily reading of the Pali canon, one passage at a time, shared with monastics and lay practitioners around the world.",
       href: "https://webuddhist.com/plans",
       image: {
-        src: "/events/daily-tipitaka.webp",
+        src: dailyTipitaka,
         alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",
-        width: 800,
-        height: 341,
       },
     },
   ] as Challenge[],
@@ -79,14 +87,14 @@ export const PARTNER = {
   ],
   partnersTitle: "Organisations already partnering with us",
   partners: [
-    { name: "Shechen Monastery", logo: "/collaborator/collaborator-shechen-wide.webp", width: 932, height: 400, href: null },
-    { name: "Khyentse Foundation", logo: "/collaborator/collaborator-khyentse-foundation-trimmed.webp", width: 230, height: 400, href: null },
-    { name: "Indrajala", logo: "/collaborator/collaborator-indrajala-wide.webp", width: 1087, height: 400, href: null },
-    { name: "OpenPecha Trust", logo: "/collaborator/collaborator-openpecha.webp", width: 1955, height: 400, href: "https://openpecha.org/" },
-    { name: "Sherab", logo: "/collaborator/collaborator-sherab.webp", width: 1451, height: 400, href: "https://www.sherab.org" },
-    { name: "Dharmaduta", logo: "/collaborator/collaborator-dharmaduta.webp", width: 2182, height: 400, href: "https://dharmaduta.in/" },
-    { name: "Tibetan Nuns Project", logo: "/collaborator/collaborator-tibetan-nuns-project.webp", width: 1811, height: 400, href: "https://tnp.org/" },
-    { name: "The Corporate Body of the Buddha Educational Foundation", logo: "/collaborator/collaborator-buddha-educational-foundation.webp", width: 1544, height: 400, href: "https://www.budaedu.org/" },
+    { name: "Shechen Monastery", logo: collaboratorShechenWide, href: null },
+    { name: "Khyentse Foundation", logo: collaboratorKhyentseFoundationTrimmed, href: null },
+    { name: "Indrajala", logo: collaboratorIndrajalaWide, href: null },
+    { name: "OpenPecha Trust", logo: collaboratorOpenpecha, href: "https://openpecha.org/" },
+    { name: "Sherab", logo: collaboratorSherab, href: "https://www.sherab.org" },
+    { name: "Dharmaduta", logo: collaboratorDharmaduta, href: "https://dharmaduta.in/" },
+    { name: "Tibetan Nuns Project", logo: collaboratorTibetanNunsProject, href: "https://tnp.org/" },
+    { name: "The Corporate Body of the Buddha Educational Foundation", logo: collaboratorBuddhaEducationalFoundation, href: "https://www.budaedu.org/" },
   ],
   action: { label: "Start a partnership conversation", href: mailto("Partnership Inquiry") },
 } as const;

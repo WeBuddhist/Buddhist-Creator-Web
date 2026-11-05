@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { SITE_NAME } from "@/lib/navigation";
+import heroImage from "@/public/hero.png";
 
 export function Hero() {
   return (
@@ -48,12 +49,12 @@ export function Hero() {
         </div>
 
         {/* The PNG is cream line art on transparency; brightness-0 turns the
-            strokes to ink so it matches the lion mark. */}
+            strokes to ink so it matches the lion mark. No blur placeholder:
+            the filter applies to it too, and thin strokes average out to a
+            grey box. */}
         <Image
-          src="/hero.png"
+          src={heroImage}
           alt="Single-line drawing of the Buddha's face, eyes lowered in meditation"
-          width={2000}
-          height={2366}
           preload
           sizes="(min-width: 1024px) 40vw, 20rem"
           className="mx-auto h-auto w-full max-w-xs brightness-0 lg:max-w-none"

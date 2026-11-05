@@ -97,8 +97,7 @@ export default function GetInvolvedPage() {
                       <Image
                         src={image.src}
                         alt={image.alt}
-                        width={image.width}
-                        height={image.height}
+                        placeholder="blur"
                         sizes="(min-width: 640px) 12rem, 100vw"
                         className="size-full object-cover"
                       />
@@ -208,19 +207,18 @@ export default function GetInvolvedPage() {
                 a muted frame with the card hairline. Names stay in the DOM
                 for screen readers and as the link's name. */}
             <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
-              {PARTNER.partners.map(({ name, logo, width, height, href }) => {
+              {PARTNER.partners.map(({ name, logo, href }) => {
                 const cell =
                   "flex h-24 items-center justify-center rounded-xl border border-transparent bg-muted/40 px-6 shadow-ring";
                 // A height cap suits wide wordmarks; a narrow crest under
                 // the same cap shrinks to a sliver, so it gets more height.
-                const narrow = width / height < 1.3;
+                const narrow = logo.width / logo.height < 1.3;
                 const mark = (
                   <>
                     <Image
                       src={logo}
                       alt=""
-                      width={width}
-                      height={height}
+                      placeholder="blur"
                       sizes="(min-width: 1024px) 14rem, (min-width: 640px) 30vw, 45vw"
                       className={cn(
                         "w-auto max-w-full object-contain mix-blend-multiply",

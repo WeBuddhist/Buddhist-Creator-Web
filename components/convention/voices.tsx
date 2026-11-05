@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { cn } from "@/lib/utils";
 import { WaveCorner } from "@/components/mission";
 import { COLLABORATORS, TESTIMONIALS } from "@/lib/convention-2026";
@@ -52,7 +52,7 @@ export function Voices() {
    logo on file are left out. */
 export function Collaborators() {
   const withLogo = COLLABORATORS.filter(
-    (c): c is typeof c & { logo: string } => c.logo !== null,
+    (c): c is typeof c & { logo: StaticImageData } => c.logo !== null,
   );
 
   return (
@@ -72,8 +72,7 @@ export function Collaborators() {
                 <Image
                   src={logo}
                   alt=""
-                  width={600}
-                  height={600}
+                  placeholder="blur"
                   sizes="3.5rem"
                   className="size-14 mix-blend-multiply"
                 />

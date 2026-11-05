@@ -2,6 +2,15 @@
    are names and countries copied from the shared creators sheet, sorted by
    name. Copy changes there by hand; nothing syncs. */
 
+import type { StaticImageData } from "next/image";
+import achal from "@/public/people/achal.webp";
+import jenniferYo from "@/public/people/jennifer-yo.webp";
+import karmaPhuntsokNamgyal from "@/public/people/karma-phuntsok-namgyal.webp";
+import norbuTsering from "@/public/people/norbu-tsering.webp";
+import tenzinNoryang from "@/public/people/tenzin-noryang.webp";
+import tenzinTsering from "@/public/people/tenzin-tsering.webp";
+import yashDixit from "@/public/people/yash-dixit.webp";
+
 export type Creator = {
   name: string;
   country: string;
@@ -11,7 +20,7 @@ export type TeamMember = {
   name: string;
   /** Omitted until confirmed; the card then shows the name alone. */
   role?: string;
-  image?: { src: string; alt: string; width: number; height: number };
+  image?: { src: StaticImageData; alt: string };
 };
 
 export const PEOPLE_PAGE = {
@@ -151,47 +160,45 @@ export const CREATORS: Creator[] = [
   { name: "Yufan Liao (Jay Liao)", country: "Taiwan" },
 ];
 
-const portrait = (file: string, name: string) => ({
-  src: `/people/${file}.webp`,
+const portrait = (src: StaticImageData, name: string) => ({
+  src,
   alt: `Portrait of ${name}`,
-  width: 800,
-  height: 800,
 });
 
 export const TEAM: TeamMember[] = [
   {
     name: "Jennifer Yo",
     role: "Lead",
-    image: portrait("jennifer-yo", "Jennifer Yo"),
+    image: portrait(jenniferYo, "Jennifer Yo"),
   },
   {
     name: "Tenzin Noryang",
     role: "Finance and Admin",
-    image: portrait("tenzin-noryang", "Tenzin Noryang"),
+    image: portrait(tenzinNoryang, "Tenzin Noryang"),
   },
   {
     name: "Tenzin Tsering",
     role: "HR, People Strategist",
-    image: portrait("tenzin-tsering", "Tenzin Tsering"),
+    image: portrait(tenzinTsering, "Tenzin Tsering"),
   },
   {
     name: "Karma Phuntsok Namgyal",
     role: "Creator Convention Manager",
-    image: portrait("karma-phuntsok-namgyal", "Karma Phuntsok Namgyal"),
+    image: portrait(karmaPhuntsokNamgyal, "Karma Phuntsok Namgyal"),
   },
   {
     name: "Yash Dixit",
     role: "Community Engagement Manager",
-    image: portrait("yash-dixit", "Yash Dixit"),
+    image: portrait(yashDixit, "Yash Dixit"),
   },
   {
     name: "Achal Wasnik",
     role: "Community Engagement Assistant",
-    image: portrait("achal", "Achal"),
+    image: portrait(achal, "Achal"),
   },
   {
     name: "Norbu Tsering",
     role: "Social Media & Communication Associate",
-    image: portrait("norbu-tsering", "Norbu Tsering"),
+    image: portrait(norbuTsering, "Norbu Tsering"),
   },
 ];
