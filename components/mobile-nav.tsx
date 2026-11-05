@@ -9,11 +9,20 @@ import { cn } from "@/lib/utils";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
 
 const iconButton = cn(
-  "inline-flex size-10 select-none items-center justify-center rounded-full text-foreground",
+  "inline-flex size-10 select-none items-center justify-center rounded-full",
   "transition-[background-color,transform] duration-150 ease-hover",
-  "hover:bg-muted",
   "active:scale-[0.95]",
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+  "focus-visible:outline-2 focus-visible:outline-offset-2",
+);
+// The trigger lives in the header and follows its tone; the close button
+// sits in the white drawer and keeps the page tokens.
+const triggerButton = cn(
+  iconButton,
+  "text-(--header-fg) hover:bg-(--header-hover) focus-visible:outline-(--header-ring)",
+);
+const closeButton = cn(
+  iconButton,
+  "text-foreground hover:bg-muted focus-visible:outline-ring",
 );
 
 export function MobileNav() {
@@ -30,7 +39,7 @@ export function MobileNav() {
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen} swipeDirection="right">
-      <Drawer.Trigger className={iconButton} aria-label="Open menu">
+      <Drawer.Trigger className={triggerButton} aria-label="Open menu">
         <ListIcon className="size-5" />
       </Drawer.Trigger>
 
@@ -74,7 +83,7 @@ export function MobileNav() {
                 <Drawer.Title className="text-sm font-medium text-muted-foreground">
                   {SITE_NAME}
                 </Drawer.Title>
-                <Drawer.Close className={iconButton} aria-label="Close menu">
+                <Drawer.Close className={closeButton} aria-label="Close menu">
                   <XIcon className="size-5" />
                 </Drawer.Close>
               </div>

@@ -7,7 +7,6 @@ export const CONVENTION = {
   shortTitle: "BCC 2026",
   location: "Bodh Gaya, India",
   dates: "29 January – 6 February 2026",
-  tagline: "Where the first-ever global sangha of creators came together.",
   reportHref: "/convention/2026/bcc-2026-report.pdf",
   documentary: {
     youtubeId: "vOStd3Dolg0",
@@ -19,7 +18,6 @@ export const CONVENTION = {
 export const HERO_STATS = [
   { value: "110", label: "Creators" },
   { value: "10", label: "Countries" },
-  { value: "Bodh Gaya", label: "Location" },
 ] as const;
 
 export const PROGRAM = {

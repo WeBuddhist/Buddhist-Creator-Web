@@ -8,6 +8,7 @@ export function Voices() {
     <section
       aria-labelledby="voices-title"
       className="relative isolate overflow-hidden bg-brand-cyan"
+      data-header-tone="brand"
     >
       <WaveCorner className="-top-16 -left-16" />
       <WaveCorner className="-right-16 -bottom-16 -scale-100" />
@@ -56,15 +57,15 @@ export function Collaborators() {
 
   return (
     <section aria-labelledby="collaborators-title" className="bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 lg:pb-20">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:gap-10 lg:py-10">
         <h2
           id="collaborators-title"
-          className="text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground"
+          className="shrink-0 text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground"
         >
           Organisations behind the convention
         </h2>
 
-        <ul className="mt-6 flex flex-wrap items-center gap-x-10 gap-y-6">
+        <ul className="flex flex-wrap items-center gap-x-8 gap-y-4">
           {withLogo.map(({ name, logo, href }) => {
             const mark = (
               <>
@@ -73,8 +74,8 @@ export function Collaborators() {
                   alt=""
                   width={600}
                   height={600}
-                  sizes="5rem"
-                  className="size-20 mix-blend-multiply"
+                  sizes="3.5rem"
+                  className="size-14 mix-blend-multiply"
                 />
                 <span className="sr-only">{name}</span>
               </>

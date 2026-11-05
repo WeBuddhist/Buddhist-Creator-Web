@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ConventionHero } from "@/components/convention/hero";
 import { CommunityDays, Program } from "@/components/convention/program";
 import { Masterclass } from "@/components/convention/masterclass";
@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   title: "Buddhist Creators Convention 2026",
   description:
     "Nine days in Bodh Gaya: 110 creators from 10 countries, a masterclass on marketing the Dharma, and the Buddhist Influencer of the Year awards.",
+};
+
+// The page opens on a brand-cyan band, so the browser chrome matches it.
+export const viewport: Viewport = {
+  themeColor: "#136986",
 };
 
 export default function Convention2026Page() {

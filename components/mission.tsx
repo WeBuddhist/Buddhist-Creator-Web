@@ -5,6 +5,7 @@ export function Mission() {
     <section
       aria-labelledby="mission-title"
       className="relative isolate overflow-hidden bg-brand-cyan"
+      data-header-tone="brand"
     >
       <WaveCorner className="-top-16 -left-16" />
       <WaveCorner className="-top-16 -right-16 -scale-x-100" />

@@ -15,25 +15,18 @@ function isActive(pathname: string, href: string) {
 const pill = cn(
   "relative inline-flex h-9 select-none items-center gap-1 rounded-full px-3.5 text-sm font-medium",
   // Hover is seen tens of times a day: a near-imperceptible color change only.
-  "text-muted-foreground transition-[color,background-color,transform] duration-150 ease-hover",
-  "hover:bg-muted hover:text-foreground data-popup-open:bg-muted data-popup-open:text-foreground",
+  "text-(--header-fg-muted) transition-[color,background-color,transform] duration-150 ease-hover",
+  "hover:bg-(--header-hover) hover:text-(--header-fg) data-popup-open:bg-(--header-hover) data-popup-open:text-(--header-fg)",
   // Press feedback: the interface heard the tap.
   "active:scale-[0.97]",
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--header-ring)",
 );
 
-function ActiveDot({ active }: { active: boolean }) {
-  // Golden dot marks the current section. Static; it never animates.
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-brand-golden transition-opacity duration-150 ease-hover",
-        active ? "opacity-100" : "opacity-0",
-      )}
-    />
-  );
-}
+// The current section sits on a soft pill at full text strength. The pill is
+// a shape cue, so the state never rests on color alone; aria-current carries
+// it to assistive tech.
+const current = "bg-(--header-hover) text-(--header-fg)";
+
 
 export function NavLinks() {
   const pathname = usePathname();
@@ -63,10 +56,9 @@ export function NavLinks() {
                 <NavigationMenu.Link
                   render={<NextLink href={item.href} />}
                   aria-current={active ? "page" : undefined}
-                  className={cn(pill, active && "text-foreground")}
+                  className={cn(pill, active && current)}
                 >
                   {item.label}
-                  <ActiveDot active={active} />
                 </NavigationMenu.Link>
               </NavigationMenu.Item>
             );
@@ -75,13 +67,12 @@ export function NavLinks() {
           return (
             <NavigationMenu.Item key={item.href}>
               <NavigationMenu.Trigger
-                className={cn(pill, "pe-2.5", active && "text-foreground")}
+                className={cn(pill, "pe-2.5", active && current)}
               >
                 {item.label}
                 <NavigationMenu.Icon className="transition-transform duration-150 ease-hover data-popup-open:rotate-180">
                   <CaretDownIcon className="size-4" weight="bold" />
                 </NavigationMenu.Icon>
-                <ActiveDot active={active} />
               </NavigationMenu.Trigger>
 
               <NavigationMenu.Content className="w-72 p-1.5">
