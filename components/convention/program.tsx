@@ -1,6 +1,12 @@
 import { cn } from "@/lib/utils";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { COMMUNITY_DAYS, PROGRAM } from "@/lib/convention-2026";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export function Program() {
   return (
@@ -43,19 +49,25 @@ export function CommunityDays() {
           </Block>
 
           <Block title="Keynote Addresses">
-            <ul className="grid gap-4 sm:grid-cols-2">
+            {/* Speakers as a disclosure list with the first open, so the
+                names scan as one column and each address reads on demand. */}
+            <Accordion defaultValue={[keynotes[0].name]} className="-mt-4">
               {keynotes.map(({ name, role, body }) => (
-                <li key={name} className={card}>
-                  <div className={cn(cardInner, "h-full px-4 pt-4 pb-5 sm:px-5")}>
-                    <p className="font-semibold text-foreground">{name}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{role}</p>
-                    <p className="mt-3 text-pretty text-sm leading-[1.5] text-muted-foreground">
+                <AccordionItem key={name} value={name}>
+                  <AccordionTrigger>
+                    <span className="flex flex-col">
+                      <span className="font-semibold text-foreground">{name}</span>
+                      <span className="mt-0.5 text-sm text-muted-foreground">{role}</span>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="max-w-[58ch] text-pretty text-sm leading-[1.5] text-muted-foreground">
                       {body}
                     </p>
-                  </div>
-                </li>
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </ul>
+            </Accordion>
           </Block>
 
           <Block title="Panel Discussion">

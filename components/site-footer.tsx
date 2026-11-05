@@ -117,23 +117,9 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {COPYRIGHT_YEAR} {SITE_NAME}. All rights reserved.
-          </p>
-          <ul className="flex items-center gap-6">
-            <li>
-              <Link href="/privacy" className={link}>
-                Privacy
-              </Link>
-            </li>
-            <li>
-              <Link href="/terms" className={link}>
-                Terms
-              </Link>
-            </li>
-          </ul>
-        </div>
+        <p className="mt-10 border-t border-border pt-6 text-sm text-muted-foreground">
+          © {COPYRIGHT_YEAR} {SITE_NAME}. All rights reserved.
+        </p>
       </div>
     </footer>
   );

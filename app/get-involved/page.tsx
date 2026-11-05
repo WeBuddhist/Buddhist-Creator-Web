@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowUpRightIcon, EnvelopeSimpleIcon, ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { WaveCorner } from "@/components/mission";
-import { SectionHeading, card, cardInner, photo } from "@/components/convention/section-heading";
+import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { cn } from "@/lib/utils";
 import { CREATOR, GET_INVOLVED_PAGE, PARTNER, SUPPORT, TEAM } from "@/lib/get-involved";
 
@@ -79,9 +79,19 @@ export default function GetInvolvedPage() {
           />
 
           <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:gap-6">
-            {CREATOR.challenges.map(({ title, body, image }) => (
+            {CREATOR.challenges.map(({ title, body, href, image }) => (
               <li key={title} className={card}>
-                <article className={cn(cardInner, "grid overflow-hidden sm:grid-cols-[10rem_minmax(0,1fr)] lg:grid-cols-[12rem_minmax(0,1fr)]")}>
+                {/* The whole card is the link; the title carries the
+                    new-tab note so it reads out of context. */}
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    cardInner,
+                    "group/challenge grid h-full overflow-hidden transition-[background-color] duration-150 ease-hover hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:grid-cols-[10rem_minmax(0,1fr)] lg:grid-cols-[12rem_minmax(0,1fr)]",
+                  )}
+                >
                   <div className="aspect-[4/3] bg-muted sm:aspect-auto sm:h-full">
                     {image ? (
                       <Image
@@ -90,7 +100,7 @@ export default function GetInvolvedPage() {
                         width={image.width}
                         height={image.height}
                         sizes="(min-width: 640px) 12rem, 100vw"
-                        className={cn("size-full object-cover", photo)}
+                        className="size-full object-cover"
                       />
                     ) : (
                       <div aria-hidden className="flex size-full min-h-40 items-center justify-center">
@@ -99,14 +109,20 @@ export default function GetInvolvedPage() {
                     )}
                   </div>
                   <div className="flex flex-col justify-center px-5 pt-5 pb-6">
-                    <h3 className="text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
+                    <h3 className="flex items-center gap-1.5 text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
                       {title}
+                      <span className="sr-only">(opens in new tab)</span>
+                      <ArrowUpRightIcon
+                        aria-hidden
+                        weight="bold"
+                        className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 ease-hover motion-safe:group-hover/challenge:translate-x-0.5 motion-safe:group-hover/challenge:-translate-y-0.5"
+                      />
                     </h3>
                     <p className="mt-2 text-pretty text-sm leading-[1.5] text-muted-foreground">
                       {body}
                     </p>
                   </div>
-                </article>
+                </a>
               </li>
             ))}
           </ul>

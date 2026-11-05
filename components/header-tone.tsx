@@ -24,6 +24,9 @@ export function HeaderTone() {
       observer?.disconnect();
       under.clear();
       const midline = header.getBoundingClientRect().height / 2;
+      // Clamped: a viewport shorter than the midline (headless before layout,
+      // some embedded webviews) would otherwise format as "--Npx" and throw.
+      const below = Math.max(window.innerHeight - midline - 1, 0);
       observer = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
@@ -33,7 +36,7 @@ export function HeaderTone() {
           header.dataset.tone = under.size > 0 ? "brand" : "light";
         },
         {
-          rootMargin: `-${midline}px 0px -${window.innerHeight - midline - 1}px 0px`,
+          rootMargin: `-${midline}px 0px -${below}px 0px`,
           threshold: 0,
         },
       );

@@ -4,10 +4,15 @@
 
 export type EventEntry = {
   title: string;
-  /** Human label and the ISO dates behind it, for the <time> element. */
-  date: { label: string; start: string; end?: string };
+  /** Human label and, when it is a real date, the ISO dates behind it for
+      the <time> element. A campaign that ran on several days has a label
+      only; one with no known date has none. */
+  date?: { label: string; start?: string; end?: string };
   location: string;
-  description: string;
+  /** The summary on a card. The past list shows the gist instead. */
+  description?: string;
+  /** The full write-up a past event opens to in the list. */
+  gist?: string;
   /** Where the card leads. Omitted when there is nothing to open yet. */
   href?: string;
   /** Absolute URL off this site. Opens in a new tab with an external cue. */
@@ -26,6 +31,8 @@ export const EVENTS_PAGE = {
   title: "Where creators gather",
   description:
     "Conventions, masterclasses and community practice days, in person and online. Everything we host, past and upcoming.",
+  impact:
+    "Our five creator campaigns have earned over 1.26 million views, 100,000+ likes and 7,600+ shares. From 15 April to 5 November 2026, more than 9 million people viewed our social media page and profile, and 7,000+ new followers joined us. Beyond these campaigns, we also collaborate with creators on their own videos.",
 } as const;
 
 /* Figures below are placeholders until the real numbers are in. */
@@ -35,6 +42,12 @@ export const ONGOING_EVENTS: EventEntry[] = [
     date: { label: "1 – 6 November 2026", start: "2026-11-01", end: "2026-11-06" },
     location: "Dzongsar Khyentse Chökyi Lodrö Institute, Himachal Pradesh, India",
     description: "Six days on marketing the Dharma, hosted by Khyentse Foundation.",
+    image: {
+      src: "/events/masterclass-2026.webp",
+      alt: "Monks in maroon robes debating on a monastery courtyard at sunset, with mountains behind the red and gold temple.",
+      width: 2048,
+      height: 1152,
+    },
     featured: true,
   },
   {
@@ -45,63 +58,125 @@ export const ONGOING_EVENTS: EventEntry[] = [
     href: "https://webuddhist.com/plans",
     external: true,
     cta: "Join the challenge",
-    stats: [
-      { value: "40", label: "Plans" },
-      { value: "358", label: "Days" },
-    ],
+    image: {
+      src: "/events/bodhisattva-challenge.webp",
+      alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
+      width: 1280,
+      height: 720,
+    },
   },
 ];
 
 export const UPCOMING_EVENTS: EventEntry[] = [
   {
     title: "Buddhist Creators Convention 2027",
-    date: { label: "10 – 13 January 2027", start: "2027-01-10", end: "2027-01-13" },
-    location: "Bodh Gaya, Bihar, India",
+    date: { label: "18 – 21 February 2027", start: "2027-02-18", end: "2027-02-21" },
+    location: "Nagaloka, Nagpur, India",
     description: "The next global gathering, building on the momentum of 2026’s first convention.",
+    image: {
+      src: "/events/convention-2027.webp",
+      alt: "Flyer for Buddhist Creators Convention 2027 with a crayon illustration of the Walking Buddha at Nagaloka, Nagpur",
+      width: 2054,
+      height: 1369,
+    },
   },
 ];
 
 export const PAST_EVENTS: EventEntry[] = [
   {
     title: "Guru Rinpoche Day",
-    date: { label: "24 July 2026", start: "2026-07-24" },
+    date: { label: "Several Guru Rinpoche Days" },
     location: "Online",
-    description: "A day of shared practice and content on the tenth day of the lunar month, carried across creators’ channels.",
+    gist: "Guru Rinpoche Day is one of the most sacred days in Tibetan Buddhism. We ran this campaign on several Guru Rinpoche Days, in collaboration with creators who talked about who Guru Rinpoche was, why he matters, and how people can honour him. The aim was to spread awareness and share knowledge about the day with a wider audience.",
+    image: {
+      src: "/events/guru-rinpoche-day.webp",
+      alt: "Thangka painting of Guru Rinpoche seated on a lotus, holding a vajra and skull cup, before a golden halo and mountains.",
+      width: 480,
+      height: 640,
+    },
     stats: [
-      { value: "42", label: "Collaborators" },
-      { value: "1.1M", label: "Engagements" },
+      { value: "18", label: "Creators" },
+      { value: "300K+", label: "Views" },
+      { value: "10.9K+", label: "Likes" },
+      { value: "648+", label: "Shares" },
     ],
   },
   {
-    title: "Saka Dawa",
+    title: "Saka Dawa Challenge 2026",
     date: { label: "31 May 2026", start: "2026-05-31" },
     location: "Online",
-    description: "Creators marked the Buddha’s birth, enlightenment and passing with a month of teachings, verses and reflections.",
+    gist: "Saka Dawa is the holiest month for many Buddhists, and it is closely linked with making merit and acts of kindness. For this challenge, we collaborated with creators who made videos about Saka Dawa and did a real act of kindness, then shared it. It turned kindness into something people could see and join in with, and it became our biggest campaign of the season.",
+    image: {
+      src: "/events/saka-dawa.webp",
+      alt: "Thangka painting of Shakyamuni Buddha seated on a lotus throne, one hand touching the earth, among green hills and clouds.",
+      width: 447,
+      height: 686,
+    },
     stats: [
-      { value: "58", label: "Collaborators" },
-      { value: "2.4M", label: "Engagements" },
+      { value: "15", label: "Videos" },
+      { value: "578K+", label: "Views" },
+      { value: "60K+", label: "Likes" },
+      { value: "5K+", label: "Shares" },
+    ],
+  },
+  {
+    title: "Buddha Purnima: My Buddha Moment",
+    date: { label: "Buddha Purnima" },
+    location: "Online",
+    gist: "For Buddha Purnima, we ran “My Buddha Moment”, a creative competition in collaboration with 14 creators, who each shared a moment when the Buddha’s teachings touched their lives. The best creators across three categories received cash prizes.",
+    stats: [
+      { value: "14", label: "Creators" },
+      { value: "60K+", label: "Views" },
+      { value: "6.5K+", label: "Likes" },
+      { value: "300+", label: "Shares" },
     ],
   },
   {
     title: "Buddhist Creators Convention 2026",
     date: { label: "29 January – 6 February 2026", start: "2026-01-29", end: "2026-02-06" },
     location: "Bodh Gaya, Bihar, India",
-    description: "Nine days with 110 creators from 10 countries: talks, a masterclass and the first Buddhist Influencer of the Year awards.",
+    gist: "In January 2026, 110 creators from 10 countries gathered in Bodh Gaya, the first global sangha of its kind. Nine days ran in three phases: community days with an opening ceremony, keynotes, a panel and lightning talks; a masterclass on marketing the Dharma; and a closing ceremony with the first Buddhist Influencer of the Year awards.",
     href: "/convention/2026",
     cta: "Read the report",
+    image: {
+      src: "/convention/2026/hero.webp",
+      alt: "Over a hundred creators seated together on the grounds of the Mahabodhi Temple in Bodh Gaya, the temple's spire rising behind them.",
+      width: 2048,
+      height: 1365,
+    },
     stats: [
       { value: "110", label: "Creators" },
       { value: "10", label: "Countries" },
     ],
   },
   {
-    title: "Lhabab Düchen",
+    title: "Lhabab Düchen Challenge",
     date: { label: "11 November 2025", start: "2025-11-11" },
     location: "Online, Google Meet",
-    description: "A day of collective practice and reflection marking the Buddha’s descent from the heavens, open to the whole community.",
+    gist: "Lhabab Düchen marks the Buddha’s descent from the heavens. We collaborated with creators who explained the story behind the day and shared its message with their audiences.",
+    image: {
+      src: "/events/lhabab-duchen.webp",
+      alt: "Thangka painting of the Buddha descending a jewelled staircase from the heavens, surrounded by deities and clouds.",
+      width: 750,
+      height: 450,
+    },
     stats: [
-      { value: "27", label: "Collaborators" },
-      { value: "640K", label: "Engagements" },
+      { value: "7", label: "Creators" },
+      { value: "280K+", label: "Views" },
+      { value: "20K+", label: "Likes" },
+      { value: "1.1K+", label: "Shares" },
+    ],
+  },
+  {
+    title: "Bodhicharyavatara Challenge",
+    location: "Online",
+    gist: "The Bodhicharyavatara (A Guide to the Bodhisattva’s Way of Life) is available on our WeBuddhist app. To help more people discover it, we collaborated with four creators who talked about the text in four different languages, so the teaching could reach people in the language they are most comfortable with.",
+    stats: [
+      { value: "4", label: "Creators" },
+      { value: "4", label: "Languages" },
+      { value: "45K+", label: "Views" },
+      { value: "4K+", label: "Likes" },
+      { value: "650+", label: "Shares" },
     ],
   },
 ];

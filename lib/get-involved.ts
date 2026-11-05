@@ -1,7 +1,6 @@
 /* Content for the Get Involved page, carried over from the previous
    buddhistcreators.com page with two additions: sponsoring a scholarship
-   and volunteering as a trainer. Challenge images are placeholders until
-   photos are chosen. */
+   and volunteering as a trainer. */
 
 const EMAIL = "hello@buddhistcreators.com";
 const mailto = (subject: string) => `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}`;
@@ -16,6 +15,8 @@ export const GET_INVOLVED_PAGE = {
 export type Challenge = {
   title: string;
   body: string;
+  /** Where the card goes. Both challenges run on WeBuddhist. */
+  href: string;
   /** Path under /public. Omitted entries show the placeholder. */
   image?: { src: string; alt: string; width: number; height: number };
 };
@@ -30,10 +31,24 @@ export const CREATOR = {
     {
       title: "Bodhisattva Challenge",
       body: "A year-long daily practice inspired by The Way of the Bodhisattva, delivered through the WeBuddhist Creator Assistant.",
+      href: "https://webuddhist.com/plans",
+      image: {
+        src: "/events/bodhisattva-challenge.webp",
+        alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
+        width: 1280,
+        height: 720,
+      },
     },
     {
-      title: "My Buddha Moment",
-      body: "A creative reel challenge inviting practitioners to share a Buddhist teaching, verse or moment that resonates with them.",
+      title: "Daily Tipitaka",
+      body: "A daily reading of the Pali canon, one passage at a time, shared with monastics and lay practitioners around the world.",
+      href: "https://webuddhist.com/plans",
+      image: {
+        src: "/events/daily-tipitaka.webp",
+        alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",
+        width: 800,
+        height: 341,
+      },
     },
   ] as Challenge[],
   programs: {

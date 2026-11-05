@@ -8,11 +8,11 @@ import {
   MapPinIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import { card, cardInner, photo } from "@/components/convention/section-heading";
+import { card, cardInner } from "@/components/convention/section-heading";
 import type { EventEntry } from "@/lib/events";
 
 /* The labelled link at the bottom of a card. */
-const ctaLink =
+export const ctaLink =
   "group/link inline-flex items-center gap-1 rounded-sm text-sm font-medium text-brand-cyan underline decoration-brand-cyan/30 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring";
 
 /* One event. The media sits flush at the top of the inner surface, the text
@@ -24,7 +24,7 @@ export function EventCard({ event }: { event: EventEntry }) {
   return (
     <li className={card}>
       <article className={cn(cardInner, "flex h-full flex-col overflow-hidden")}>
-        <div className="relative aspect-[3/2] bg-muted">
+        <div className="relative aspect-[3/2] min-h-0 shrink-0 overflow-hidden bg-muted">
           {image ? (
             <Image
               src={image.src}
@@ -32,7 +32,7 @@ export function EventCard({ event }: { event: EventEntry }) {
               width={image.width}
               height={image.height}
               sizes="(min-width: 1024px) 22rem, (min-width: 640px) 50vw, 100vw"
-              className={cn("size-full object-cover", photo)}
+              className="size-full object-cover"
             />
           ) : (
             <Placeholder />
@@ -50,14 +50,17 @@ export function EventCard({ event }: { event: EventEntry }) {
           </h3>
 
           <dl className="mt-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
-            <div className="flex items-start gap-2">
-              <dt className="sr-only">Date</dt>
-              <CalendarBlankIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
-              <dd>
-                {/* datetime takes one date, so a range carries its start. */}
-                <time dateTime={date.start}>{date.label}</time>
-              </dd>
-            </div>
+            {date && (
+              <div className="flex items-start gap-2">
+                <dt className="sr-only">Date</dt>
+                <CalendarBlankIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+                <dd>
+                  {/* datetime takes one date, so a range carries its start;
+                      a label with no date behind it is plain text. */}
+                  {date.start ? <time dateTime={date.start}>{date.label}</time> : date.label}
+                </dd>
+              </div>
+            )}
             <div className="flex items-start gap-2">
               <dt className="sr-only">Location</dt>
               <MapPinIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -65,9 +68,11 @@ export function EventCard({ event }: { event: EventEntry }) {
             </div>
           </dl>
 
-          <p className="mt-4 text-pretty text-sm leading-[1.5] text-muted-foreground">
-            {description}
-          </p>
+          {description && (
+            <p className="mt-4 text-pretty text-sm leading-[1.5] text-muted-foreground">
+              {description}
+            </p>
+          )}
 
           {stats && (
             <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-3">

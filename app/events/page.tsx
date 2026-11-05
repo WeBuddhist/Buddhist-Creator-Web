@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 import { EventCard } from "@/components/events/event-card";
-import { WaveCorner } from "@/components/mission";
+import { PastEventList } from "@/components/events/past-event-list";
+import { AsanohaCorner } from "@/components/asanoha-corner";
 import { EVENTS_PAGE, ONGOING_EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
 
 export const metadata: Metadata = {
@@ -23,10 +24,10 @@ export default function EventsPage() {
           takes the brand tone. */}
       <section
         aria-labelledby="events-title"
-        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-maroon pt-(--header-height) [--wave-fill:var(--color-brand-maroon)]"
+        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-maroon pt-(--header-height)"
         data-header-tone="brand"
       >
-        <WaveCorner className="-top-16 -right-16 -scale-x-100" />
+        <AsanohaCorner className="-top-16 -right-16 -scale-x-100" />
 
         <div className="relative mx-auto w-full max-w-6xl px-4 pt-12 pb-12 sm:px-6 lg:pt-20 lg:pb-20">
           <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-golden">
@@ -40,6 +41,9 @@ export default function EventsPage() {
           </h1>
           <p className="mt-5 max-w-[58ch] text-pretty text-lg leading-[1.6] text-white/80">
             {EVENTS_PAGE.description}
+          </p>
+          <p className="mt-4 max-w-[58ch] text-pretty text-lg leading-[1.6] text-white/80">
+            {EVENTS_PAGE.impact}
           </p>
         </div>
       </section>
@@ -59,16 +63,18 @@ export default function EventsPage() {
               {title}
             </h2>
 
-            {events.length > 0 ? (
+            {events.length === 0 ? (
+              <p className="mt-6 text-pretty text-base leading-[1.6] text-muted-foreground">
+                {empty}
+              </p>
+            ) : id === "past" ? (
+              <PastEventList events={events} />
+            ) : (
               <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:mt-8 lg:grid-cols-3 lg:gap-6">
                 {events.map((event) => (
                   <EventCard key={event.title} event={event} />
                 ))}
               </ul>
-            ) : (
-              <p className="mt-6 text-pretty text-base leading-[1.6] text-muted-foreground">
-                {empty}
-              </p>
             )}
           </div>
         </section>

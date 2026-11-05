@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CreatorCard, TeamCard } from "@/components/people/person-card";
+import { TeamCard } from "@/components/people/person-card";
 import { WaveCorner } from "@/components/mission";
 import {
   CREATORS,
@@ -78,9 +78,16 @@ export default function PeoplePage() {
           <p className="mt-2 max-w-[58ch] text-pretty text-base leading-[1.6] text-muted-foreground">
             {CREATORS_SECTION.description}
           </p>
-          <ul className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-4 sm:grid-cols-3 lg:mt-8 lg:grid-cols-4 lg:gap-6">
-            {CREATORS.map((creator, index) => (
-              <CreatorCard key={`${creator.name}-${index}`} creator={creator} />
+          {/* A long directory, so plain text rather than cards: name over country,
+              grouped by space, on the same columns as the team above. */}
+          <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:mt-8 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-8">
+            {CREATORS.map(({ name, country }) => (
+              <li key={name} className="min-w-0">
+                <p className="text-pretty text-sm font-medium leading-[1.4] text-foreground sm:text-base sm:leading-[1.3]">
+                  {name}
+                </p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{country}</p>
+              </li>
             ))}
           </ul>
         </div>
