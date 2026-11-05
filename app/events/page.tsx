@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 import { EventCard } from "@/components/events/event-card";
 import { WaveCorner } from "@/components/mission";
-import { EVENTS_PAGE, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
+import { EVENTS_PAGE, ONGOING_EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 const GROUPS = [
+  { id: "ongoing", title: "Ongoing", events: ONGOING_EVENTS, empty: "Nothing running right now." },
   { id: "upcoming", title: "Upcoming", events: UPCOMING_EVENTS, empty: "Nothing scheduled yet. Check back soon." },
   { id: "past", title: "Past", events: PAST_EVENTS, empty: "No past events yet." },
 ] as const;

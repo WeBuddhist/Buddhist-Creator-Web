@@ -270,5 +270,4 @@ export const COLLABORATORS = [
   { name: "Indrajala", logo: "/collaborator/collaborator-indrajala.png", href: null },
   { name: "OpenPecha", logo: "/collaborator/collaborator-partner.png", href: "https://openpecha.org/" },
   { name: "Dharmaduta Services", logo: null, href: "https://dharmaduta.in/" },
-  { name: "Sherab", logo: null, href: "https://www.sherab.org" },
 ] as const;
