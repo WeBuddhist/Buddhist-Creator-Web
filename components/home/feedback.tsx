@@ -21,9 +21,10 @@ const well = cn(
 
 /* The golden surface from the awards badge, as a button: a 14% lighter top
    fading to brand golden, a faint inner highlight, a soft drop and a 10%
-   darker ring. Black text measures 10.1:1 on it. */
+   darker ring. The label is the same golden with 50% black, which measures
+   5.3:1 on the top of the gradient and 4.7:1 at the bottom. */
 const goldenButton =
-  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-golden),white_14%)] to-brand-golden font-semibold text-black shadow-[0_0_1px_1px_--alpha(var(--color-white)/20%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-golden),black_10%)] transition-[filter,translate] hover:brightness-[1.04] focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-golden),white_14%)] to-brand-golden font-semibold text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)] shadow-[0_0_1px_1px_--alpha(var(--color-white)/20%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-golden),black_10%)] transition-[filter,translate] hover:brightness-[1.04] focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 
 export function Feedback() {
   const { form } = FEEDBACK;
