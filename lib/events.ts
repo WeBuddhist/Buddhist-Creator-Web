@@ -46,8 +46,8 @@ export const ONGOING_EVENTS: EventEntry[] = [
     external: true,
     cta: "Join the challenge",
     stats: [
-      { value: "36", label: "Collaborators" },
-      { value: "480K", label: "Engagements" },
+      { value: "40", label: "Plans" },
+      { value: "358", label: "Days" },
     ],
   },
 ];

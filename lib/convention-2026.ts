@@ -268,6 +268,6 @@ export const COLLABORATORS = [
   { name: "Shechen Monastery", logo: "/collaborator/collaborator-shechen.png", href: null },
   { name: "Khyentse Foundation", logo: "/collaborator/collaborator-khyentse-foundation.png", href: null },
   { name: "Indrajala", logo: "/collaborator/collaborator-indrajala.png", href: null },
-  { name: "OpenPecha", logo: "/collaborator/collaborator-partner.png", href: "https://openpecha.org/" },
+  { name: "Sherab", logo: "/collaborator/collaborator-partner.png", href: "https://www.sherab.org" },
   { name: "Dharmaduta Services", logo: null, href: "https://dharmaduta.in/" },
 ] as const;

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { WaveCorner } from "@/components/mission";
 import { SectionHeading, card, cardInner, photo } from "@/components/convention/section-heading";
 import { cn } from "@/lib/utils";
-import { COLLABORATORS } from "@/lib/convention-2026";
 import { CREATOR, GET_INVOLVED_PAGE, PARTNER, SUPPORT, TEAM } from "@/lib/get-involved";
 
 export const metadata: Metadata = {
@@ -170,57 +169,73 @@ export default function GetInvolvedPage() {
             ))}
           </ul>
 
-          <div className="mt-12 flex flex-col gap-6 border-t border-border pt-12 lg:mt-16 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:pt-16">
-            <div>
+          <div className="mt-12 border-t border-border pt-12 lg:mt-16 lg:pt-16">
+            {/* Heading leads, the action trails, and the logo wall sits
+                beneath them on the same left edge. */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
               <h3 className="text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
                 {PARTNER.partnersTitle}
               </h3>
-              <ul className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-4">
-                {COLLABORATORS.map(({ name, logo, href }) => {
-                  const mark = logo ? (
-                    <>
-                      <Image
-                        src={logo}
-                        alt=""
-                        width={600}
-                        height={600}
-                        sizes="3.5rem"
-                        className="size-14 mix-blend-multiply"
-                      />
-                      <span className="sr-only">{name}</span>
-                    </>
-                  ) : (
-                    <span className="text-sm font-medium text-foreground">{name}</span>
-                  );
-                  return (
-                    <li key={name}>
-                      {href ? (
-                        <a
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center rounded-lg transition-opacity duration-150 ease-hover hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                        >
-                          {mark}
-                          <span className="sr-only">(opens in new tab)</span>
-                        </a>
-                      ) : (
-                        mark
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              <Button
+                size="lg"
+                nativeButton={false}
+                className={cn(primaryButton, "shrink-0 self-start sm:self-auto")}
+                render={<a href={PARTNER.action.href} />}
+              >
+                <EnvelopeSimpleIcon data-icon="inline-start" weight="bold" />
+                {PARTNER.action.label}
+              </Button>
             </div>
-            <Button
-              size="lg"
-              nativeButton={false}
-              className={cn(primaryButton, "shrink-0")}
-              render={<a href={PARTNER.action.href} />}
-            >
-              <EnvelopeSimpleIcon data-icon="inline-start" weight="bold" />
-              {PARTNER.action.label}
-            </Button>
+
+            {/* Equal cells so square marks and wide wordmarks read as one
+                set. Each logo is capped in height and width and centred, in
+                a muted frame with the card hairline. Names stay in the DOM
+                for screen readers and as the link's name. */}
+            <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+              {PARTNER.partners.map(({ name, logo, width, height, href }) => {
+                const cell =
+                  "flex h-24 items-center justify-center rounded-xl border border-transparent bg-muted/40 px-6 shadow-ring";
+                // A height cap suits wide wordmarks; a narrow crest under
+                // the same cap shrinks to a sliver, so it gets more height.
+                const narrow = width / height < 1.3;
+                const mark = (
+                  <>
+                    <Image
+                      src={logo}
+                      alt=""
+                      width={width}
+                      height={height}
+                      sizes="(min-width: 1024px) 14rem, (min-width: 640px) 30vw, 45vw"
+                      className={cn(
+                        "w-auto max-w-full object-contain mix-blend-multiply",
+                        narrow ? "max-h-16" : "max-h-12",
+                      )}
+                    />
+                    <span className="sr-only">{name}</span>
+                  </>
+                );
+                return (
+                  <li key={name}>
+                    {href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          cell,
+                          "transition-[background-color] duration-150 ease-hover hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                        )}
+                      >
+                        {mark}
+                        <span className="sr-only">(opens in new tab)</span>
+                      </a>
+                    ) : (
+                      <div className={cell}>{mark}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </section>

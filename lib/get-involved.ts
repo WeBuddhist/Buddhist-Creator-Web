@@ -63,6 +63,16 @@ export const PARTNER = {
     },
   ],
   partnersTitle: "Organisations already partnering with us",
+  partners: [
+    { name: "Shechen Monastery", logo: "/collaborator/collaborator-shechen-wide.webp", width: 932, height: 400, href: null },
+    { name: "Khyentse Foundation", logo: "/collaborator/collaborator-khyentse-foundation-trimmed.webp", width: 230, height: 400, href: null },
+    { name: "Indrajala", logo: "/collaborator/collaborator-indrajala-wide.webp", width: 1087, height: 400, href: null },
+    { name: "OpenPecha Trust", logo: "/collaborator/collaborator-openpecha.webp", width: 1955, height: 400, href: "https://openpecha.org/" },
+    { name: "Sherab", logo: "/collaborator/collaborator-sherab.webp", width: 1451, height: 400, href: "https://www.sherab.org" },
+    { name: "Dharmaduta", logo: "/collaborator/collaborator-dharmaduta.webp", width: 2182, height: 400, href: "https://dharmaduta.in/" },
+    { name: "Tibetan Nuns Project", logo: "/collaborator/collaborator-tibetan-nuns-project.webp", width: 1811, height: 400, href: "https://tnp.org/" },
+    { name: "The Corporate Body of the Buddha Educational Foundation", logo: "/collaborator/collaborator-buddha-educational-foundation.webp", width: 1544, height: 400, href: "https://www.budaedu.org/" },
+  ],
   action: { label: "Start a partnership conversation", href: mailto("Partnership Inquiry") },
 } as const;
 
