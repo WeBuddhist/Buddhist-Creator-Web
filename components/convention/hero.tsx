@@ -1,7 +1,11 @@
 import Image from "next/image";
-import { FilePdfIcon } from "@phosphor-icons/react/dist/ssr";
+import { FilePdfIcon, YoutubeLogoIcon } from "@phosphor-icons/react/dist/ssr";
 import { WaveCorner } from "@/components/mission";
 import { CONVENTION, HERO_STATS } from "@/lib/convention-2026";
+
+/* Byline links: underlined white text with a leading icon. */
+const bylineLink =
+  "inline-flex items-center gap-1.5 rounded-sm font-medium text-white underline decoration-white/40 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white";
 
 /* Report-style header: one cyan band carrying the dateline, title, a byline
    of key figures and the cohort photo as the article's lead image. */
@@ -44,13 +48,28 @@ export function ConventionHero() {
             </div>
           ))}
           <div className="flex items-baseline">
+            <dt className="sr-only">Documentary</dt>
+            <dd>
+              <a
+                href={CONVENTION.documentary.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={bylineLink}
+              >
+                <YoutubeLogoIcon weight="bold" className="size-4" />
+                Watch the documentary
+                <span className="sr-only">(YouTube, opens in new tab)</span>
+              </a>
+            </dd>
+          </div>
+          <div className="flex items-baseline">
             <dt className="sr-only">Report</dt>
             <dd>
               <a
                 href={CONVENTION.reportHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-sm font-medium text-white underline decoration-white/40 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                className={bylineLink}
               >
                 <FilePdfIcon weight="bold" className="size-4" />
                 Download the full report

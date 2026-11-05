@@ -10,6 +10,7 @@ export const CONVENTION = {
   reportHref: "/convention/2026/bcc-2026-report.pdf",
   documentary: {
     youtubeId: "vOStd3Dolg0",
+    href: "https://www.youtube.com/watch?v=vOStd3Dolg0",
     title: "The Buddhist Creators Convention 2026 · The Documentary",
     runtime: "20 min",
   },

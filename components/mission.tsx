@@ -38,7 +38,8 @@ export function Mission() {
 
 /* Seigaiha (overlapping wave) pattern, drawn once at the top-left and
    mirrored into the other corners. Each circle is filled with the section
-   colour so the row below hides the bottom half of the row above. Strokes
+   colour so the row below hides the bottom half of the row above; a band
+   that is not brand cyan sets --wave-fill to its own colour. Strokes
    are opaque and the whole SVG is faded, so overlapping strokes composite
    once instead of stacking into lighter slivers. */
 
@@ -75,7 +76,7 @@ export function WaveCorner({ className }: { className?: string }) {
               cx={cx}
               cy={cy}
               r={r}
-              fill={i === 0 ? "var(--color-brand-cyan)" : "none"}
+              fill={i === 0 ? "var(--wave-fill, var(--color-brand-cyan))" : "none"}
               stroke="currentColor"
               strokeWidth={8}
             />

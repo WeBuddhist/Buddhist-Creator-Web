@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowUpRightIcon,
   EnvelopeIcon,
   FacebookLogoIcon,
   InstagramLogoIcon,
@@ -8,9 +9,9 @@ import {
   XLogoIcon,
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import { SITE_NAME } from "@/lib/navigation";
+import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
 
-type FooterLink = { label: string; href: string };
+type FooterLink = { label: string; href: string; external?: true };
 
 // A literal, not new Date(): the page is prerendered with Cache Components,
 // which rejects values that change between renders.
@@ -18,19 +19,16 @@ const COPYRIGHT_YEAR = 2026;
 
 // Placeholder content until the real pages and accounts exist.
 const EXPLORE: FooterLink[] = [
-  { label: "About", href: "/about" },
   { label: "Get Involved", href: "/get-involved" },
   { label: "Events", href: "/events" },
   { label: "Convention", href: "/convention" },
   { label: "People", href: "/people" },
 ];
 
-const RESOURCES: FooterLink[] = [
-  { label: "Blog", href: "/blog" },
-  { label: "Press Kit", href: "/press" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Contact", href: "/contact" },
-];
+// The products column mirrors the Products menu in the header, so the two
+// never drift apart.
+const PRODUCTS: FooterLink[] =
+  NAV_ITEMS.find((item) => item.label === "Products")?.children ?? [];
 
 const SOCIAL = [
   { label: "Instagram", href: "https://instagram.com", Icon: InstagramLogoIcon },
@@ -66,8 +64,7 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-4 text-pretty text-sm leading-[1.6] text-muted-foreground">
-              A community of creators sharing the Dharma through film, writing,
-              music and design.
+              A global sangha of creators bringing the Dharma to the digital age.
             </p>
             <ul className="mt-5 flex items-center gap-3">
               {SOCIAL.map(({ label, href, Icon }) => (
@@ -89,7 +86,7 @@ export function SiteFooter() {
           </div>
 
           <FooterColumn title="Explore" links={EXPLORE} />
-          <FooterColumn title="Resources" links={RESOURCES} />
+          <FooterColumn title="Products" links={PRODUCTS} />
 
           {/* Address */}
           <div>
@@ -110,10 +107,10 @@ export function SiteFooter() {
               <p className="flex gap-2.5">
                 <EnvelopeIcon className="mt-1 size-4 shrink-0" />
                 <a
-                  href="mailto:hello@buddhistcreators.org"
+                  href="mailto:hello@buddhistcreators.com"
                   className="transition-colors duration-150 ease-hover hover:text-foreground"
                 >
-                  hello@buddhistcreators.org
+                  hello@buddhistcreators.com
                 </a>
               </p>
             </address>
@@ -149,9 +146,22 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
       <ul className="mt-2 flex flex-col">
         {links.map((item) => (
           <li key={item.href}>
-            <Link href={item.href} className={link}>
-              {item.label}
-            </Link>
+            {item.external ? (
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${link} gap-1`}
+              >
+                {item.label}
+                <ArrowUpRightIcon aria-hidden className="size-3.5 shrink-0" weight="bold" />
+                <span className="sr-only">(opens in new tab)</span>
+              </a>
+            ) : (
+              <Link href={item.href} className={link}>
+                {item.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>

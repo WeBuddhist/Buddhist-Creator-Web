@@ -34,7 +34,7 @@ export function EventCard({ event }: { event: EventEntry }) {
             <Placeholder />
           )}
           {featured && (
-            <span className="absolute top-3 left-3 inline-flex items-center rounded-full border border-transparent bg-background px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.05em] text-brand-cyan shadow-border">
+            <span className="absolute top-3 start-3 inline-flex items-center rounded-full border border-transparent bg-background px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.05em] text-brand-cyan shadow-border">
               Featured
             </span>
           )}
@@ -59,9 +59,8 @@ export function EventCard({ event }: { event: EventEntry }) {
               <dt className="sr-only">Date</dt>
               <CalendarBlankIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
               <dd>
-                <time dateTime={date.end ? `${date.start}/${date.end}` : date.start}>
-                  {date.label}
-                </time>
+                {/* datetime takes one date, so a range carries its start. */}
+                <time dateTime={date.start}>{date.label}</time>
               </dd>
             </div>
             <div className="flex items-start gap-2">

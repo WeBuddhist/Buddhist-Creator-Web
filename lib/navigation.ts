@@ -16,6 +16,18 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Events", href: "/events" },
   {
+    label: "Convention",
+    href: "/convention",
+    children: [
+      {
+        label: "Buddhist Creators Convention 2026",
+        href: "/convention/2026",
+        description: "Nine days in Bodh Gaya: talks, a masterclass and awards.",
+      },
+    ],
+  },
+  { label: "People", href: "/people" },
+  {
     label: "Products",
     href: "/products",
     children: [
@@ -39,18 +51,6 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
   },
-  {
-    label: "Convention",
-    href: "/convention",
-    children: [
-      {
-        label: "Buddhist Creators Convention 2026",
-        href: "/convention/2026",
-        description: "Nine days in Bodh Gaya: talks, a masterclass and awards.",
-      },
-    ],
-  },
-  { label: "People", href: "/people" },
 ];
 
 export const SITE_NAME = "Buddhist Creators";

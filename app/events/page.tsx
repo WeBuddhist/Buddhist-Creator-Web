@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 import { EventCard } from "@/components/events/event-card";
+import { WaveCorner } from "@/components/mission";
 import { EVENTS_PAGE, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
 
 export const metadata: Metadata = {
@@ -16,38 +17,29 @@ const GROUPS = [
 export default function EventsPage() {
   return (
     <main className="flex flex-1 flex-col">
-      <section aria-labelledby="events-title" className="bg-background">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-12 sm:px-6 lg:pt-20">
-          <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">
+      {/* The intro band runs up behind the transparent header and pads its
+          top by the header's height, so the header sits on the burgundy and
+          takes the brand tone. */}
+      <section
+        aria-labelledby="events-title"
+        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-maroon pt-(--header-height) [--wave-fill:var(--color-brand-maroon)]"
+        data-header-tone="brand"
+      >
+        <WaveCorner className="-top-16 -right-16 -scale-x-100" />
+
+        <div className="relative mx-auto w-full max-w-6xl px-4 pt-12 pb-12 sm:px-6 lg:pt-20 lg:pb-20">
+          <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-golden">
             {EVENTS_PAGE.eyebrow}
           </p>
           <h1
             id="events-title"
-            className="mt-4 max-w-2xl text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-6xl"
+            className="mt-4 max-w-2xl text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-5xl lg:text-6xl"
           >
             {EVENTS_PAGE.title}
           </h1>
-          <p className="mt-5 max-w-[58ch] text-pretty text-lg leading-[1.6] text-muted-foreground">
+          <p className="mt-5 max-w-[58ch] text-pretty text-lg leading-[1.6] text-white/80">
             {EVENTS_PAGE.description}
           </p>
-
-          {/* In-page navigation. Counts sit beside the labels so the reader
-              knows what each section holds before jumping. */}
-          <nav aria-label="Event sections" className="mt-8">
-            <ul className="flex flex-wrap gap-2">
-              {GROUPS.map(({ id, title, events }) => (
-                <li key={id}>
-                  <a
-                    href={`#${id}`}
-                    className="inline-flex h-9 items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-sm font-medium text-foreground shadow-ring transition-[background-color] duration-150 ease-hover hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_5%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  >
-                    {title}
-                    <span className="tabular-nums text-muted-foreground">{events.length}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
         </div>
       </section>
 

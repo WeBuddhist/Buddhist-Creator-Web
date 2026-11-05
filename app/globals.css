@@ -54,6 +54,9 @@
      taken. White measures 8.7:1 on it, white at 80% 6.3:1; brand golden
      needs a 15% white lift to pass 4.5:1 for small text. */
   --color-brand-forest: #26543d;
+  /* Deep burgundy for the events intro band. White measures 11.3:1 on it,
+     white at 80% 7.8:1 and brand golden 5.5:1. */
+  --color-brand-maroon: oklch(0.36 0.09 25);
 
   /* Hairline ring, and ring + soft lift. Nested they read as a double border.
      Pair either with `border border-transparent`: forced-colors mode drops
