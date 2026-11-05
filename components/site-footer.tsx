@@ -20,7 +20,7 @@ const COPYRIGHT_YEAR = 2026;
 const EXPLORE: FooterLink[] = [
   { label: "About", href: "/about" },
   { label: "Get Involved", href: "/get-involved" },
-  { label: "Programs", href: "/programs" },
+  { label: "Events", href: "/events" },
   { label: "Convention", href: "/convention" },
   { label: "Our Creators", href: "/creators" },
 ];
