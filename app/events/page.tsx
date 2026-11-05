@@ -42,9 +42,6 @@ export default function EventsPage() {
           <p className="mt-5 max-w-[58ch] text-pretty text-lg leading-[1.6] text-white/80">
             {EVENTS_PAGE.description}
           </p>
-          <p className="mt-4 max-w-[58ch] text-pretty text-lg leading-[1.6] text-white/80">
-            {EVENTS_PAGE.impact}
-          </p>
         </div>
       </section>
 

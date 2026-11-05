@@ -77,6 +77,12 @@
 
 @custom-variant reduced-transparency (@media (prefers-reduced-transparency: reduce));
 
+/* The site is light only (see colorScheme in app/layout.tsx), but components
+   from the shadcn registry carry dark: utilities. Tie that variant to a .dark
+   class, which nothing sets, so a reader's OS dark-mode preference never
+   switches those utilities on. */
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -230,6 +236,137 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
     }
     .stat-pop {
       animation-name: stat-fade-in;
+    }
+  }
+
+  /*
+   * Illustrations on the homepage's Find Your Place cards. Entrances reuse the
+   * stat-* classes above and wait for InView, and only when scripts can run:
+   * without them nothing would ever report in view, so the entrances simply
+   * play and the picture still appears. Loops are declared only without a
+   * reduced-motion preference, start paused, and run only while their card is
+   * hovered or keyboard-focused. Pausing rather than removing them means
+   * leaving the card holds the current frame instead of snapping back.
+   */
+  @media (scripting: enabled) {
+    .art:not([data-visible]) [data-animate] {
+      animation-play-state: paused;
+    }
+  }
+  .art-ignite {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: stat-fade-in 300ms var(--ease-out) both;
+  }
+  .art-ripple,
+  .art-glow {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .art-flicker {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+  }
+  .art-spin {
+    transform-box: view-box;
+    transform-origin: center;
+  }
+  /* A spark exists only while it travels, so at rest it has no opacity. */
+  .art-spark {
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .art-ignite {
+      animation-name: art-ignite;
+      animation-duration: 400ms;
+    }
+    .art-spark {
+      animation: art-spark 500ms linear both;
+    }
+    .art-ripple {
+      animation: art-ripple 3.6s linear infinite;
+    }
+    .art-spin {
+      animation: art-spin 24s linear infinite;
+    }
+    .art-flicker {
+      animation: art-flicker 1.4s var(--ease-in-out) infinite alternate;
+    }
+    .art-glow {
+      animation: art-glow 1.4s var(--ease-in-out) infinite alternate;
+    }
+    .art [data-loop] {
+      animation-play-state: paused;
+    }
+    a:focus-visible .art [data-loop] {
+      animation-play-state: running;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      a:hover .art [data-loop] {
+        animation-play-state: running;
+      }
+    }
+  }
+  @keyframes art-ignite {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
+  /* A hop of 88 units, the lamp spacing, along a parabola 34 units high. Linear
+     because the five stops already shape the arc. */
+  @keyframes art-spark {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0);
+    }
+    10% {
+      opacity: 1;
+    }
+    25% {
+      transform: translate(22px, -25.5px);
+    }
+    50% {
+      transform: translate(44px, -34px);
+    }
+    75% {
+      transform: translate(66px, -25.5px);
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(88px, 0);
+    }
+  }
+  @keyframes art-ripple {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    15% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.15);
+    }
+  }
+  @keyframes art-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes art-flicker {
+    to {
+      transform: scale(0.94, 1.07);
+    }
+  }
+  @keyframes art-glow {
+    to {
+      opacity: 0.7;
+      transform: scale(1.12);
     }
   }
 

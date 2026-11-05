@@ -8,7 +8,7 @@ export function Awards() {
   const { featured, winners, closing } = AWARDS;
 
   return (
-    <section aria-labelledby="awards-title" className="bg-background">
+    <section id="awards" aria-labelledby="awards-title" className="bg-background">
       <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
         <SectionHeading
           id="awards-title"

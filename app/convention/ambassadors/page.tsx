@@ -54,9 +54,9 @@ export default function AmbassadorsPage() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
-              size="lg"
+              size="pill"
               nativeButton={false}
-              className="h-11 gap-1.5 rounded-full border-transparent bg-white px-5 text-sm text-brand-cyan shadow-border hover:bg-white/90"
+              className="border-transparent bg-white text-brand-cyan shadow-border hover:bg-white/90"
               render={<Link href="/convention/2026" />}
             >
               See the 2026 convention
@@ -64,9 +64,9 @@ export default function AmbassadorsPage() {
             </Button>
             <Button
               variant="outline"
-              size="lg"
+              size="pill"
               nativeButton={false}
-              className="h-11 rounded-full border-white/30 bg-transparent px-5 text-sm text-white hover:bg-white/10 hover:text-white"
+              className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
               render={<Link href="/get-involved" />}
             >
               Get involved

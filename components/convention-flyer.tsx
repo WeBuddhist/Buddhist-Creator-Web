@@ -39,6 +39,16 @@ export function ConventionFlyer() {
         >
           Buddhist Creators Convention 2027
         </h2>
+
+        {/* A status, not a control. The double border from the site's cards, in
+            pill form: a muted frame with a hairline ring, and inside it the
+            white surface with its own ring plus lift. */}
+        <p className="mt-5 inline-flex rounded-full border border-transparent bg-muted/40 p-1 shadow-ring">
+          <span className="inline-flex items-center gap-2 rounded-full border border-transparent bg-card px-3.5 py-1.5 text-sm font-medium text-foreground shadow-border">
+            <span aria-hidden className="size-2 rounded-full bg-brand-golden" />
+            RSVP opens soon
+          </span>
+        </p>
       </div>
 
       {/* Full-bleed illustration, bottom-aligned so the ground meets the footer.

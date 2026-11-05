@@ -28,9 +28,9 @@ export function Hero() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
-              size="lg"
+              size="pill"
               nativeButton={false}
-              className="h-11 gap-1.5 rounded-full border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan px-5 text-sm text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]"
+              className="border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]"
               render={<Link href="/get-involved" />}
             >
               Get Involved
@@ -38,9 +38,8 @@ export function Hero() {
             </Button>
             <Button
               variant="outline"
-              size="lg"
+              size="pill"
               nativeButton={false}
-              className="h-11 rounded-full px-5 text-sm"
               render={<Link href="/people" />}
             >
               Meet our creators

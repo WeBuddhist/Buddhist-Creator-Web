@@ -30,6 +30,10 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+        // The site's large rounded button. The icon side sits 2px tighter than
+        // the text side, because an icon's own whitespace makes equal padding
+        // look lopsided.
+        pill: "h-11 gap-1.5 rounded-full px-5 has-data-[icon=inline-end]:pe-4.5 has-data-[icon=inline-start]:ps-4.5",
       },
     },
     defaultVariants: {

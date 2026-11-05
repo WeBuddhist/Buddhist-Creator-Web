@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRightIcon, EnvelopeSimpleIcon, ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { WaveCorner } from "@/components/mission";
+import { PartnerLogos } from "@/components/partner-logos";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { cn } from "@/lib/utils";
 import { CREATOR, GET_INVOLVED_PAGE, PARTNER, SUPPORT, TEAM } from "@/lib/get-involved";
@@ -18,10 +19,9 @@ export const viewport: Viewport = {
   themeColor: "#35325a",
 };
 
-/* Primary and secondary buttons, in the homepage hero's recipe. */
+/* The primary button, in the homepage hero's recipe. */
 const primaryButton =
-  "h-11 gap-1.5 rounded-full border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan px-5 text-sm text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";
-const secondaryButton = "h-11 gap-1.5 rounded-full px-5 text-sm";
+  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";
 
 export default function GetInvolvedPage() {
   return (
@@ -137,7 +137,7 @@ export default function GetInvolvedPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Button
-                size="lg"
+                size="pill"
                 nativeButton={false}
                 className={primaryButton}
                 render={<Link href={CREATOR.programs.actions[0].href} />}
@@ -147,9 +147,8 @@ export default function GetInvolvedPage() {
               </Button>
               <Button
                 variant="outline"
-                size="lg"
+                size="pill"
                 nativeButton={false}
-                className={secondaryButton}
                 render={<Link href={CREATOR.programs.actions[1].href} />}
               >
                 {CREATOR.programs.actions[1].label}
@@ -192,7 +191,7 @@ export default function GetInvolvedPage() {
                 {PARTNER.partnersTitle}
               </h3>
               <Button
-                size="lg"
+                size="pill"
                 nativeButton={false}
                 className={cn(primaryButton, "shrink-0 self-start sm:self-auto")}
                 render={<a href={PARTNER.action.href} />}
@@ -202,54 +201,7 @@ export default function GetInvolvedPage() {
               </Button>
             </div>
 
-            {/* Equal cells so square marks and wide wordmarks read as one
-                set. Each logo is capped in height and width and centred, in
-                a muted frame with the card hairline. Names stay in the DOM
-                for screen readers and as the link's name. */}
-            <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
-              {PARTNER.partners.map(({ name, logo, href }) => {
-                const cell =
-                  "flex h-24 items-center justify-center rounded-xl border border-transparent bg-muted/40 px-6 shadow-ring";
-                // A height cap suits wide wordmarks; a narrow crest under
-                // the same cap shrinks to a sliver, so it gets more height.
-                const narrow = logo.width / logo.height < 1.3;
-                const mark = (
-                  <>
-                    <Image
-                      src={logo}
-                      alt=""
-                      placeholder="blur"
-                      sizes="(min-width: 1024px) 14rem, (min-width: 640px) 30vw, 45vw"
-                      className={cn(
-                        "w-auto max-w-full object-contain mix-blend-multiply",
-                        narrow ? "max-h-16" : "max-h-12",
-                      )}
-                    />
-                    <span className="sr-only">{name}</span>
-                  </>
-                );
-                return (
-                  <li key={name}>
-                    {href ? (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                          cell,
-                          "transition-[background-color] duration-150 ease-hover hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                        )}
-                      >
-                        {mark}
-                        <span className="sr-only">(opens in new tab)</span>
-                      </a>
-                    ) : (
-                      <div className={cell}>{mark}</div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <PartnerLogos partners={PARTNER.partners} className="mt-6" />
           </div>
         </div>
       </section>
@@ -277,9 +229,8 @@ export default function GetInvolvedPage() {
                   <div className="mt-auto pt-5">
                     <Button
                       variant="outline"
-                      size="lg"
+                      size="pill"
                       nativeButton={false}
-                      className={secondaryButton}
                       render={<a href={action.href} />}
                     >
                       <EnvelopeSimpleIcon data-icon="inline-start" weight="bold" />
@@ -306,7 +257,7 @@ export default function GetInvolvedPage() {
                 description={TEAM.description}
               />
               <Button
-                size="lg"
+                size="pill"
                 nativeButton={false}
                 className={cn(primaryButton, "shrink-0")}
                 render={<a href={TEAM.action.href} />}

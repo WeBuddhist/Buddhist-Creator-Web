@@ -7,7 +7,7 @@ export function Masterclass() {
   const { coaches, modules, format, specialSession, effectiveness } = MASTERCLASS;
 
   return (
-    <section aria-labelledby="masterclass-title" className="bg-background">
+    <section id="masterclass" aria-labelledby="masterclass-title" className="bg-background">
       <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
         <SectionHeading
           id="masterclass-title"
