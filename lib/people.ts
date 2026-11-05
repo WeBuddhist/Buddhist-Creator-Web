@@ -97,7 +97,10 @@ const portrait = (file: string, name: string) => ({
 });
 
 export const TEAM: TeamMember[] = [
-  { name: "Jennifer Yo" },
+  {
+    name: "Jennifer Yo",
+    image: portrait("jennifer-yo", "Jennifer Yo"),
+  },
   {
     name: "Tenzin Noryang",
     role: "Executive Manager",

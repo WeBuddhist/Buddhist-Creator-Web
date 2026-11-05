@@ -112,16 +112,12 @@ export function MobileNav() {
                             "transition-[background-color,transform] duration-150 ease-hover",
                             "active:scale-[0.98] active:bg-muted",
                             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                            active ? "text-foreground" : "text-foreground/80",
+                            // The current section sits on a soft pill, matching the
+                            // header; aria-current carries it to assistive tech.
+                            active ? "bg-muted text-foreground" : "text-foreground/80",
                           )}
                         >
                           {item.label}
-                          {active && (
-                            <span
-                              aria-hidden
-                              className="size-1.5 rounded-full bg-brand-golden"
-                            />
-                          )}
                         </Link>
                         {item.children && (
                           <ul className="mb-2 flex flex-col">
@@ -135,7 +131,7 @@ export function MobileNav() {
                                 "transition-[background-color,transform] duration-150 ease-hover",
                                 "active:scale-[0.98] active:bg-muted",
                                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                                childActive ? "text-foreground" : "text-muted-foreground",
+                                childActive ? "bg-muted text-foreground" : "text-muted-foreground",
                               );
                               return (
                                 <li key={child.href}>
@@ -161,12 +157,6 @@ export function MobileNav() {
                                       className={childClass}
                                     >
                                       {child.label}
-                                      {childActive && (
-                                        <span
-                                          aria-hidden
-                                          className="size-1.5 rounded-full bg-brand-golden"
-                                        />
-                                      )}
                                     </Link>
                                   )}
                                 </li>
