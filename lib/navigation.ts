@@ -50,7 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
   },
-  { label: "Our Creators", href: "/creators" },
+  { label: "People", href: "/people" },
 ];
 
 export const SITE_NAME = "Buddhist Creators";

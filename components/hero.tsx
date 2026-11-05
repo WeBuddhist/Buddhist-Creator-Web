@@ -40,7 +40,7 @@ export function Hero() {
               size="lg"
               nativeButton={false}
               className="h-11 rounded-full px-5 text-sm"
-              render={<Link href="/creators" />}
+              render={<Link href="/people" />}
             >
               Meet our creators
             </Button>

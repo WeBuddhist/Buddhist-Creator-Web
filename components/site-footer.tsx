@@ -22,7 +22,7 @@ const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Events", href: "/events" },
   { label: "Convention", href: "/convention" },
-  { label: "Our Creators", href: "/creators" },
+  { label: "People", href: "/people" },
 ];
 
 const RESOURCES: FooterLink[] = [

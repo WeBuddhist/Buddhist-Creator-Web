@@ -50,6 +50,10 @@
   --color-brand-cyan: #136986;
   --color-brand-light-cyan: #16a4c0;
   --color-brand-golden: #dead2d;
+  /* Deep forest green for page intro bands, where the cyan is already
+     taken. White measures 8.7:1 on it, white at 80% 6.3:1; brand golden
+     needs a 15% white lift to pass 4.5:1 for small text. */
+  --color-brand-forest: #26543d;
 
   /* Hairline ring, and ring + soft lift. Nested they read as a double border.
      Pair either with `border border-transparent`: forced-colors mode drops
@@ -85,7 +89,9 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Focus ring. 0.62 measures 3.6:1 on white and 3.3:1 on --muted, the
+     3:1 a focus indicator needs; 0.708 measured 2.6:1. */
+  --ring: oklch(0.62 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
