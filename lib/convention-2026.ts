@@ -208,14 +208,14 @@ export const AWARDS = {
     {
       category: "Rising Star",
       name: "Chhewang Dorjee",
-      affiliation: null,
+      affiliation: "Dehradun",
       photo: awardChhewangDorjee,
       citation: "For his video Why Everybody Should Create Content.",
     },
     {
       category: "Audience Choice",
       name: "Tashi Chosgon",
-      affiliation: null,
+      affiliation: "Ladakh",
       photo: awardTashiChosgon,
       citation: "Voted the community’s favourite, with 33% of all participant votes.",
     },
