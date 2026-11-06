@@ -22,7 +22,8 @@ const COPYRIGHT_YEAR = 2026;
 const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Events", href: "/events" },
-  { label: "Convention", href: "/convention" },
+  // /convention itself has no page; the header treats it as a menu group.
+  { label: "Convention", href: "/convention/2026" },
   { label: "People", href: "/people" },
 ];
 

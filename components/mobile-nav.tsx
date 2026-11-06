@@ -104,23 +104,38 @@ export function MobileNav() {
                           "motion-reduce:slide-in-from-right-0",
                         )}
                       >
-                        <Link
-                          href={item.href}
-                          aria-current={active ? "page" : undefined}
-                          className={cn(
-                            "flex h-13 select-none items-center justify-between rounded-xl px-3 text-lg font-medium tracking-[-0.01em]",
-                            "transition-[background-color,transform] duration-150 ease-hover",
-                            "active:scale-[0.98] active:bg-muted",
-                            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                            // The current section sits on a soft pill, matching the
-                            // header; aria-current carries it to assistive tech.
-                            active ? "bg-muted text-foreground" : "text-foreground/80",
-                          )}
-                        >
-                          {item.label}
-                        </Link>
+                        {item.children ? (
+                          // Parents with children have no page of their own
+                          // (the desktop nav uses them as dropdown triggers),
+                          // so here they are a plain group heading.
+                          <span
+                            id={`mobile-nav-group-${index}`}
+                            className="flex h-13 select-none items-center px-3 text-lg font-medium tracking-[-0.01em] text-foreground/80"
+                          >
+                            {item.label}
+                          </span>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            aria-current={active ? "page" : undefined}
+                            className={cn(
+                              "flex h-13 select-none items-center justify-between rounded-xl px-3 text-lg font-medium tracking-[-0.01em]",
+                              "transition-[background-color,transform] duration-150 ease-hover",
+                              "active:scale-[0.98] active:bg-muted",
+                              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                              // The current section sits on a soft pill, matching the
+                              // header; aria-current carries it to assistive tech.
+                              active ? "bg-muted text-foreground" : "text-foreground/80",
+                            )}
+                          >
+                            {item.label}
+                          </Link>
+                        )}
                         {item.children && (
-                          <ul className="mb-2 flex flex-col">
+                          <ul
+                            aria-labelledby={`mobile-nav-group-${index}`}
+                            className="mb-2 flex flex-col"
+                          >
                             {item.children.map((child) => {
                               const childActive =
                                 !child.external &&
