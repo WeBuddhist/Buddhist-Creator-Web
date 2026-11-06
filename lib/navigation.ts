@@ -14,7 +14,7 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Get Involved", href: "/get-involved" },
-  { label: "Program", href: "/events" },
+  { label: "Program", href: "/program" },
   {
     label: "Convention",
     href: "/convention",

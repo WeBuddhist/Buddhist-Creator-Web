@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const GROUPS = [
   { id: "ongoing", title: "Ongoing", events: ONGOING_EVENTS, empty: "Nothing running right now." },
   { id: "upcoming", title: "Upcoming", events: UPCOMING_EVENTS, empty: "Nothing scheduled yet. Check back soon." },
-  { id: "past", title: "Past", events: PAST_EVENTS, empty: "No past events yet." },
+  { id: "past", title: "Past", events: PAST_EVENTS, empty: "No past programs yet." },
 ] as const;
 
 export default function EventsPage() {

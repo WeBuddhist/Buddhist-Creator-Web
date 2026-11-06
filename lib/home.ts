@@ -51,17 +51,17 @@ export const PROGRAMS = {
       id: "campaigns",
       title: "Creator campaigns",
       body: "Collaborative campaigns around sacred days such as Saka Dawa and Guru Rinpoche Day. Five so far, with over 1.26 million views between them.",
-      href: "/events#past",
+      href: "/program#past",
       cta: "See past campaigns",
     },
   ] satisfies Program[],
 } as const;
 
 export const WHATS_ON = {
-  eyebrow: "Events",
+  eyebrow: "Program",
   title: "What’s on",
   description: "What creators can join now, and what is coming next.",
-  action: { label: "See all events", href: "/events" },
+  action: { label: "See full program", href: "/program" },
 } as const;
 
 /* Three audiences of the Get Involved page, each linking to its section

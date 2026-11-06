@@ -10,7 +10,7 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global sang
 | --- | --- |
 | `/` | Mission, programs, what's on, partners and the suggestion box |
 | `/get-involved` | Ways to take part as a creator, partner or supporter |
-| `/events` | Ongoing, upcoming and past events |
+| `/program` | Ongoing, upcoming and past programs |
 | `/convention/2026` | Buddhist Creators Convention 2026 in Bodh Gaya |
 | `/people` | The team and the creators |
 

@@ -21,7 +21,7 @@ const COPYRIGHT_YEAR = 2026;
 // Placeholder content until the real pages exist.
 const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
-  { label: "Program", href: "/events" },
+  { label: "Program", href: "/program" },
   // /convention itself has no page; the header treats it as a menu group.
   { label: "Convention", href: "/convention/2026" },
   { label: "People", href: "/people" },

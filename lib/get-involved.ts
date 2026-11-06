@@ -63,7 +63,7 @@ export const CREATOR = {
     title: "Looking for the next convention or masterclass?",
     body: "The annual convention, the WeBuddhist Influencer Masterclass and the Buddhist Influencer of the Year awards are where creators go deeper together.",
     actions: [
-      { label: "See all events", href: "/events" },
+      { label: "See full program", href: "/program" },
       { label: "Explore the 2026 convention", href: "/convention/2026" },
     ],
   },

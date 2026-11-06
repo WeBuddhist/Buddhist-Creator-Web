@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/navigation";
 const ROUTES = [
   "/",
   "/get-involved",
-  "/events",
+  "/program",
   "/convention/2026",
   "/people",
 ];
