@@ -3,7 +3,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { InView } from "@/components/home/in-view";
-import { JOIN_ART } from "@/components/home/join-art";
+import { JoinArt } from "@/components/home/join-art";
 import { JOIN } from "@/lib/home";
 
 /* Router into the Get Involved page: one card per audience, each the whole
@@ -23,15 +23,13 @@ export function Join() {
         />
 
         <ul className="mt-12 grid gap-4 sm:grid-cols-3 lg:mt-16 lg:gap-6">
-          {JOIN.audiences.map(({ id, eyebrow, title, href }) => {
-            const Art = JOIN_ART[id];
-            return (
+          {JOIN.audiences.map(({ id, eyebrow, title, href }) => (
             <li key={id} className={card}>
               <Link
                 href={href}
                 className={cn(
                   cardInner,
-                  "group/join flex h-full flex-col overflow-hidden transition-[background-color] duration-150 ease-hover hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "group/join art-host flex h-full flex-col overflow-hidden transition-[background-color] duration-150 ease-hover hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 )}
               >
                 <div className="flex-1 px-5 pt-5 pb-6">
@@ -48,12 +46,11 @@ export function Join() {
                   </h3>
                 </div>
                 <InView className="art aspect-square bg-muted/60">
-                  <Art />
+                  <JoinArt id={id} />
                 </InView>
               </Link>
             </li>
-            );
-          })}
+          ))}
         </ul>
       </div>
     </section>
