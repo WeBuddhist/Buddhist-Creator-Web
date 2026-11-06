@@ -79,8 +79,186 @@ export const COMMUNITY_DAYS = {
   lightningTalks: {
     title: "Lightning Talks",
     subtitle: "27 creators, four rooms",
-    rooms: ["Lumbini", "Bodh Gaya", "Sarnath", "Kushinagar"],
     body: "27 presenters rotated across four concurrent rooms named for sites in the Buddha’s life — each allotted 15 minutes (7 for their talk, 5 for Q&A, 2 to transition) so attendees could move freely between spaces based on their interests.",
+    /* The two session slots every room ran. Each room's talks are listed in
+       the same order, morning then afternoon. */
+    sessions: [
+      { label: "Morning", time: "10:30 – 11:30" },
+      { label: "Afternoon", time: "13:15 – 14:15" },
+    ],
+    rooms: [
+      {
+        name: "Lumbini",
+        talks: [
+          [
+            {
+              creator: "Gabriel Kobler",
+              topic: "Digital tools for Tibetan Dharma texts: research and translation",
+              language: "English",
+            },
+            {
+              creator: "Munpa Rabsel – Deckyi",
+              topic: "The modern vessel: carrying an ancient flame",
+              language: "English",
+            },
+            {
+              creator: "Nawang Dechen",
+              topic: "Building confidence on screen",
+              language: "Tibetan",
+            },
+          ],
+          [
+            {
+              creator: "Quinthup Pema Bhutia",
+              topic: "The story of my content creation journey",
+              language: "Hindi & English",
+            },
+            {
+              creator: "Munpa Rabsel – Chhering Wangmo",
+              topic: "Voices from Spiti Valley",
+              language: "English",
+            },
+            {
+              creator: "Kunsang Tenzing",
+              topic: "Turning lived experience into digital stories",
+              language: "English",
+            },
+            {
+              creator: "Suresh Kumar",
+              topic: "From ground reporting to digital Dhamma: a Buddhist creator’s responsibility",
+              language: "English",
+            },
+          ],
+        ],
+      },
+      {
+        name: "Bodh Gaya",
+        talks: [
+          [
+            {
+              creator: "Karma Chimmi Wangmo",
+              topic: "How I shoot videos using the essential shots that matter",
+              language: "English",
+            },
+            {
+              creator: "Tenzin Phuljung",
+              topic: "How monastic education changed my life",
+              language: "English",
+            },
+            {
+              creator: "Gangkar Metok",
+              topic: "Social media as a bridge between ancient wisdom and the modern world",
+              language: "English",
+            },
+          ],
+          [
+            {
+              creator: "Ayye Shakya Dhammadinna",
+              topic: "Bridging stories, perspectives and backgrounds across the world",
+              language: "English",
+            },
+            {
+              creator: "Yeshi Dorjee",
+              topic: "Preparation before a content shoot",
+              language: "English",
+            },
+            {
+              creator: "Bhuchung Kata",
+              topic: "Bridging stories, perspectives and backgrounds across the world",
+              language: "English",
+            },
+          ],
+        ],
+      },
+      {
+        name: "Sarnath",
+        talks: [
+          [
+            {
+              creator: "Jay Liao",
+              topic: "Collaborating with Buddhist experts to build practice plans on WeBuddhist",
+              language: "English",
+            },
+            {
+              creator: "Munpa Rabsel – Rigzen Angmo",
+              topic: "The heart behind the lens",
+              language: "English",
+            },
+            {
+              creator: "Norbu Tsering",
+              topic: "Seed of intention behind content creation",
+              language: "Tibetan",
+            },
+          ],
+          [
+            {
+              creator: "Aachen Tenzin Thupten",
+              topic: "My journey into the world of digital creation",
+              language: "English & Tibetan",
+            },
+            {
+              creator: "Tashi Chosgon",
+              topic: "If the Buddhas were online today, what would they teach?",
+              language: "English",
+            },
+            {
+              creator: "Karmavajra Dhammachari",
+              topic: "Reaching the unreached: how to support emerging new Buddhists",
+              language: "English",
+            },
+            {
+              creator: "Tenzin Chemi",
+              topic: "On-camera confidence for content creators",
+              language: "English",
+            },
+          ],
+        ],
+      },
+      {
+        name: "Kushinagar",
+        talks: [
+          [
+            {
+              creator: "Chhewang Dorjee",
+              topic: "Why I started content creation and my future goals",
+              language: "Hindi",
+            },
+            {
+              creator: "Bharat Nakwal",
+              topic: "Bringing history to life through content creation",
+              language: "Hinglish",
+            },
+            {
+              creator: "Nishchal Pakhrin",
+              topic: "How to handle negative comments with equanimity",
+              language: "English",
+            },
+          ],
+          [
+            {
+              creator: "Yash Dixit",
+              topic: "My journey to Buddha Dharma, and why and how our pristine Dharma must be preserved",
+              language: "English",
+            },
+            {
+              creator: "Chow Tze Jen",
+              topic: "Analyzing the elements of a viral video",
+              language: "English",
+            },
+            {
+              creator: "Dorjeepa",
+              topic: "From edit to engagement: sharing Buddhist content on social media",
+              language: "Hinglish",
+            },
+            {
+              creator: "Deepa Thakur",
+              topic: "You, Buddhism and everyday life!",
+              language: "English",
+            },
+          ],
+        ],
+      },
+    ],
   },
   why: {
     title: "The Why Behind the What",

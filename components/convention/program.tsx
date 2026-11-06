@@ -1,6 +1,7 @@
 import { InstagramLogoIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
+import { LightningTalks } from "@/components/convention/lightning-talks";
 import { COMMUNITY_DAYS, PROGRAM } from "@/lib/convention-2026";
 import {
   Accordion,
@@ -121,16 +122,7 @@ export function CommunityDays() {
             <p className="max-w-[58ch] text-pretty text-base leading-[1.6] text-muted-foreground">
               {lightningTalks.body}
             </p>
-            <ul className="mt-5 flex flex-wrap gap-2" aria-label="Rooms">
-              {lightningTalks.rooms.map((room) => (
-                <li
-                  key={room}
-                  className="rounded-full border border-transparent bg-card px-3 py-1 text-sm font-medium text-foreground shadow-ring"
-                >
-                  {room}
-                </li>
-              ))}
-            </ul>
+            <LightningTalks />
           </Block>
 
           <Block title={why.title}>
