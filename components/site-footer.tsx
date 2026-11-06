@@ -5,8 +5,8 @@ import {
   EnvelopeIcon,
   FacebookLogoIcon,
   InstagramLogoIcon,
+  LinkedinLogoIcon,
   MapPinIcon,
-  XLogoIcon,
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
@@ -18,7 +18,7 @@ type FooterLink = { label: string; href: string; external?: true };
 // which rejects values that change between renders.
 const COPYRIGHT_YEAR = 2026;
 
-// Placeholder content until the real pages and accounts exist.
+// Placeholder content until the real pages exist.
 const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Events", href: "/events" },
@@ -32,10 +32,26 @@ const PRODUCTS: FooterLink[] =
   NAV_ITEMS.find((item) => item.label === "Products")?.children ?? [];
 
 const SOCIAL = [
-  { label: "Instagram", href: "https://instagram.com", Icon: InstagramLogoIcon },
-  { label: "YouTube", href: "https://youtube.com", Icon: YoutubeLogoIcon },
-  { label: "Facebook", href: "https://facebook.com", Icon: FacebookLogoIcon },
-  { label: "X", href: "https://x.com", Icon: XLogoIcon },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/buddhist_creators/",
+    Icon: InstagramLogoIcon,
+  },
+  {
+    label: "YouTube",
+    href: "https://www.youtube.com/@BuddhistCreators",
+    Icon: YoutubeLogoIcon,
+  },
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/people/Buddhist-Creators/61582543556233/",
+    Icon: FacebookLogoIcon,
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/buddhist-creators/",
+    Icon: LinkedinLogoIcon,
+  },
 ];
 
 const link =
