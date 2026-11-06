@@ -36,7 +36,7 @@ export type EventEntry = {
 };
 
 export const EVENTS_PAGE = {
-  eyebrow: "Events",
+  eyebrow: "Program",
   title: "Where creators gather",
   description:
     "Our five creator campaigns have earned over 1.26 million views, 100,000+ likes and 7,600+ shares. From 15 April to 5 November 2026, more than 9 million people viewed our social media page and profile, and 7,000+ new followers joined us. Beyond these campaigns, we also collaborate with creators on their own videos.",

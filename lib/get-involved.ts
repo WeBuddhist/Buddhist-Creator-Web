@@ -72,20 +72,20 @@ export const CREATOR = {
 export const PARTNER = {
   id: "partner",
   eyebrow: "As an institution or group",
-  title: "Become our partner",
+  title: "Support to the next convention",
   description:
     "Monasteries, foundations and organisations already power our two flagship initiatives. Join them in bringing the Dharma to the digital age.",
   ways: [
     {
       title: "Buddhist Creators Convention",
-      body: "Our annual global gathering in Bodh Gaya. Sponsor a scholarship seat, host a session or support the ceremony.",
+      body: "Join us at our next convention, 18 to 21 February 2027, at Nagaloka, Nagpur.",
     },
     {
       title: "WeBuddhist Influencer Masterclass",
       body: "An intensive, practice-led training that runs at partner institutes through the year. Host the next one at your centre.",
     },
   ],
-  partnersTitle: "Organisations already partnering with us",
+  partnersTitle: "Past organisations that supported the convention",
   partners: [
     { name: "Shechen Monastery", logo: collaboratorShechenWide, href: null },
     { name: "Khyentse Foundation", logo: collaboratorKhyentseFoundationTrimmed, href: null },
@@ -96,7 +96,7 @@ export const PARTNER = {
     { name: "Tibetan Nuns Project", logo: collaboratorTibetanNunsProject, href: "https://tnp.org/" },
     { name: "The Corporate Body of the Buddha Educational Foundation", logo: collaboratorBuddhaEducationalFoundation, href: "https://www.budaedu.org/" },
   ],
-  action: { label: "Start a partnership conversation", href: mailto("Partnership Inquiry") },
+  action: { label: "Support the next convention", href: mailto("Partnership Inquiry") },
 } as const;
 
 export const SUPPORT = {

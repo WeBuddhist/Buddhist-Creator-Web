@@ -11,9 +11,8 @@ export function SiteHeader() {
     <header
       className={[
         "site-header sticky top-0 z-40 w-full",
-        // No surface of its own: the text takes its colour from the section
+        // The text and the frosted surface take their colour from the section
         // beneath, see the header tone tokens in globals.css.
-        "bg-transparent",
         "pt-[env(safe-area-inset-top,0px)]",
       ].join(" ")}
     >

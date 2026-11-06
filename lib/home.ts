@@ -7,7 +7,7 @@ import { CREATOR, GET_INVOLVED_PAGE, PARTNER, SUPPORT } from "@/lib/get-involved
 
 export const PARTNERS = {
   title: PARTNER.partnersTitle,
-  action: { label: "Become a partner", href: `/get-involved#${PARTNER.id}` },
+  action: { label: "Support the next convention", href: `/get-involved#${PARTNER.id}` },
 } as const;
 
 export type Program = {

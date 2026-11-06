@@ -6,7 +6,7 @@ import { AsanohaCorner } from "@/components/asanoha-corner";
 import { EVENTS_PAGE, ONGOING_EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
 
 export const metadata: Metadata = {
-  title: "Events",
+  title: "Program",
   description: EVENTS_PAGE.description,
 };
 

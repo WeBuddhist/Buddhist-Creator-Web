@@ -121,14 +121,17 @@
 }
 
 /*
- * Site header tone. The header has no background of its own; its text takes
- * the colour that reads on the section beneath it. The defaults sit on :root
- * so portaled menus and the mobile drawer keep them.
+ * Site header tone. The header's text takes the colour that reads on the
+ * section beneath it, and its frosted surface takes that section's colour, so
+ * content scrolling under stays apart from the nav without a visible bar. The
+ * defaults sit on :root so portaled menus and the mobile drawer keep them.
  *
- * Sections set data-header-tone="brand" when they sit on brand cyan. The
+ * Sections set data-header-tone="brand" when they sit on a brand band. The
  * HeaderTone component watches them and writes data-tone on the header as
- * the user scrolls. Before it runs, a page whose first section is cyan
- * starts on the brand tone through :has(), so there is no flash.
+ * the user scrolls, with the band's colour as --header-bg. Before it runs, a
+ * page whose first section is a band starts on the brand tone through :has(),
+ * so there is no flash; nothing has scrolled under yet, so the surface can
+ * stay clear until the band's colour is known.
  *
  * White at 80% measures 4.6:1 on brand cyan; white measures 6.2:1.
  */
@@ -144,11 +147,37 @@
 }
 .site-header[data-tone="brand"],
 body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-tone]) {
-  --header-bg: var(--color-brand-cyan);
+  --header-bg: transparent;
   --header-fg: oklch(1 0 0);
   --header-fg-muted: oklch(1 0 0 / 80%);
   --header-hover: oklch(1 0 0 / 12%);
   --header-ring: oklch(1 0 0);
+}
+/* The frosted surface is a layer of its own: backdrop-filter on the header
+   itself would make it the containing block for anything fixed inside it. It
+   is a pill around the nav's own width (max-w-6xl, as in site-header.tsx),
+   filling the 4rem nav row and leaving the sides clear so band patterns show
+   around it. */
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: env(safe-area-inset-top, 0px) 0.5rem 0;
+  max-width: var(--container-6xl);
+  margin-inline: auto;
+  border-radius: 9999px;
+  z-index: -1;
+  pointer-events: none;
+  background-color: color-mix(in srgb, var(--header-bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
+  transition: background-color 150ms var(--ease-hover);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .site-header::before {
+    background-color: var(--header-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 /* The logo mark is black line art on a transparent PNG. On the brand tone
    every opaque pixel is forced to white. */
