@@ -60,3 +60,11 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const SITE_NAME = "Buddhist Creators";
+
+/** Canonical origin, with no trailing slash. Absolute URLs in metadata,
+    the sitemap and robots.txt are built from it. */
+export const SITE_URL = "https://buddhistcreators.com";
+
+/** The default meta description, and the homepage's social-card text. */
+export const SITE_DESCRIPTION =
+  "A global sangha of monastics, practitioners and storytellers carrying the Dharma to the digital age through a convention, masterclasses, awards and campaigns.";

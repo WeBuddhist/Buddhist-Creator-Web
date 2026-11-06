@@ -174,9 +174,9 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
     scroll-padding-block-start: var(--header-height);
     /* In-page anchors glide rather than jump, unless the reader has asked
        for less motion. Programmatic scrollTo calls inherit this too. */
-    @media (prefers-reduced-motion: no-preference) {
+    /* @media (prefers-reduced-motion: no-preference) {
       scroll-behavior: smooth;
-    }
+    } */
     /* Mobile baseline: no gray tap flash, no font inflation in landscape. */
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
