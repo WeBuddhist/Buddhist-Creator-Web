@@ -47,27 +47,32 @@ export const COMMUNITY_DAYS = {
     {
       name: "Shri Abhijit Halder",
       role: "Director General, International Buddhist Confederation",
+      videoHref: null,
       body: "Spoke on the intersection of social media and social responsibility, urging creators to adopt mindfulness as their core operating principle and to use their borderless platforms for the benefit of global society.",
     },
     {
       name: "Dzongsar Jamyang Khyentse Rinpoche",
       role: "Video message",
+      videoHref: "https://www.instagram.com/reel/DULZBoBjMRM/",
       body: "Reflected on the paradox of influence — we resist being influenced while wanting to influence others — and expressed hope that creators use their influence with good intentions and meaningful content.",
     },
     {
       name: "Shechen Rabjam Rinpoche",
       role: "Video message",
+      videoHref: "https://www.instagram.com/reel/DUHvhy5Av0c/",
       body: "Underscored the importance of Buddhist content creation in an era of rapid change, and encouraged attendees to make teachings accessible while preserving their authentic message.",
     },
     {
       name: "Kyabje Trulshik Yangsi Rinpoche",
       role: "Video message",
+      videoHref: "https://www.instagram.com/reel/DUWZiepjsx5/",
       body: "In his first-ever address of this kind, Rinpoche shared that if even one viewer is inspired to cause a little less harm and do a little more good, the work is worthwhile — and asked participants to hold a pure motivation.",
     },
   ],
   panel: {
     title: "Future of Buddhism in the Digital Age",
     moderator: "Rahul Dongre",
+    videoHref: "https://www.instagram.com/reel/DULJFfGARPx/",
     panelists: ["Aachen Tenzin Thupten", "Ayye Shakya Dhammadinna", "Quinthup Pema Bhutia"],
     body: "The panel examined authenticity, accessibility, and the digital divide — how creators maintain the integrity of Buddhist teachings while adapting them for digital formats and diverse, less-connected audiences.",
   },

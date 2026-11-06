@@ -27,9 +27,6 @@ export default function NotFound() {
       </div>
 
       <div className="mt-8 max-w-2xl">
-        <p className="text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
-          404
-        </p>
         <h1 className="mt-3 text-balance text-3xl font-semibold leading-[1.1] tracking-[-0.02em] text-foreground sm:text-4xl">
           The wheel has turned past this page.
         </h1>

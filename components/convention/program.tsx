@@ -1,3 +1,4 @@
+import { InstagramLogoIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { COMMUNITY_DAYS, PROGRAM } from "@/lib/convention-2026";
@@ -22,6 +23,32 @@ export function Program() {
         />
       </div>
     </section>
+  );
+}
+
+function InstagramLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-foreground underline decoration-foreground/30 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
+        className,
+      )}
+    >
+      <InstagramLogoIcon aria-hidden weight="bold" className="size-4" />
+      {children}
+      <span className="sr-only">(Instagram, opens in new tab)</span>
+    </a>
   );
 }
 
@@ -52,7 +79,7 @@ export function CommunityDays() {
             {/* Speakers as a disclosure list with the first open, so the
                 names scan as one column and each address reads on demand. */}
             <Accordion defaultValue={[keynotes[0].name]} className="-mt-4">
-              {keynotes.map(({ name, role, body }) => (
+              {keynotes.map(({ name, role, body, videoHref }) => (
                 <AccordionItem key={name} value={name}>
                   <AccordionTrigger>
                     <span className="flex flex-col">
@@ -64,6 +91,11 @@ export function CommunityDays() {
                     <p className="max-w-[58ch] text-pretty text-sm leading-[1.5] text-muted-foreground">
                       {body}
                     </p>
+                    {videoHref && (
+                      <InstagramLink href={videoHref} className="mt-3">
+                        Watch the video message
+                      </InstagramLink>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -80,6 +112,9 @@ export function CommunityDays() {
             <p className="mt-4 max-w-[58ch] text-pretty text-base leading-[1.6] text-muted-foreground">
               {panel.body}
             </p>
+            <InstagramLink href={panel.videoHref} className="mt-4">
+              Watch the panel discussion
+            </InstagramLink>
           </Block>
 
           <Block title={lightningTalks.title} meta={lightningTalks.subtitle}>

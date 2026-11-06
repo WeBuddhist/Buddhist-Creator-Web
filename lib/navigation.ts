@@ -24,12 +24,6 @@ export const NAV_ITEMS: NavItem[] = [
         href: "/convention/2026",
         description: "Nine days in Bodh Gaya: talks, a masterclass and awards.",
       },
-      {
-        label: "Ambassador Programme",
-        href: "/convention/ambassadors",
-        description:
-          "Ambassadors are selected from each convention’s participants and carry the title of Convention Ambassador until the next convention.",
-      },
     ],
   },
   { label: "People", href: "/people" },
