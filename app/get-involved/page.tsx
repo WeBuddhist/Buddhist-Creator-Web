@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRightIcon, EnvelopeSimpleIcon, ImageIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRightIcon, ArrowUpRightIcon, EnvelopeSimpleIcon, ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { WaveCorner } from "@/components/mission";
 import { PartnerLogos } from "@/components/partner-logos";
@@ -169,16 +169,40 @@ export default function GetInvolvedPage() {
           />
 
           <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:gap-6">
-            {PARTNER.ways.map(({ title, body }) => (
-              <li key={title} className={card}>
-                <div className={cn(cardInner, "flex h-full flex-col px-5 pt-5 pb-6")}>
-                  <h3 className="text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-pretty text-sm leading-[1.5] text-muted-foreground">
-                    {body}
-                  </p>
-                </div>
+            {PARTNER.ways.map((way) => (
+              <li key={way.title} className={card}>
+                {/* A way with a page is the whole card a link, with the
+                    arrow the homepage's Find Your Place cards use. */}
+                {"href" in way ? (
+                  <Link
+                    href={way.href}
+                    className={cn(
+                      cardInner,
+                      "group/way flex h-full flex-col px-5 pt-5 pb-6 transition-[background-color] duration-150 ease-hover hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    )}
+                  >
+                    <h3 className="flex items-start gap-1.5 text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
+                      <span className="min-w-0">{way.title}</span>
+                      <ArrowRightIcon
+                        aria-hidden
+                        weight="bold"
+                        className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-150 ease-hover motion-safe:group-hover/way:translate-x-0.5"
+                      />
+                    </h3>
+                    <p className="mt-2 text-pretty text-sm leading-[1.5] text-muted-foreground">
+                      {way.body}
+                    </p>
+                  </Link>
+                ) : (
+                  <div className={cn(cardInner, "flex h-full flex-col px-5 pt-5 pb-6")}>
+                    <h3 className="text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
+                      {way.title}
+                    </h3>
+                    <p className="mt-2 text-pretty text-sm leading-[1.5] text-muted-foreground">
+                      {way.body}
+                    </p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

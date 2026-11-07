@@ -75,10 +75,12 @@ export const PARTNER = {
   title: "Support to the next convention",
   description:
     "Monasteries, foundations and organisations already power our two flagship initiatives. Join them in bringing the Dharma to the digital age.",
+  /** A way with an href renders as a link card to that page. */
   ways: [
     {
       title: "Buddhist Creators Convention",
       body: "Join us at our next convention, 18 to 21 February 2027, at Nagaloka, Nagpur.",
+      href: "/convention/2027",
     },
     {
       title: "WeBuddhist Influencer Masterclass",
