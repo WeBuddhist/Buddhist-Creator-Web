@@ -12,6 +12,7 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global sang
 | `/get-involved` | Ways to take part as a creator, partner or supporter |
 | `/program` | Ongoing, upcoming and past programs |
 | `/convention/2026` | Buddhist Creators Convention 2026 in Bodh Gaya |
+| `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/people` | The team and the creators |
 
 ## Tech stack
@@ -57,6 +58,7 @@ Most copy lives in typed data files in `lib/`, so it can be changed without touc
 | `lib/get-involved.ts` | Get Involved page |
 | `lib/events.ts` | Events listing |
 | `lib/convention-2026.ts` | Convention 2026 page |
+| `lib/convention-2027.ts` | Convention 2027 page, including the registration switch |
 | `lib/people.ts` | Team and creators |
 | `lib/navigation.ts` | Site navigation, name, URL and default description |
 

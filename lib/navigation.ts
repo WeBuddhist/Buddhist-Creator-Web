@@ -20,6 +20,11 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/convention",
     children: [
       {
+        label: "Buddhist Creators Convention 2027",
+        href: "/convention/2027",
+        description: "18 – 21 February 2027 at Nagaloka, Nagpur.",
+      },
+      {
         label: "Buddhist Creators Convention 2026",
         href: "/convention/2026",
         description: "Nine days in Bodh Gaya: talks, a masterclass and awards.",
