@@ -154,23 +154,30 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
   --header-ring: oklch(1 0 0);
 }
 /* The frosted surface is a layer of its own: backdrop-filter on the header
-   itself would make it the containing block for anything fixed inside it. It
-   is a pill around the nav's own width (max-w-6xl, as in site-header.tsx),
-   filling the 4rem nav row and leaving the sides clear so band patterns show
+   itself would make it the containing block for anything fixed inside it.
+   On a phone it is a plain bar edge to edge, filling the 4rem nav row and
+   the safe area above it. From the tablet breakpoint (md, where the menu
+   becomes the nav links) it is a pill around the nav's own width (max-w-6xl,
+   as in site-header.tsx), leaving the sides clear so band patterns show
    around it. */
 .site-header::before {
   content: "";
   position: absolute;
-  inset: env(safe-area-inset-top, 0px) 0.5rem 0;
-  max-width: var(--container-6xl);
-  margin-inline: auto;
-  border-radius: 9999px;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
   background-color: color-mix(in srgb, var(--header-bg) 80%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(4px);
   transition: background-color 150ms var(--ease-hover);
+}
+@media (min-width: 48rem) {
+  .site-header::before {
+    inset: env(safe-area-inset-top, 0px) 0.5rem 0;
+    max-width: var(--container-6xl);
+    margin-inline: auto;
+    border-radius: 9999px;
+  }
 }
 @media (prefers-reduced-transparency: reduce) {
   .site-header::before {
