@@ -37,8 +37,18 @@ export function AdminNav({ user }: { user: CurrentUser }) {
             {item.label}
           </Link>
         ))}
-        <span className="ml-2 hidden text-sm text-muted-foreground sm:inline" title={user.email}>
-          {user.name ?? user.email} · {user.role}
+        {/* Who is signed in, and as what. A bordered pill the height of the
+            nav links, with the role as a filled chip inside it. The chip is
+            h-6 and the pill pads its end by 1.5 (6px), so the two round ends
+            stay concentric: 24 + 6 + 6 = 36, the pill's h-9. */}
+        <span
+          className="ms-2 hidden h-9 items-center gap-2 rounded-full border border-border bg-background ps-3.5 pe-1.5 text-sm sm:inline-flex"
+          title={user.email}
+        >
+          <span className="text-foreground">{user.name ?? user.email}</span>
+          <span className="inline-flex h-6 items-center rounded-full bg-muted px-2 text-xs font-medium whitespace-nowrap text-muted-foreground capitalize">
+            {user.role}
+          </span>
         </span>
       </nav>
     </header>

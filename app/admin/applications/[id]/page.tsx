@@ -92,7 +92,7 @@ async function ApplicationDetail({ params }: { params: PageProps<"/admin/applica
             {" · "}last edited {formatDateTime(application.updatedAt)}
           </p>
         </div>
-        <StatusBadge status={application.status} className="h-7 px-3 text-sm" />
+        <StatusBadge status={application.status} className="h-7 ps-2.5 pe-3 text-sm" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">

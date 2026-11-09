@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { VideoCameraIcon } from "@phosphor-icons/react/dist/ssr";
+import { redirect } from "next/navigation";
+import { Pagination } from "@/components/admin/pagination";
 import { StatusBadge, STATUS_LABEL } from "@/components/admin/status-badge";
 import { card, cardInner } from "@/components/convention/section-heading";
 import { countByStatus, listApplications, type ListFilter } from "@/lib/applications";
@@ -14,6 +15,14 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Applications" };
 
 const FILTERS: ListFilter[] = ["all", "submitted", "accepted", "waitlisted", "rejected", "withdrawn", "draft"];
+
+function pageHref(filter: ListFilter, page: number) {
+  const params = new URLSearchParams();
+  if (filter !== "all") params.set("status", filter);
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return query ? `/admin?${query}` : "/admin";
+}
 
 export default function AdminPage(props: PageProps<"/admin">) {
   return (
@@ -35,6 +44,9 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
     .filter(([status]) => status !== "draft")
     .reduce((sum, [, n]) => sum + (n ?? 0), 0);
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
+  // A page past the end (a stale link, or a decision that emptied the last
+  // page) lands on the last real page rather than an empty table.
+  if (page > pages) redirect(pageHref(filter, pages));
 
   return (
     <>
@@ -87,10 +99,7 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
                       >
                         {row.fullName || row.userName || row.email}
                       </Link>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {row.email}
-                        {row.hasVideo && <VideoCameraIcon aria-label="Has video" className="size-3.5" weight="bold" />}
-                      </div>
+                      <div className="text-xs text-muted-foreground">{row.email}</div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{row.organization}</td>
                     <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
@@ -111,23 +120,14 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
         </div>
       </div>
 
-      {pages > 1 && (
-        <nav aria-label="Pages" className="mt-4 flex items-center gap-3 text-sm text-muted-foreground">
-          {page > 1 && (
-            <Link href={`/admin?status=${filter}&page=${page - 1}`} className="underline underline-offset-4">
-              Previous
-            </Link>
-          )}
-          <span>
-            Page {page} of {pages}
-          </span>
-          {page < pages && (
-            <Link href={`/admin?status=${filter}&page=${page + 1}`} className="underline underline-offset-4">
-              Next
-            </Link>
-          )}
-        </nav>
-      )}
+      <Pagination
+        page={page}
+        pages={pages}
+        total={list.total}
+        pageSize={list.pageSize}
+        href={(n) => pageHref(filter, n)}
+        className="mt-4"
+      />
     </>
   );
 }

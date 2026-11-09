@@ -61,6 +61,25 @@
      it, white at 80% 8.3:1 and brand golden 5.8:1. */
   --color-brand-indigo: oklch(0.34 0.07 285);
 
+  /* Application status. Each state is one hue in three steps with jobs:
+     a light fill, text on that fill, and a solid for the dot. Chroma is the
+     most each lightness holds in sRGB. Measured on the fill: accepted text
+     6.3:1 and dot 3.2:1; submitted 5.9:1 and 3.2:1; waitlisted 6.0:1 and
+     3.3:1; rejected 6.2:1 and 3.9:1. Submitted shares the brand cyan hue,
+     since "in review" is the house colour, not a verdict. */
+  --color-status-accepted-bg: oklch(0.94 0.06 150);
+  --color-status-accepted-text: oklch(0.44 0.12 150);
+  --color-status-accepted-solid: oklch(0.6 0.164 150);
+  --color-status-submitted-bg: oklch(0.94 0.036 227);
+  --color-status-submitted-text: oklch(0.46 0.088 227);
+  --color-status-submitted-solid: oklch(0.6 0.116 227);
+  --color-status-waitlisted-bg: oklch(0.95 0.044 80);
+  --color-status-waitlisted-text: oklch(0.47 0.098 80);
+  --color-status-waitlisted-solid: oklch(0.61 0.126 80);
+  --color-status-rejected-bg: oklch(0.94 0.03 25);
+  --color-status-rejected-text: oklch(0.47 0.16 25);
+  --color-status-rejected-solid: oklch(0.58 0.19 25);
+
   /* Hairline ring, and ring + soft lift. Nested they read as a double border.
      Pair either with `border border-transparent`: forced-colors mode drops
      box-shadow and paints that border instead. */

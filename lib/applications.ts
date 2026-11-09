@@ -164,7 +164,6 @@ export type ApplicationListRow = {
   organization: string | null;
   location: string | null;
   platforms: string[] | null;
-  hasVideo: boolean;
   submittedAt: Date | null;
   updatedAt: Date;
   email: string;
@@ -187,7 +186,6 @@ export async function listApplications(filter: ListFilter, page = 1) {
         organization: applications.organization,
         location: applications.location,
         platforms: applications.platforms,
-        hasVideo: sql<boolean>`${applications.videoKey} is not null`,
         submittedAt: applications.submittedAt,
         updatedAt: applications.updatedAt,
         email: users.email,

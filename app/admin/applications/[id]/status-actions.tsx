@@ -9,10 +9,26 @@ import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { setStatusAction, type DecisionState } from "./actions";
 
+/* The homepage's raised button (components/hero.tsx), with the brand colour
+   taken from --btn so one recipe serves all three decisions: a top-lit
+   gradient, a hairline of white inside, a soft drop and a ring one shade
+   darker than the fill. Each button sets --btn to its own brand colour. */
+const raised =
+  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--btn),white_14%)] to-(--btn) shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--btn),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";
+
 const DECISIONS: { status: ApplicationStatus; label: string; className: string }[] = [
-  { status: "accepted", label: "Accept", className: "bg-brand-forest text-white hover:bg-brand-forest/90" },
-  { status: "waitlisted", label: "Waitlist", className: "bg-brand-golden text-black/80 hover:bg-brand-golden/90" },
-  { status: "rejected", label: "Reject", className: "bg-brand-maroon text-white hover:bg-brand-maroon/90" },
+  { status: "accepted", label: "Accept", className: cn(raised, "[--btn:var(--color-brand-cyan)] text-white") },
+  // Golden is light, so the ink is the colour itself darkened, as on the
+  // homepage feedback form, and the inner hairline is stronger to show.
+  {
+    status: "waitlisted",
+    label: "Waitlist",
+    className: cn(
+      raised,
+      "[--btn:var(--color-brand-golden)] font-semibold text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)] shadow-[0_0_1px_1px_--alpha(var(--color-white)/20%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--btn),black_10%)] hover:brightness-[1.04]",
+    ),
+  },
+  { status: "rejected", label: "Reject", className: cn(raised, "[--btn:var(--color-brand-maroon)] text-white") },
 ];
 
 /* The decision buttons. One form, three submitters: the clicked button's
@@ -48,7 +64,7 @@ export function StatusActions({
           rows={3}
           defaultValue={reviewNote ?? ""}
           placeholder="Why this decision, or anything the mailing should mention."
-          className="min-h-20 px-3.5 py-3 leading-[1.5]"
+          className="min-h-20 resize-none px-3.5 py-3 leading-[1.5]"
         />
       </div>
       <div className="flex flex-wrap items-center gap-2">
