@@ -50,16 +50,11 @@
   --color-brand-cyan: #136986;
   --color-brand-light-cyan: #16a4c0;
   --color-brand-golden: #dead2d;
-  /* Deep forest green for page intro bands, where the cyan is already
-     taken. White measures 8.7:1 on it, white at 80% 6.3:1; brand golden
-     needs a 15% white lift to pass 4.5:1 for small text. */
+  /* Every page intro band sits on brand cyan. Forest and maroon are kept
+     for success and error text only. White measures 8.7:1 on forest and
+     11.3:1 on maroon, so both hold up as text on white. */
   --color-brand-forest: #26543d;
-  /* Deep burgundy for the events intro band. White measures 11.3:1 on it,
-     white at 80% 7.8:1 and brand golden 5.5:1. */
   --color-brand-maroon: oklch(0.36 0.09 25);
-  /* Deep indigo for the get-involved intro band. White measures 12:1 on
-     it, white at 80% 8.3:1 and brand golden 5.8:1. */
-  --color-brand-indigo: oklch(0.34 0.07 285);
 
   /* Application status. Each state is one hue in three steps with jobs:
      a light fill, text on that fill, and a solid for the dot. Chroma is the

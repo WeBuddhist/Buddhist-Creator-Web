@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   description: GET_INVOLVED_PAGE.description,
 };
 
-// The page opens on a brand-indigo band, so the browser chrome matches it.
+// The page opens on a brand-cyan band, so the browser chrome matches it.
 export const viewport: Viewport = {
-  themeColor: "#35325a",
+  themeColor: "#136986",
 };
 
 /* The primary button, in the homepage hero's recipe. */
@@ -27,17 +27,18 @@ export default function GetInvolvedPage() {
   return (
     <main className="flex flex-1 flex-col">
       {/* The intro band runs up behind the transparent header and pads its
-          top by the header's height, so the header sits on the indigo and
+          top by the header's height, so the header sits on the cyan and
           takes the brand tone. */}
       <section
         aria-labelledby="get-involved-title"
-        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-indigo pt-(--header-height) [--wave-fill:var(--color-brand-indigo)]"
+        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-cyan pt-(--header-height)"
         data-header-tone="brand"
       >
         <WaveCorner className="-top-16 -right-16 -scale-x-100" />
 
         <div className="relative mx-auto w-full max-w-6xl px-4 pt-12 pb-12 sm:px-6 lg:pt-20 lg:pb-20">
-          <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-golden">
+          {/* White at 80% measures 4.6:1 on brand cyan; brand golden only 3:1. */}
+          <p className="text-xs font-medium uppercase tracking-[0.05em] text-white/80">
             {GET_INVOLVED_PAGE.eyebrow}
           </p>
           <h1

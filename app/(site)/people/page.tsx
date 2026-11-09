@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { TeamCard } from "@/components/people/person-card";
 import { WaveCorner } from "@/components/mission";
 import {
@@ -14,22 +14,27 @@ export const metadata: Metadata = {
   description: PEOPLE_PAGE.description,
 };
 
+// The page opens on a brand-cyan band, so the browser chrome matches it.
+export const viewport: Viewport = {
+  themeColor: "#136986",
+};
+
 export default function PeoplePage() {
   return (
     <main className="flex flex-1 flex-col">
       {/* The intro band runs up behind the transparent header and pads its
-          top by the header's height, so the header sits on the green and
+          top by the header's height, so the header sits on the cyan and
           takes the brand tone. */}
       <section
         aria-labelledby="people-title"
-        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-forest pt-(--header-height) [--wave-fill:var(--color-brand-forest)]"
+        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-cyan pt-(--header-height)"
         data-header-tone="brand"
       >
         <WaveCorner className="-top-16 -right-16 -scale-x-100" />
 
         <div className="relative mx-auto w-full max-w-6xl px-4 pt-12 pb-12 sm:px-6 lg:pt-20 lg:pb-20">
-          {/* Brand golden measures 4.2:1 on forest; a 15% lift reaches 4.5:1 or more. */}
-          <p className="text-xs font-medium uppercase tracking-[0.05em] text-[color-mix(in_oklch,var(--color-brand-golden),white_15%)]">
+          {/* White at 80% measures 4.6:1 on brand cyan; brand golden only 3:1. */}
+          <p className="text-xs font-medium uppercase tracking-[0.05em] text-white/80">
             {PEOPLE_PAGE.eyebrow}
           </p>
           <h1

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cn } from "@/lib/utils";
 import { EventCard } from "@/components/events/event-card";
 import { PastEventList } from "@/components/events/past-event-list";
@@ -8,6 +8,11 @@ import { EVENTS_PAGE, ONGOING_EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib
 export const metadata: Metadata = {
   title: "Program",
   description: EVENTS_PAGE.description,
+};
+
+// The page opens on a brand-cyan band, so the browser chrome matches it.
+export const viewport: Viewport = {
+  themeColor: "#136986",
 };
 
 const GROUPS = [
@@ -20,17 +25,18 @@ export default function EventsPage() {
   return (
     <main className="flex flex-1 flex-col">
       {/* The intro band runs up behind the transparent header and pads its
-          top by the header's height, so the header sits on the burgundy and
+          top by the header's height, so the header sits on the cyan and
           takes the brand tone. */}
       <section
         aria-labelledby="events-title"
-        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-maroon pt-(--header-height)"
+        className="relative isolate -mt-(--header-height) overflow-hidden bg-brand-cyan pt-(--header-height)"
         data-header-tone="brand"
       >
         <AsanohaCorner className="-top-16 -right-16 -scale-x-100" />
 
         <div className="relative mx-auto w-full max-w-6xl px-4 pt-12 pb-12 sm:px-6 lg:pt-20 lg:pb-20">
-          <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-golden">
+          {/* White at 80% measures 4.6:1 on brand cyan; brand golden only 3:1. */}
+          <p className="text-xs font-medium uppercase tracking-[0.05em] text-white/80">
             {EVENTS_PAGE.eyebrow}
           </p>
           <h1
