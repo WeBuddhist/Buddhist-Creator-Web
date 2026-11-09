@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { SquareIcon } from "@phosphor-icons/react";
+import { CircleIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,14 +13,20 @@ import { setStatusAction, type DecisionState } from "./actions";
 /* One raised button per view. Undecided, that is Accept in the
    dashboard's action blue, with the other two as quiet outlines so the eye
    lands on the primary. Once decided, the decision taken is the raised
-   one instead, in its own status hue (the badge's text colour, dark
-   enough for white) with a small square as the second cue, and Accept
-   steps back to an outline so nothing competes with the current state.
+   one instead, in its own status hue, with a small dot as the second
+   cue, and Accept steps back to an outline so nothing competes with the
+   current state. Accepted and Rejected use the badge's text colour, dark
+   enough for white; Waitlisted has its own fill token, since its text
+   colour reads brown on a button and its solid is too light for white.
    Reject's label stays in the rejected red either way, so it reads as
    the destructive one. */
 const DECISIONS: { status: ApplicationStatus; label: string; selected: string; quiet?: string }[] = [
   { status: "accepted", label: "Accept", selected: "[--btn:var(--color-status-accepted-text)]" },
-  { status: "waitlisted", label: "Waitlist", selected: "[--btn:var(--color-status-waitlisted-text)]" },
+  {
+    status: "waitlisted",
+    label: "Waitlist",
+    selected: "[--btn:var(--color-status-waitlisted-fill)]",
+  },
   {
     status: "rejected",
     label: "Reject",
@@ -89,7 +95,9 @@ export function StatusActions({
                 aria-pressed={selected}
                 className={cn("px-3", selected ? cn("ps-2.5", decision.selected) : decision.quiet)}
               >
-                {selected && <SquareIcon aria-hidden weight="fill" className="size-2.5" />}
+                {selected && (
+                  <CircleIcon aria-hidden weight="fill" className="size-2.5 opacity-60" />
+                )}
                 {decision.label}
               </Button>
             );

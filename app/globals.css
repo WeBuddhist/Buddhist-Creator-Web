@@ -76,9 +76,14 @@
   --color-status-submitted-bg: oklch(0.94 0.036 227);
   --color-status-submitted-text: oklch(0.46 0.088 227);
   --color-status-submitted-solid: oklch(0.6 0.116 227);
-  --color-status-waitlisted-bg: oklch(0.95 0.044 80);
-  --color-status-waitlisted-text: oklch(0.47 0.098 80);
-  --color-status-waitlisted-solid: oklch(0.61 0.126 80);
+  --color-status-waitlisted-bg: oklch(0.95 0.03 60);
+  --color-status-waitlisted-text: oklch(0.52 0.12 60);
+  --color-status-waitlisted-solid: oklch(0.68 0.15 60);
+  /* The waitlisted hue is only orange when light, and the light one cannot
+     hold white text, so a raised button takes this darker fill instead of
+     the badge's text colour: white on it measures as it does on the action
+     blue, 5.3:1 at the base of the gradient. */
+  --color-status-waitlisted-fill: oklch(0.54 0.13 55);
   --color-status-rejected-bg: oklch(0.94 0.03 25);
   --color-status-rejected-text: oklch(0.47 0.16 25);
   --color-status-rejected-solid: oklch(0.58 0.19 25);
