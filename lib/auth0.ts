@@ -1,4 +1,5 @@
 import { Auth0Client } from "@auth0/nextjs-auth0/server";
+import { DEFAULT_RETURN_TO } from "@/lib/login-url";
 
 /* One Auth0 client for the proxy, server components, server actions and
    route handlers. Built on first use rather than at import, so a build or a
@@ -7,9 +8,24 @@ import { Auth0Client } from "@auth0/nextjs-auth0/server";
 
    Required env: AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET,
    AUTH0_SECRET (openssl rand -hex 32), APP_BASE_URL. The SDK mounts
-   /auth/login, /auth/logout, /auth/callback and /auth/profile itself. */
+   /auth/login, /auth/logout, /auth/callback and /auth/profile itself.
+
+   Sign-in starts on our own /login page (app/login/page.tsx), not on
+   Auth0's hosted one: each button there opens /auth/login with a
+   `connection`, and the SDK forwards every query parameter except
+   returnTo to Auth0's /authorize, so Google and Apple open the provider
+   directly and the hosted "identifier" screen is never shown. */
 
 let client: Auth0Client | undefined;
+
+export { DEFAULT_RETURN_TO, LOGIN_PATH, loginUrl, safeReturnTo } from "@/lib/login-url";
+
+/** Auth0 connection names as enabled on the application. Social only:
+    a first sign-in creates the account, so there is no sign-up step. */
+export const CONNECTIONS = {
+  google: "google-oauth2",
+  apple: "apple",
+} as const;
 
 /** Whether the Auth0 variables are present. The proxy lets requests through
     without them so the public site still runs in a fresh checkout; anything
@@ -35,14 +51,14 @@ export function getAuth0(): Auth0Client {
       scope: "openid profile email",
     },
     // Where /auth/login lands when it is opened without a returnTo.
-    signInReturnToPath: "/convention/2027/register",
+    signInReturnToPath: DEFAULT_RETURN_TO,
   });
   return client;
 }
 
-/** Where to send someone who must be signed in to see `path`. */
-export function loginUrl(path: string, connection?: "google-oauth2") {
-  const params = new URLSearchParams({ returnTo: path });
-  if (connection) params.set("connection", connection);
-  return `/auth/login?${params}`;
+/** The SDK's login endpoint for one connection: Auth0 skips its own chooser
+    and opens that provider. */
+export function authLoginUrl(returnTo: string, connection: string) {
+  const search = new URLSearchParams({ returnTo, connection });
+  return `/auth/login?${search}`;
 }

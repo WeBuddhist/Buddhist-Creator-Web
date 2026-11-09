@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { SignInIcon } from "@phosphor-icons/react/dist/ssr";
 import { AccountMenu } from "@/components/account-menu";
+import { SignInLink } from "@/components/sign-in-link";
 import { getCurrentUser, hasRole } from "@/lib/auth";
-import { loginUrl } from "@/lib/auth0";
 import { cn } from "@/lib/utils";
 
 /* The header's account corner. It reads the session, so it renders inside
@@ -40,13 +39,13 @@ export async function UserMenu() {
   if (!user) {
     return (
       <>
-        <Link href={loginUrl(REGISTER)} className={cn(pill, "hidden md:inline-flex")}>
+        <SignInLink className={cn(pill, "hidden md:inline-flex")}>
           <SignInIcon className="size-4" weight="bold" aria-hidden />
           Sign in
-        </Link>
-        <Link href={loginUrl(REGISTER)} className={cn(iconPill, "md:hidden")} aria-label="Sign in">
+        </SignInLink>
+        <SignInLink className={cn(iconPill, "md:hidden")} aria-label="Sign in">
           <SignInIcon className="size-5" weight="bold" aria-hidden />
-        </Link>
+        </SignInLink>
       </>
     );
   }

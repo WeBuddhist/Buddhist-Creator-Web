@@ -109,10 +109,10 @@ export const FORM = {
     "Participation is merit-based, with careful consideration given to balanced representation across gender, Buddhist traditions and countries. Everything you share here is used only for the selection process.",
   ],
   facts: [
-    { label: "Venue", value: "Nagaloka, Nagpur, India" },
-    { label: "Dates", value: "18 – 21 February 2027" },
-    { label: "Language", value: "English / Hindi" },
-    { label: "Participants", value: "Approximately 120 in person" },
+    { icon: "venue", label: "Venue", value: "Nagaloka, Nagpur, India" },
+    { icon: "dates", label: "Dates", value: "18 – 21 February 2027" },
+    { icon: "language", label: "Language", value: "English / Hindi" },
+    { icon: "participants", label: "Participants", value: "Approximately 120 in person" },
   ],
   contact: "hello@buddhistcreators.com",
   sections: {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ConventionFacts } from "@/components/convention/convention-facts";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { getOrCreateMyApplication } from "@/lib/applications";
 import { requireUser } from "@/lib/auth";
@@ -34,22 +35,7 @@ export default function RegisterPage() {
               ))}
             </div>
           </div>
-          <aside className={card} aria-label="Convention details">
-            <dl className={cn(cardInner, "flex flex-col gap-3 px-5 py-5 text-base leading-[1.5]")}>
-              {FORM.facts.map(({ label, value }) => (
-                <div key={label} className="flex flex-col">
-                  <dt className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">{label}</dt>
-                  <dd className="text-foreground">{value}</dd>
-                </div>
-              ))}
-              <div className="mt-2 border-t border-border pt-4 text-sm text-muted-foreground">
-                Questions?{" "}
-                <a href={`mailto:${FORM.contact}`} className="font-medium text-foreground underline underline-offset-4">
-                  {FORM.contact}
-                </a>
-              </div>
-            </dl>
-          </aside>
+          <ConventionFacts />
         </div>
       </section>
 
