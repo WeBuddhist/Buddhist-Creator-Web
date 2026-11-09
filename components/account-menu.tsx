@@ -145,7 +145,7 @@ export function AccountMenu({
               )}
               <Menu.LinkItem closeOnClick render={<NextLink href={applicationHref} />} className={item}>
                 <FileTextIcon className="size-4 text-muted-foreground" weight="bold" aria-hidden />
-                Registeration
+                Registration
               </Menu.LinkItem>
               <Menu.Separator className="mx-1.5 mb-1.5 h-px bg-border" />
 

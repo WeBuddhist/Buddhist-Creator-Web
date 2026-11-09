@@ -4,7 +4,3 @@
    transparent border is what forced-colors mode paints in place of the
    shadow. */
 export const panel = "rounded-xl border border-transparent bg-card shadow-border";
-
-/* A panel that is a link: the ring firms up under the pointer. */
-export const panelLink =
-  "rounded-xl border border-transparent bg-card shadow-border transition-[box-shadow,transform] duration-150 ease-hover hover:shadow-border-hover active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
