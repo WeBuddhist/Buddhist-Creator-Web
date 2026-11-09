@@ -17,6 +17,10 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
         link: "text-primary underline-offset-4 hover:underline",
+        // The dashboard's raised button; the recipe is btn-emphasis in
+        // globals.css. White ink by default: set --btn and, on a light
+        // colour such as golden, a darker text colour at the call site.
+        emphasis: "btn-emphasis text-white hover:text-white",
       },
       size: {
         default:

@@ -1,4 +1,4 @@
-import { card, cardInner } from "@/components/convention/section-heading";
+import { panel } from "@/components/admin/panel";
 import { cn } from "@/lib/utils";
 
 export const COLUMNS = ["Applicant", "Organisation", "Location", "Platforms", "Status", "Submitted"] as const;
@@ -37,8 +37,8 @@ const WIDTHS = [
    empty settles the instant it is clicked. */
 export function TableSkeleton({ rows, className }: { rows: number; className?: string }) {
   return (
-    <div role="status" aria-busy="true" aria-label="Loading applications" className={cn(card, className)}>
-      <div className={cn(cardInner, "overflow-x-auto")}>
+    <div role="status" aria-busy="true" aria-label="Loading applications" className={cn(panel, "overflow-x-auto", className)}>
+      <>
         {rows <= 0 ? (
           <EmptyRows />
         ) : (
@@ -70,7 +70,7 @@ export function TableSkeleton({ rows, className }: { rows: number; className?: s
             </tbody>
           </table>
         )}
-      </div>
+      </>
     </div>
   );
 }

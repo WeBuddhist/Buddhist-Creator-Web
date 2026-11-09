@@ -4,9 +4,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ApplicationsFilter, type FilterOption } from "@/components/admin/applications-filter";
 import { EmptyRows, FilterSkeleton, TableHead, TableSkeleton } from "@/components/admin/applications-skeleton";
+import { PageHeader } from "@/components/admin/page-header";
 import { Pagination } from "@/components/admin/pagination";
+import { panel } from "@/components/admin/panel";
+import { StatTiles, StatTilesSkeleton, type StatTile } from "@/components/admin/stat-tiles";
 import { StatusBadge, STATUS_LABEL } from "@/components/admin/status-badge";
-import { card, cardInner } from "@/components/convention/section-heading";
 import { countByStatus, listApplications, PAGE_SIZE, type ListFilter } from "@/lib/applications";
 import { requireRole } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
@@ -20,6 +22,15 @@ const FILTERS: ListFilter[] = ["all", "submitted", "accepted", "waitlisted", "re
 
 const filterLabel = (filter: ListFilter) => (filter === "all" ? "All" : STATUS_LABEL[filter]);
 
+/* The figures at the top: the states a reviewer acts on or has decided.
+   Each dot is the status badge's solid, so tile and badge match. */
+const TILES: { status: ApplicationStatus; label: string; dot: string }[] = [
+  { status: "submitted", label: "Awaiting review", dot: "bg-status-submitted-solid" },
+  { status: "accepted", label: "Accepted", dot: "bg-status-accepted-solid" },
+  { status: "waitlisted", label: "Waitlisted", dot: "bg-status-waitlisted-solid" },
+  { status: "rejected", label: "Rejected", dot: "bg-status-rejected-solid" },
+];
+
 function pageHref(filter: ListFilter, page: number) {
   const params = new URLSearchParams();
   if (filter !== "all") params.set("status", filter);
@@ -30,16 +41,24 @@ function pageHref(filter: ListFilter, page: number) {
 
 export default function AdminPage(props: PageProps<"/admin">) {
   return (
-    <Suspense
-      fallback={
-        <>
-          <FilterSkeleton labels={FILTERS.map(filterLabel)} />
-          <TableSkeleton rows={4} />
-        </>
-      }
-    >
-      <ApplicationsList searchParams={props.searchParams} />
-    </Suspense>
+    <>
+      <PageHeader
+        title="Applications"
+        description="Everyone who has applied to Convention 2027, newest first. Open one to watch the intro video, read the answers and record a decision."
+        className="mb-6"
+      />
+      <Suspense
+        fallback={
+          <>
+            <StatTilesSkeleton labels={TILES.map((tile) => tile.label)} className="mb-6" />
+            <FilterSkeleton labels={FILTERS.map(filterLabel)} />
+            <TableSkeleton rows={4} />
+          </>
+        }
+      >
+        <ApplicationsList searchParams={props.searchParams} />
+      </Suspense>
+    </>
   );
 }
 
@@ -59,6 +78,14 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
   // page) lands on the last real page rather than an empty table.
   if (page > pages) redirect(pageHref(filter, pages));
 
+  const tiles: StatTile[] = TILES.map((tile) => ({
+    label: tile.label,
+    count: counts[tile.status] ?? 0,
+    href: pageHref(tile.status, 1),
+    dot: tile.dot,
+    active: filter === tile.status,
+  }));
+
   const options: FilterOption[] = FILTERS.map((value) => ({
     value,
     label: filterLabel(value),
@@ -67,9 +94,10 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
   }));
 
   return (
-    <ApplicationsFilter options={options} active={filter} pageSize={PAGE_SIZE}>
-      <div className={card}>
-        <div className={cn(cardInner, "overflow-x-auto")}>
+    <>
+      <StatTiles tiles={tiles} className="mb-6" />
+      <ApplicationsFilter options={options} active={filter} pageSize={PAGE_SIZE}>
+        <div className={cn(panel, "overflow-x-auto")}>
           {list.rows.length === 0 ? (
             <EmptyRows />
           ) : (
@@ -104,16 +132,16 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
             </table>
           )}
         </div>
-      </div>
 
-      <Pagination
-        page={page}
-        pages={pages}
-        total={list.total}
-        pageSize={list.pageSize}
-        href={(n) => pageHref(filter, n)}
-        className="mt-4"
-      />
-    </ApplicationsFilter>
+        <Pagination
+          page={page}
+          pages={pages}
+          total={list.total}
+          pageSize={list.pageSize}
+          href={(n) => pageHref(filter, n)}
+          className="mt-4"
+        />
+      </ApplicationsFilter>
+    </>
   );
 }

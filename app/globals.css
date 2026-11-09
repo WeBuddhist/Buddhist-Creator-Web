@@ -80,6 +80,9 @@
      box-shadow and paints that border instead. */
   --shadow-ring: 0 0 0 1px oklch(0 0 0 / 6%);
   --shadow-border: 0 0 0 1px oklch(0 0 0 / 6%), 0 1px 2px oklch(0 0 0 / 5%);
+  /* The same surface under a pointer: the ring a shade firmer and a touch
+     more lift, for dashboard tiles that are links. */
+  --shadow-border-hover: 0 0 0 1px oklch(0 0 0 / 9%), 0 1px 2px oklch(0 0 0 / 6%), 0 2px 4px oklch(0 0 0 / 4%);
   /* Chrome that floats over scrolling content, such as the form's action
      bar: the card's hairline plus a soft, wide drop so it reads as lifted. */
   --shadow-float: 0 0 0 1px oklch(0 0 0 / 6%), 0 1px 2px oklch(0 0 0 / 5%), 0 12px 32px -8px oklch(0 0 0 / 18%);
@@ -90,6 +93,55 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   /* Hover and color changes keep the plain CSS `ease` curve. */
   --ease-hover: ease;
+}
+
+/*
+ * The dashboard's raised button, in the recipe Cloudflare's dashboard uses
+ * for its emphasis button: a top-lit gradient from the colour in --btn, a
+ * ring one shade darker than the fill, a stack of inner highlights in a
+ * pale mix of the same colour that round the face, and a drop shadow
+ * tinted with the colour itself. A pointer over it flattens the top of the
+ * gradient to the paler mix; a press scales it by 1%. Callers set --btn to
+ * a brand colour (`[--btn:var(--color-brand-maroon)]`); it defaults to
+ * cyan. The shadow goes through --tw-shadow so a focus ring composes with
+ * it instead of replacing it. The 2px bottom padding lifts the label a
+ * pixel, which reads as centred on a convex face.
+ */
+@utility btn-emphasis {
+  --btn-pale: color-mix(in oklch, var(--btn, var(--color-brand-cyan)), white 55%);
+  background-clip: border-box;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--btn, var(--color-brand-cyan)), white 15%),
+    var(--btn, var(--color-brand-cyan))
+  );
+  padding-bottom: 2px;
+  --tw-shadow:
+    0 0 0 1px color-mix(in oklch, var(--btn, var(--color-brand-cyan)), black 10%),
+    inset 0 1px 0 0 color-mix(in oklch, var(--btn, var(--color-brand-cyan)), white 30%),
+    inset 0 -1px 3px color-mix(in oklab, var(--btn-pale) 12%, transparent),
+    inset 0 -0.5px 0.5px color-mix(in oklab, var(--btn-pale) 24%, transparent),
+    inset 0 4px 8px color-mix(in oklab, var(--btn-pale) 12%, transparent),
+    inset 0 1px 3px color-mix(in oklab, var(--btn-pale) 24%, transparent),
+    inset 0 0.5px 0.5px color-mix(in oklab, var(--btn-pale) 32%, transparent),
+    0 6px 10px -4px color-mix(in oklab, var(--btn, var(--color-brand-cyan)) 24%, transparent),
+    0 2px 4px -1px color-mix(in oklab, var(--btn, var(--color-brand-cyan)) 12%, transparent),
+    0 1px 1px -0.5px color-mix(in oklab, var(--btn, var(--color-brand-cyan)) 12%, transparent);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow), var(--tw-shadow);
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-image: linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--btn, var(--color-brand-cyan)), white 30%),
+        var(--btn, var(--color-brand-cyan))
+      );
+    }
+  }
+  &:active:not(:disabled) {
+    scale: 0.99;
+  }
 }
 
 @custom-variant reduced-transparency (@media (prefers-reduced-transparency: reduce));

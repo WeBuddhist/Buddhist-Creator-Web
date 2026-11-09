@@ -9,26 +9,19 @@ import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { setStatusAction, type DecisionState } from "./actions";
 
-/* The homepage's raised button (components/hero.tsx), with the brand colour
-   taken from --btn so one recipe serves all three decisions: a top-lit
-   gradient, a hairline of white inside, a soft drop and a ring one shade
-   darker than the fill. Each button sets --btn to its own brand colour. */
-const raised =
-  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--btn),white_14%)] to-(--btn) shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--btn),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";
-
+/* One recipe serves all three decisions: the dashboard's raised button
+   (btn-emphasis in globals.css) with the brand colour taken from --btn.
+   Golden is light, so its ink is the colour itself darkened, as on the
+   homepage feedback form. */
 const DECISIONS: { status: ApplicationStatus; label: string; className: string }[] = [
-  { status: "accepted", label: "Accept", className: cn(raised, "[--btn:var(--color-brand-cyan)] text-white") },
-  // Golden is light, so the ink is the colour itself darkened, as on the
-  // homepage feedback form, and the inner hairline is stronger to show.
+  { status: "accepted", label: "Accept", className: "[--btn:var(--color-brand-cyan)]" },
   {
     status: "waitlisted",
     label: "Waitlist",
-    className: cn(
-      raised,
-      "[--btn:var(--color-brand-golden)] font-semibold text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)] shadow-[0_0_1px_1px_--alpha(var(--color-white)/20%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--btn),black_10%)] hover:brightness-[1.04]",
-    ),
+    className:
+      "[--btn:var(--color-brand-golden)] font-semibold text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)] hover:text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)]",
   },
-  { status: "rejected", label: "Reject", className: cn(raised, "[--btn:var(--color-brand-maroon)] text-white") },
+  { status: "rejected", label: "Reject", className: "[--btn:var(--color-brand-maroon)]" },
 ];
 
 /* The decision buttons. One form, three submitters: the clicked button's
@@ -74,16 +67,17 @@ export function StatusActions({
             type="submit"
             name="status"
             value={decision.status}
-            size="pill"
+            variant="emphasis"
+            size="lg"
             disabled={pending}
             aria-pressed={status === decision.status}
-            className={cn(decision.className, status === decision.status && "ring-3 ring-ring/40")}
+            className={cn("px-4", decision.className, status === decision.status && "ring-3 ring-ring/40")}
           >
             {decision.label}
           </Button>
         ))}
         {status !== "submitted" && (
-          <Button type="submit" name="status" value="submitted" size="pill" variant="outline" disabled={pending}>
+          <Button type="submit" name="status" value="submitted" size="lg" variant="outline" disabled={pending} className="px-4">
             Undo decision
           </Button>
         )}
