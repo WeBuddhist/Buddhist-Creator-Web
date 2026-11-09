@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { SignInIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react/dist/ssr";
+import { SignInIcon } from "@phosphor-icons/react/dist/ssr";
+import { AccountMenu } from "@/components/account-menu";
 import { getCurrentUser, hasRole } from "@/lib/auth";
 import { loginUrl } from "@/lib/auth0";
 import { cn } from "@/lib/utils";
@@ -50,29 +51,13 @@ export async function UserMenu() {
     );
   }
 
-  const firstName = user.name?.split(" ")[0] ?? user.email;
-
   return (
-    <>
-      <div className="hidden items-center gap-1 md:flex">
-        {hasRole(user, "admin") && (
-          <Link href="/admin" className={pill}>
-            Admin
-          </Link>
-        )}
-        <Link href={REGISTER} className={pill} title={user.email}>
-          <UserCircleIcon className="size-4" weight="bold" aria-hidden />
-          {firstName}
-        </Link>
-        {/* A plain anchor: the SDK serves /auth/logout, so it must not be prefetched. */}
-        <a href="/auth/logout" className={pill}>
-          <SignOutIcon className="size-4" weight="bold" aria-hidden />
-          Sign out
-        </a>
-      </div>
-      <Link href={REGISTER} className={cn(iconPill, "md:hidden")} aria-label={`My application (${user.email})`}>
-        <UserCircleIcon className="size-5" weight="bold" aria-hidden />
-      </Link>
-    </>
+    <AccountMenu
+      name={user.name}
+      email={user.email}
+      picture={user.picture}
+      applicationHref={REGISTER}
+      adminHref={hasRole(user, "admin") ? "/admin" : undefined}
+    />
   );
 }
