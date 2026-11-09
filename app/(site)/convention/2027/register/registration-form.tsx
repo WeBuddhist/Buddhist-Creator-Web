@@ -52,7 +52,8 @@ export type FormApplication = {
   awardViralContentUrl: string | null;
   video: UploadedVideo | null;
   submittedAt: string | null;
-  updatedAt: string;
+  /** Null until the first save: nothing is stored by merely opening the form. */
+  updatedAt: string | null;
 };
 
 type Values = {
@@ -545,8 +546,10 @@ export function RegistrationForm({
                 </>
               ) : state.savedAt ? (
                 `Saved ${formatDateTime(state.savedAt)}`
-              ) : (
+              ) : application.updatedAt ? (
                 `Last saved ${formatDateTime(application.updatedAt)}`
+              ) : (
+                "Not saved yet"
               )}
             </p>
           </div>

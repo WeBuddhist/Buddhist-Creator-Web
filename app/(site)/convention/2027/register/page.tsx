@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ConventionFacts } from "@/components/convention/convention-facts";
 import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
-import { getOrCreateMyApplication } from "@/lib/applications";
+import { getMyApplication } from "@/lib/applications";
 import { requireUser } from "@/lib/auth";
 import { CONVENTION_2027 } from "@/lib/convention-2027";
 import { FORM } from "@/lib/registration-2027";
@@ -21,7 +21,12 @@ const PATH = "/convention/2027/register";
 /* The intro and the facts are static and prerender; the form needs the
    session and the row, so it streams in behind the boundary. The proxy has
    already sent anyone without a session to Auth0, so the boundary's
-   fallback is only ever a brief placeholder. */
+   fallback is only ever a brief placeholder.
+
+   Opening the form does not create an application. The row is first
+   written when the applicant saves a draft, submits, or uploads a video,
+   so the admin's Draft count means "chose to save", not "looked at the
+   form". Until then the form renders from empty values. */
 export default function RegisterPage() {
   return (
     <main className="flex flex-1 flex-col bg-background">
@@ -52,10 +57,38 @@ export default function RegisterPage() {
 
 async function RegistrationLoader() {
   const user = await requireUser(PATH);
-  const row = await getOrCreateMyApplication(user.id);
-  const videoUrl = row.videoKey ? await presignedGetUrl(row.videoKey) : null;
+  const row = await getMyApplication(user.id);
+  const application: FormApplication = row ? await fromRow(row) : EMPTY;
+  return <RegistrationForm user={{ email: user.email, name: user.name }} application={application} />;
+}
 
-  const application: FormApplication = {
+const EMPTY: FormApplication = {
+  status: "draft",
+  fullName: null,
+  organization: null,
+  location: null,
+  contentTopics: [],
+  contentTopicsOther: null,
+  targetAudience: null,
+  targetAudienceOther: null,
+  audienceRegion: null,
+  audienceRegionOther: null,
+  audienceLanguage: null,
+  audienceLanguageOther: null,
+  platforms: [],
+  platformsOther: null,
+  socialLinks: null,
+  awardAudienceChoiceUrl: null,
+  awardCreativeVideoUrl: null,
+  awardViralContentUrl: null,
+  video: null,
+  submittedAt: null,
+  updatedAt: null,
+};
+
+async function fromRow(row: NonNullable<Awaited<ReturnType<typeof getMyApplication>>>): Promise<FormApplication> {
+  const videoUrl = row.videoKey ? await presignedGetUrl(row.videoKey) : null;
+  return {
     status: row.status,
     fullName: row.fullName,
     organization: row.organization,
@@ -85,8 +118,6 @@ async function RegistrationLoader() {
     submittedAt: row.submittedAt?.toISOString() ?? null,
     updatedAt: row.updatedAt.toISOString(),
   };
-
-  return <RegistrationForm user={{ email: user.email, name: user.name }} application={application} />;
 }
 
 function FormFallback() {

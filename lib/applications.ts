@@ -41,7 +41,9 @@ export async function getMyApplication(userId: string): Promise<Application | nu
   return row ?? null;
 }
 
-/** The user's application, creating an empty draft the first time. */
+/** The user's application, creating an empty draft the first time. Only
+    for writes (the first draft save or video upload): a page view reads
+    with `getMyApplication` so that looking at the form stores nothing. */
 export async function getOrCreateMyApplication(userId: string): Promise<Application> {
   const existing = await getMyApplication(userId);
   if (existing) return existing;
@@ -303,10 +305,8 @@ export async function listUsers() {
       name: users.name,
       role: users.role,
       createdAt: users.createdAt,
-      applicationStatus: applications.status,
     })
     .from(users)
-    .leftJoin(applications, eq(applications.userId, users.id))
     .orderBy(desc(users.role), asc(users.email));
 }
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { StatusBadge } from "@/components/admin/status-badge";
 import { card, cardInner } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
 import { listUsers } from "@/lib/applications";
@@ -34,11 +33,10 @@ async function UsersList() {
       </p>
       <div className={card}>
         <div className={cn(cardInner, "overflow-x-auto")}>
-          <table className="w-full min-w-[40rem] text-sm">
+          <table className="w-full min-w-[32rem] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
                 <th scope="col" className="px-4 py-3">User</th>
-                <th scope="col" className="px-4 py-3">Application</th>
                 <th scope="col" className="px-4 py-3">Joined</th>
                 <th scope="col" className="px-4 py-3">Role</th>
               </tr>
@@ -51,9 +49,6 @@ async function UsersList() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{row.name ?? row.email}</div>
                       <div className="text-xs text-muted-foreground">{row.email}{self ? " (you)" : ""}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {row.applicationStatus ? <StatusBadge status={row.applicationStatus} /> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt)}</td>
                     <td className="px-4 py-3">
