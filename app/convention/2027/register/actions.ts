@@ -13,7 +13,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { loginUrl } from "@/lib/auth0";
 import type { ApplicationStatus } from "@/lib/db/schema";
-import { draftSchema, formValues, submitSchema, type FieldErrors } from "@/lib/registration-2027";
+import { FORM, draftSchema, formValues, submitSchema, type FieldErrors } from "@/lib/registration-2027";
 
 const PATH = "/convention/2027/register";
 
@@ -23,10 +23,14 @@ export type FormState = {
   status?: ApplicationStatus;
   errors?: FieldErrors;
   savedAt?: string;
+  /** True when this submission moved the application out of draft. */
+  firstSubmission?: boolean;
 };
 
+/* The applicant hears about a decision by email, so a locked application
+   says only that it is locked, never why. */
 const LOCKED: FieldErrors = {
-  form: ["This application has been reviewed and can no longer be changed."],
+  form: [`Your application can no longer be changed. If something needs updating, write to ${FORM.contact}.`],
 };
 
 /* One action for both buttons: the submitter's `intent` says whether this
@@ -78,7 +82,13 @@ export async function saveApplicationAction(_prev: FormState, formData: FormData
   try {
     const saved = await submitMyApplication(user.id, parsed.data);
     revalidatePath(PATH);
-    return { ok: true, intent, status: saved.status, savedAt: new Date().toISOString() };
+    return {
+      ok: true,
+      intent,
+      status: saved.status,
+      savedAt: new Date().toISOString(),
+      firstSubmission: current?.status === "draft",
+    };
   } catch (error) {
     if (error instanceof ApplicationLocked) return { ok: false, intent, errors: LOCKED };
     throw error;

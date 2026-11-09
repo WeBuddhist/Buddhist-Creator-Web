@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { CheckCircleIcon, FloppyDiskIcon, PaperPlaneTiltIcon } from "@phosphor-icons/react";
-import { card, cardInner, primaryButton } from "@/components/convention/section-heading";
+import { CheckCircleIcon, FloppyDiskIcon, PaperPlaneTiltIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { toast } from "sonner";
+import { card, primaryButton } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,14 +79,31 @@ function toValues(application: FormApplication): Values {
   };
 }
 
+/* What the applicant can do depends on where the application is:
+   - draft: every field is open; submit, or save and come back;
+   - submitted: read-only behind an Edit button until the committee decides;
+   - locked: read-only with no actions.
+   A decision reaches the applicant by email. The form never shows
+   accepted, waitlisted or rejected; those all look like "received". */
+type Mode = "draft" | "submitted" | "locked";
+
+function modeFor(status: ApplicationStatus): Mode {
+  if (status === "draft") return "draft";
+  if (status === "submitted") return "submitted";
+  return "locked";
+}
+
 const field = "h-11 px-3.5";
+const readOnlyField = "bg-muted/50";
 const sectionTitle = "text-xl font-semibold leading-[1.2] tracking-[-0.02em] text-foreground";
 const errorText = "text-sm text-brand-maroon";
+const TOAST_ID = "application";
 
 /* The whole application on one page, in the Google Form's four sections.
    Inputs are controlled so the browser's form reset after an action keeps
-   what was typed. Two submit buttons share one action: the pressed one
-   says whether this is a draft or a submission. */
+   what was typed. The submit buttons share one action: the pressed one
+   says whether this is a draft or a submission. The actions live in a bar
+   that stays at the bottom of the viewport while the form scrolls. */
 export function RegistrationForm({
   user,
   application,
@@ -96,6 +114,10 @@ export function RegistrationForm({
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveApplicationAction, { ok: false });
   const [values, setValues] = React.useState<Values>(() => toValues(application));
   const [video, setVideo] = React.useState<UploadedVideo | null>(application.video);
+  const [editing, setEditing] = React.useState(false);
+  const formRef = React.useRef<HTMLFormElement>(null);
+  const bannerRef = React.useRef<HTMLDivElement>(null);
+  const barRef = React.useRef<HTMLDivElement>(null);
 
   // A fresh upload calls router.refresh(), and the server comes back with a
   // playback URL: take the server's version whenever its key changes or it
@@ -108,15 +130,106 @@ export function RegistrationForm({
     }
   }
 
+  // A submission that went through closes edit mode. Done during render,
+  // like the video above, so the read-only view and the result arrive in
+  // the same frame.
+  const [seenState, setSeenState] = React.useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (state.ok && state.intent === "submit") setEditing(false);
+  }
+
   const status = application.status;
-  const editable = status === "draft" || status === "submitted";
-  const errors: FieldErrors = state.errors ?? {};
+  const mode = modeFor(status);
+  const editable = mode === "draft" || (mode === "submitted" && editing);
+  const errors: FieldErrors = editable ? (state.errors ?? {}) : {};
   const set = <K extends keyof Values>(key: K, value: Values[K]) =>
     setValues((previous) => ({ ...previous, [key]: value }));
 
+  // Each action result is announced once: a toast at the bottom, and focus
+  // moved to where the result is, the banner on success or the first
+  // answer that needs fixing on failure.
+  const handled = React.useRef(state);
+  React.useEffect(() => {
+    if (handled.current === state) return;
+    handled.current = state;
+    if (!state.intent) return;
+    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth";
+
+    if (state.ok) {
+      if (state.intent === "submit") {
+        toast.success(state.firstSubmission ? "Application submitted" : "Changes saved", {
+          id: TOAST_ID,
+          description: state.firstSubmission
+            ? `We will write to ${user.email}.`
+            : "Your application stays submitted with the new answers.",
+        });
+        bannerRef.current?.scrollIntoView({ behavior, block: "start" });
+        bannerRef.current?.focus({ preventScroll: true });
+      } else {
+        toast.success("Draft saved", { id: TOAST_ID, description: "Come back any time to finish it." });
+      }
+      return;
+    }
+
+    const problem = state.errors?.form?.[0];
+    toast.error(problem ? "Could not save" : "A few answers need attention", {
+      id: TOAST_ID,
+      description: problem ?? "Fix the highlighted answers, then try again.",
+      duration: 8000,
+      closeButton: true,
+    });
+    const invalid = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    const target = invalid?.matches("fieldset") ? invalid.querySelector<HTMLElement>("input") : invalid;
+    invalid?.scrollIntoView({ behavior, block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [state, user.email]);
+
+  // The toaster lifts itself above the bar by this much, see globals.css.
+  React.useEffect(() => {
+    const bar = barRef.current;
+    const root = document.documentElement.style;
+    if (!bar) return;
+    const observer = new ResizeObserver(() => {
+      root.setProperty("--action-bar-height", `${Math.ceil(bar.offsetHeight)}px`);
+    });
+    observer.observe(bar);
+    return () => {
+      observer.disconnect();
+      root.removeProperty("--action-bar-height");
+    };
+  }, [mode]);
+
+  // Both handlers stop the click's default action. React re-renders the
+  // bar synchronously inside the click, and without the keys below the
+  // browser would then run the default action on the node that replaced
+  // the button, a submit button, and send the form.
+  const startEditing = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setEditing(true);
+  };
+  const cancelEditing = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setValues(toValues(application));
+    setEditing(false);
+  };
+
   return (
-    <form action={formAction} className="flex flex-col gap-6" aria-describedby="form-status">
-      <StatusBanner status={status} submittedAt={application.submittedAt} email={user.email} state={state} />
+    <form
+      ref={formRef}
+      action={formAction}
+      className="flex flex-col gap-6"
+      aria-describedby={mode === "locked" ? undefined : "form-status"}
+    >
+      <StatusBanner
+        ref={bannerRef}
+        mode={mode}
+        status={status}
+        submittedAt={application.submittedAt}
+        email={user.email}
+      />
 
       {/* Section 2: personal details */}
       <Section title={FORM.sections.personal.title} description={FORM.sections.personal.description}>
@@ -128,7 +241,7 @@ export function RegistrationForm({
           onChange={(v) => set("fullName", v)}
           error={errors.fullName?.[0]}
           autoComplete="name"
-          disabled={!editable}
+          readOnly={!editable}
         />
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>
@@ -146,7 +259,7 @@ export function RegistrationForm({
           onChange={(v) => set("organization", v)}
           error={errors.organization?.[0]}
           autoComplete="organization"
-          disabled={!editable}
+          readOnly={!editable}
         />
         <TextField
           id="location"
@@ -155,7 +268,7 @@ export function RegistrationForm({
           value={values.location}
           onChange={(v) => set("location", v)}
           error={errors.location?.[0]}
-          disabled={!editable}
+          readOnly={!editable}
         />
       </Section>
 
@@ -235,8 +348,8 @@ export function RegistrationForm({
             placeholder={"https://www.youtube.com/@yourchannel\nhttps://www.instagram.com/yourhandle"}
             aria-invalid={!!errors.socialLinks}
             aria-describedby={errors.socialLinks ? "socialLinks-error" : undefined}
-            disabled={!editable}
-            className="min-h-28 px-3.5 py-3 leading-[1.5]"
+            readOnly={!editable}
+            className={cn("min-h-28 px-3.5 py-3 leading-[1.5]", !editable && readOnlyField)}
           />
           {errors.socialLinks && (
             <p id="socialLinks-error" className={errorText}>
@@ -274,7 +387,7 @@ export function RegistrationForm({
                 value={values[key]}
                 onChange={(v) => set(key, v)}
                 error={errors[key]?.[0]}
-                disabled={!editable}
+                readOnly={!editable}
                 className="mt-1"
               />
             </div>
@@ -288,48 +401,95 @@ export function RegistrationForm({
         </p>
       )}
 
-      {editable && (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="submit"
-              name="intent"
-              value="submit"
-              size="pill"
-              disabled={pending}
-              className={primaryButton}
+      {mode !== "locked" && (
+        <div
+          ref={barRef}
+          data-action-bar
+          className={cn(card, "sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30")}
+        >
+          {/* On a phone the main button takes the full row and the second
+              action shares the next row with the status; from sm up it is
+              one row with the status at the trailing end. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent bg-card px-4 py-3 shadow-float sm:flex-nowrap">
+            {editable ? (
+              <React.Fragment key="editing">
+                <Button
+                  type="submit"
+                  name="intent"
+                  value="submit"
+                  size="pill"
+                  disabled={pending}
+                  className={cn(primaryButton, "w-full sm:w-auto")}
+                >
+                  {mode === "submitted" ? "Save changes" : "Submit application"}
+                  {mode === "submitted" ? (
+                    <FloppyDiskIcon data-icon="inline-end" weight="bold" />
+                  ) : (
+                    <PaperPlaneTiltIcon data-icon="inline-end" weight="bold" />
+                  )}
+                </Button>
+                {mode === "draft" ? (
+                  <Button type="submit" name="intent" value="draft" size="pill" variant="outline" disabled={pending}>
+                    <FloppyDiskIcon data-icon="inline-start" weight="bold" />
+                    Save draft
+                  </Button>
+                ) : (
+                  <Button type="button" size="pill" variant="outline" disabled={pending} onClick={cancelEditing}>
+                    Cancel
+                  </Button>
+                )}
+              </React.Fragment>
+            ) : (
+              <React.Fragment key="reading">
+                <Button type="button" size="pill" variant="outline" onClick={startEditing} className="w-full sm:w-auto">
+                  <PencilSimpleIcon data-icon="inline-start" weight="bold" />
+                  Edit application
+                </Button>
+                <Button
+                  type="submit"
+                  size="pill"
+                  variant="ghost"
+                  formAction={withdrawApplicationAction}
+                  formNoValidate
+                  onClick={(event) => {
+                    if (!window.confirm("Withdraw your application? It will no longer be considered.")) {
+                      event.preventDefault();
+                    }
+                  }}
+                  className="text-muted-foreground"
+                >
+                  Withdraw
+                </Button>
+              </React.Fragment>
+            )}
+            {/* Always mounted, so screen readers announce changes to it. On a
+                phone the resting "Last saved" line is read but not shown;
+                anything newer than that takes the room. */}
+            <p
+              id="form-status"
+              role="status"
+              aria-live="polite"
+              className={cn(
+                "ms-auto flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm",
+                editable && !pending && !state.savedAt && "max-sm:sr-only",
+              )}
             >
-              {status === "submitted" ? "Save changes" : "Submit application"}
-              <PaperPlaneTiltIcon data-icon="inline-end" weight="bold" />
-            </Button>
-            <Button type="submit" name="intent" value="draft" size="pill" variant="outline" disabled={pending}>
-              <FloppyDiskIcon data-icon="inline-start" weight="bold" />
-              Save draft
-            </Button>
-            <span id="form-status" role="status" aria-live="polite" className="text-sm text-muted-foreground">
-              {pending
-                ? "Saving…"
-                : state.savedAt
-                  ? `Saved at ${formatDateTime(state.savedAt)}`
-                  : `Last saved ${formatDateTime(application.updatedAt)}`}
-            </span>
+              {pending ? (
+                "Saving…"
+              ) : !editable ? (
+                <>
+                  <CheckCircleIcon className="size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />
+                  <span>
+                    Submitted<span className="max-sm:sr-only"> on {formatDateTime(application.submittedAt)}</span>
+                  </span>
+                </>
+              ) : state.savedAt ? (
+                `Saved ${formatDateTime(state.savedAt)}`
+              ) : (
+                `Last saved ${formatDateTime(application.updatedAt)}`
+              )}
+            </p>
           </div>
-          <Button
-            type="submit"
-            size="pill"
-            variant="ghost"
-            formAction={withdrawApplicationAction}
-            formNoValidate
-            disabled={pending}
-            onClick={(event) => {
-              if (!window.confirm("Withdraw your application? It will no longer be considered.")) {
-                event.preventDefault();
-              }
-            }}
-            className="text-muted-foreground"
-          >
-            Withdraw
-          </Button>
         </div>
       )}
     </form>
@@ -338,56 +498,55 @@ export function RegistrationForm({
 
 /* ---------------------------------------------------------------------- */
 
+/* The one place the application's state is spelled out. It is a live
+   region, so when a submission lands the new text is announced, and it
+   takes focus then so the reader lands on it. */
 function StatusBanner({
+  ref,
+  mode,
   status,
   submittedAt,
   email,
-  state,
 }: {
+  ref: React.Ref<HTMLDivElement>;
+  mode: Mode;
   status: ApplicationStatus;
   submittedAt: string | null;
   email: string;
-  state: FormState;
 }) {
-  const justSubmitted = state.ok && state.intent === "submit";
-  const copy: Record<ApplicationStatus, { tone: string; text: React.ReactNode }> = {
-    draft: {
-      tone: "border-border bg-card text-muted-foreground",
-      text: "Save a draft at any point and come back later. Submit once everything is complete; you can still edit after submitting until the committee decides.",
-    },
-    submitted: {
-      tone: "border-brand-cyan/30 bg-brand-cyan/5 text-foreground",
-      text: (
-        <>
-          {justSubmitted ? "Thank you, your application has been submitted" : "Your application has been received"}
-          {submittedAt ? ` on ${formatDateTime(submittedAt)}` : ""}. You can still make changes until the selection
-          committee decides. We will write to {email}.
-        </>
-      ),
-    },
-    accepted: {
-      tone: "border-brand-forest/30 bg-brand-forest/5 text-foreground",
-      text: `Congratulations, you have been accepted to the convention. We will be in touch at ${email} with the next steps.`,
-    },
-    waitlisted: {
-      tone: "border-brand-golden/50 bg-brand-golden/10 text-foreground",
-      text: `You are on the waitlist. If a place opens up we will write to ${email}.`,
-    },
-    rejected: {
-      tone: "border-border bg-muted/50 text-foreground",
-      text: "Thank you for applying. We were not able to offer you a place this time; we hope to see your work at a future convention.",
-    },
-    withdrawn: {
-      tone: "border-border bg-muted/50 text-muted-foreground",
-      text: `You withdrew your application. If that was a mistake, write to ${FORM.contact}.`,
-    },
-  };
-  const { tone, text } = copy[status];
+  const received = submittedAt ? ` on ${formatDateTime(submittedAt)}` : "";
+  let tone = "border-border bg-card text-muted-foreground";
+  let text: React.ReactNode;
+  let check = false;
+
+  if (mode === "draft") {
+    text =
+      "Save a draft at any point and come back later. Submit once everything is complete; you can still make changes until the selection committee decides.";
+  } else if (status === "withdrawn") {
+    tone = "border-border bg-muted/50 text-muted-foreground";
+    text = `You withdrew your application. If that was a mistake, write to ${FORM.contact}.`;
+  } else if (mode === "submitted") {
+    tone = "border-brand-cyan/30 bg-brand-cyan/5 text-foreground";
+    check = true;
+    text = `Your application has been received${received}. You can still make changes until the selection committee decides. We will write to ${email}.`;
+  } else {
+    // Decided. The outcome goes out by email, so here it only looks received.
+    tone = "border-brand-cyan/30 bg-brand-cyan/5 text-foreground";
+    check = true;
+    text = `Your application has been received${received}. We will write to ${email}.`;
+  }
+
   return (
-    <div className={cn("flex items-start gap-3 rounded-xl border px-4 py-3.5 text-sm leading-[1.5]", tone)} role="status">
-      {(status === "submitted" || status === "accepted") && (
-        <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="status"
+      className={cn(
+        "flex scroll-mt-6 items-start gap-3 rounded-xl border px-4 py-3.5 text-sm leading-[1.5] outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        tone,
       )}
+    >
+      {check && <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />}
       <p>{text}</p>
     </div>
   );
@@ -406,7 +565,7 @@ function Section({
 }) {
   return (
     <section className={card} aria-label={title}>
-      <div className={cn(cardInner, "flex flex-col gap-5 px-5 py-6 sm:px-6 sm:py-7")}>
+      <div className="flex flex-col gap-5 rounded-xl border border-transparent bg-card px-5 py-6 shadow-border sm:px-6 sm:py-7">
         <div>
           <h2 className={sectionTitle}>
             {title}
@@ -439,6 +598,7 @@ function TextField({
   value,
   onChange,
   className,
+  readOnly,
   ...rest
 }: {
   id: string;
@@ -469,7 +629,8 @@ function TextField({
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
         aria-describedby={describedBy}
-        className={field}
+        readOnly={readOnly}
+        className={cn(field, readOnly && readOnlyField)}
         {...rest}
       />
       {hint && (
@@ -524,7 +685,9 @@ function ChoiceGroup({
       aria-describedby={error ? errorId : undefined}
       disabled={disabled}
     >
-      <legend className="flex items-center gap-2 text-sm font-medium leading-none">
+      {/* A legend sits outside the fieldset's flex flow, so the gap above
+          never reaches it: the space below it is its own margin. */}
+      <legend className="mb-3 flex items-center gap-2 text-sm font-medium leading-none">
         {legend}
         {required && (
           <>

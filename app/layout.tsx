@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { Toaster } from "sonner";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/navigation";
 import "./globals.css";
 
@@ -56,6 +57,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         {children}
         <SiteFooter />
+        {/* One toaster for the whole site. Pages call toast() from client
+            code; the register page lifts it above its floating action bar
+            through --action-bar-height, see globals.css. */}
+        <Toaster
+          position="bottom-center"
+          theme="light"
+          toastOptions={{ style: { fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif" } }}
+        />
       </body>
     </html>
   );

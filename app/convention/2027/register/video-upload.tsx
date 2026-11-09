@@ -32,7 +32,7 @@ const ENDPOINT = "/api/applications/video";
 const MESSAGES: Record<string, string> = {
   MEDIA_TOO_LARGE: `That file is larger than ${Math.round(VIDEO_MAX_BYTES / 1024 / 1024)} MB. Export it at a lower quality and try again.`,
   UNSUPPORTED_MEDIA_TYPE: "Upload an MP4 or MOV file.",
-  APPLICATION_LOCKED: "Your application has been reviewed and the video can no longer be changed.",
+  APPLICATION_LOCKED: "Your application can no longer be changed, so the video stays as it is.",
   UNAUTHENTICATED: "Your session has expired. Reload the page and sign in again.",
   EMPTY_MEDIA_FILE: "That file looks empty.",
   S3_UPLOAD_FAILED: "The upload did not go through. Please try again.",

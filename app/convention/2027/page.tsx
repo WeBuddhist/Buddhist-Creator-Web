@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
-import {
-  ArrowRightIcon,
-  ArrowUpRightIcon,
-  CalendarBlankIcon,
-  HandshakeIcon,
-  MapPinIcon,
-} from "@phosphor-icons/react/dist/ssr";
-import { Button } from "@/components/ui/button";
+import { ArrowRightIcon, CalendarBlankIcon, HandshakeIcon, MapPinIcon } from "@phosphor-icons/react/dist/ssr";
 import { ConventionFlyer } from "@/components/convention-flyer";
-import { SectionHeading, card, cardInner, primaryButton } from "@/components/convention/section-heading";
+import { RegisterCallToAction, RegistrationAction } from "@/components/convention/registration-action";
+import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
 import { ctaLink } from "@/components/events/event-card";
 import { cn } from "@/lib/utils";
 import { CONVENTION_2027, HOSTS, REGISTRATION, WELCOME } from "@/lib/convention-2027";
@@ -26,8 +21,10 @@ const detailLink =
 
 /* The flyer everyone knows from the homepage opens the page, then the
    announcement: the welcome copy on the left, and on the right one card
-   holding the facts a reader came for and the one action, registering,
-   which is disabled whenever REGISTRATION.open is off. */
+   holding the facts a reader came for and the one action: registering,
+   or for someone with an application, getting back to it. That action
+   reads the session, so it streams in behind a Suspense boundary whose
+   fallback is the visitor's register button. */
 export default function Convention2027Page() {
 
   return (
@@ -97,34 +94,9 @@ export default function Convention2027Page() {
                 </div>
               </dl>
 
-              <div className="mt-6">
-                {REGISTRATION.open ? (
-                  <Button
-                    size="pill"
-                    nativeButton={false}
-                    className={cn(primaryButton, "w-full sm:w-auto")}
-                    render={<Link href={REGISTRATION.href} />}
-                  >
-                    {REGISTRATION.label}
-                    <ArrowRightIcon data-icon="inline-end" weight="bold" />
-                  </Button>
-                ) : (
-                  // Genuinely unavailable, so natively disabled: it leaves
-                  // the tab order and reads as disabled to assistive tech.
-                  <Button
-                    size="pill"
-                    disabled
-                    className={cn(primaryButton, "w-full sm:w-auto")}
-                  >
-                    {REGISTRATION.label}
-                    <ArrowUpRightIcon data-icon="inline-end" weight="bold" />
-                  </Button>
-                )}
-              </div>
-
-              <p className="mt-4 text-pretty text-sm leading-[1.5] text-muted-foreground">
-                {REGISTRATION.note}
-              </p>
+              <Suspense fallback={<RegisterCallToAction />}>
+                <RegistrationAction />
+              </Suspense>
 
               <p className="mt-5 border-t border-border pt-5">
                 <Link href={REGISTRATION.previous.href} className={ctaLink}>
