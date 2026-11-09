@@ -117,6 +117,31 @@ export async function withdrawMyApplication(userId: string): Promise<Application
   });
 }
 
+/** The applicant takes a withdrawal back. Withdrawing keeps the row and
+    its submitted date, so a submitted application returns to submitted
+    and an unsent one to draft. Only a withdrawn application can be
+    reopened; anything else is left as it is. */
+export async function reopenMyApplication(userId: string): Promise<Application> {
+  return db().transaction(async (tx) => {
+    const current = await tx.query.applications.findFirst({ where: eq(applications.userId, userId) });
+    if (!current) throw new ApplicationLocked();
+    if (current.status !== "withdrawn") throw new InvalidTransition(current.status, "submitted");
+    const status: ApplicationStatus = current.submittedAt ? "submitted" : "draft";
+    const [updated] = await tx
+      .update(applications)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(applications.id, current.id))
+      .returning();
+    await tx.insert(applicationEvents).values({
+      applicationId: current.id,
+      actorId: userId,
+      fromStatus: current.status,
+      toStatus: status,
+    });
+    return updated;
+  });
+}
+
 /** Record a newly uploaded video. Returns the key it replaced, if any, so
     the caller can delete that object once the row is safe. */
 export async function setMyVideo(

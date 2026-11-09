@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
   ApplicationLocked,
+  InvalidTransition,
   getMyApplication,
+  reopenMyApplication,
   saveMyApplication,
   submitMyApplication,
   withdrawMyApplication,
@@ -29,9 +31,8 @@ export type FormState = {
 
 /* The applicant hears about a decision by email, so a locked application
    says only that it is locked, never why. */
-const LOCKED: FieldErrors = {
-  form: [`Your application can no longer be changed. If something needs updating, write to ${FORM.contact}.`],
-};
+const LOCKED_MESSAGE = `Your application can no longer be changed. If something needs updating, write to ${FORM.contact}.`;
+const LOCKED: FieldErrors = { form: [LOCKED_MESSAGE] };
 
 /* One action for both buttons: the submitter's `intent` says whether this
    is a draft save (anything goes) or a submission (everything required,
@@ -95,13 +96,35 @@ export async function saveApplicationAction(_prev: FormState, formData: FormData
   }
 }
 
-export async function withdrawApplicationAction(): Promise<void> {
+/* Withdrawing and reopening are a pair: withdrawing is immediate and the
+   client offers undo, which is reopening. Both answer with the new status
+   so the client can say what happened. */
+export type StatusResult = { ok: true; status: ApplicationStatus } | { ok: false; error: string };
+
+export async function withdrawApplicationAction(): Promise<StatusResult> {
   const user = await getCurrentUser();
   if (!user) redirect(loginUrl(PATH));
   try {
-    await withdrawMyApplication(user.id);
+    const saved = await withdrawMyApplication(user.id);
+    revalidatePath(PATH);
+    return { ok: true, status: saved.status };
   } catch (error) {
-    if (!(error instanceof ApplicationLocked)) throw error;
+    if (error instanceof ApplicationLocked) return { ok: false, error: LOCKED_MESSAGE };
+    throw error;
   }
-  revalidatePath(PATH);
+}
+
+export async function reopenApplicationAction(): Promise<StatusResult> {
+  const user = await getCurrentUser();
+  if (!user) redirect(loginUrl(PATH));
+  try {
+    const saved = await reopenMyApplication(user.id);
+    revalidatePath(PATH);
+    return { ok: true, status: saved.status };
+  } catch (error) {
+    if (error instanceof InvalidTransition || error instanceof ApplicationLocked) {
+      return { ok: false, error: "This application is not withdrawn, so there is nothing to reopen." };
+    }
+    throw error;
+  }
 }

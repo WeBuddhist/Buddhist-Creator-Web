@@ -112,14 +112,20 @@ export function RegistrationActionView({
   if (status === "withdrawn") {
     return (
       <>
-        <p className="mt-6 text-sm leading-[1.5] text-muted-foreground">You withdrew your application.</p>
-        <p className={note}>
-          If that was a mistake, write to{" "}
-          <a href={`mailto:${FORM.contact}`} className="font-medium text-foreground underline underline-offset-4">
-            {FORM.contact}
-          </a>
-          .
-        </p>
+        <p className="mt-6 text-sm font-medium leading-[1.5] text-foreground">You withdrew your application.</p>
+        <div className="mt-4">
+          <Button
+            size="pill"
+            variant="outline"
+            nativeButton={false}
+            className={outlineClass}
+            render={<Link href={REGISTRATION.href} />}
+          >
+            Reopen your application
+            <ArrowRightIcon data-icon="inline-end" weight="bold" />
+          </Button>
+        </div>
+        <p className={note}>It will not be considered unless you reopen it. Questions? Write to {FORM.contact}.</p>
       </>
     );
   }
@@ -150,3 +156,4 @@ export function RegistrationActionView({
     </>
   );
 }
+

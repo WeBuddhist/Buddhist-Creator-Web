@@ -1,8 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { useActionState } from "react";
-import { CheckCircleIcon, FloppyDiskIcon, PaperPlaneTiltIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { useActionState, useTransition } from "react";
+import {
+  ArrowCounterClockwiseIcon,
+  CheckCircleIcon,
+  FloppyDiskIcon,
+  PaperPlaneTiltIcon,
+  PencilSimpleIcon,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { card, primaryButton } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
@@ -22,7 +28,7 @@ import {
   type Option,
 } from "@/lib/registration-2027";
 import { cn } from "@/lib/utils";
-import { saveApplicationAction, withdrawApplicationAction, type FormState } from "./actions";
+import { reopenApplicationAction, saveApplicationAction, withdrawApplicationAction, type FormState } from "./actions";
 import { VideoUpload, type UploadedVideo } from "./video-upload";
 
 export type FormApplication = {
@@ -82,14 +88,16 @@ function toValues(application: FormApplication): Values {
 /* What the applicant can do depends on where the application is:
    - draft: every field is open; submit, or save and come back;
    - submitted: read-only behind an Edit button until the committee decides;
+   - withdrawn: read-only, with one action, reopening it;
    - locked: read-only with no actions.
    A decision reaches the applicant by email. The form never shows
    accepted, waitlisted or rejected; those all look like "received". */
-type Mode = "draft" | "submitted" | "locked";
+type Mode = "draft" | "submitted" | "withdrawn" | "locked";
 
 function modeFor(status: ApplicationStatus): Mode {
   if (status === "draft") return "draft";
   if (status === "submitted") return "submitted";
+  if (status === "withdrawn") return "withdrawn";
   return "locked";
 }
 
@@ -111,7 +119,9 @@ export function RegistrationForm({
   user: { email: string; name: string | null };
   application: FormApplication;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(saveApplicationAction, { ok: false });
+  const [state, formAction, saving] = useActionState<FormState, FormData>(saveApplicationAction, { ok: false });
+  const [changingStatus, startStatusChange] = useTransition();
+  const pending = saving || changingStatus;
   const [values, setValues] = React.useState<Values>(() => toValues(application));
   const [video, setVideo] = React.useState<UploadedVideo | null>(application.video);
   const [editing, setEditing] = React.useState(false);
@@ -215,6 +225,40 @@ export function RegistrationForm({
     setValues(toValues(application));
     setEditing(false);
   };
+
+  // Withdrawing is reversible, so it acts at once and offers undo rather
+  // than asking first. The server revalidates the page, so the banner and
+  // the bar follow the new status on their own.
+  const reopen = () =>
+    startStatusChange(async () => {
+      const result = await reopenApplicationAction();
+      if (!result.ok) {
+        toast.error("Could not reopen the application", { id: TOAST_ID, description: result.error });
+        return;
+      }
+      toast.success("Application reopened", {
+        id: TOAST_ID,
+        description:
+          result.status === "submitted"
+            ? "It is back with the selection committee, as submitted."
+            : "It is back as a draft. Submit it once it is complete.",
+      });
+    });
+  const withdraw = () =>
+    startStatusChange(async () => {
+      const result = await withdrawApplicationAction();
+      if (!result.ok) {
+        toast.error("Could not withdraw the application", { id: TOAST_ID, description: result.error });
+        return;
+      }
+      setEditing(false);
+      toast("Application withdrawn", {
+        id: TOAST_ID,
+        description: "It will not be considered unless you reopen it.",
+        duration: 10000,
+        action: { label: "Undo", onClick: reopen },
+      });
+    });
 
   return (
     <form
@@ -411,7 +455,19 @@ export function RegistrationForm({
               action shares the next row with the status; from sm up it is
               one row with the status at the trailing end. */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent bg-card px-4 py-3 shadow-float sm:flex-nowrap">
-            {editable ? (
+            {mode === "withdrawn" ? (
+              <Button
+                key="reopen"
+                type="button"
+                size="pill"
+                disabled={pending}
+                onClick={reopen}
+                className={cn(primaryButton, "w-full sm:w-auto")}
+              >
+                <ArrowCounterClockwiseIcon data-icon="inline-start" weight="bold" />
+                Reopen application
+              </Button>
+            ) : editable ? (
               <React.Fragment key="editing">
                 <Button
                   type="submit"
@@ -441,21 +497,23 @@ export function RegistrationForm({
               </React.Fragment>
             ) : (
               <React.Fragment key="reading">
-                <Button type="button" size="pill" variant="outline" onClick={startEditing} className="w-full sm:w-auto">
+                <Button
+                  type="button"
+                  size="pill"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={startEditing}
+                  className="w-full sm:w-auto"
+                >
                   <PencilSimpleIcon data-icon="inline-start" weight="bold" />
                   Edit application
                 </Button>
                 <Button
-                  type="submit"
+                  type="button"
                   size="pill"
                   variant="ghost"
-                  formAction={withdrawApplicationAction}
-                  formNoValidate
-                  onClick={(event) => {
-                    if (!window.confirm("Withdraw your application? It will no longer be considered.")) {
-                      event.preventDefault();
-                    }
-                  }}
+                  disabled={pending}
+                  onClick={withdraw}
                   className="text-muted-foreground"
                 >
                   Withdraw
@@ -475,7 +533,9 @@ export function RegistrationForm({
               )}
             >
               {pending ? (
-                "Saving…"
+                changingStatus ? "Updating…" : "Saving…"
+              ) : mode === "withdrawn" ? (
+                "Withdrawn"
               ) : !editable ? (
                 <>
                   <CheckCircleIcon className="size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />
@@ -523,8 +583,8 @@ function StatusBanner({
     text =
       "Save a draft at any point and come back later. Submit once everything is complete; you can still make changes until the selection committee decides.";
   } else if (status === "withdrawn") {
-    tone = "border-border bg-muted/50 text-muted-foreground";
-    text = `You withdrew your application. If that was a mistake, write to ${FORM.contact}.`;
+    tone = "border-border bg-muted/50 text-foreground";
+    text = "You withdrew your application. It will not be considered unless you reopen it, which you can do below.";
   } else if (mode === "submitted") {
     tone = "border-brand-cyan/30 bg-brand-cyan/5 text-foreground";
     check = true;
