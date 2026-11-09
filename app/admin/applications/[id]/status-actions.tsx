@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { SquareIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,82 +10,116 @@ import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { setStatusAction, type DecisionState } from "./actions";
 
-/* One recipe serves all three decisions: the dashboard's raised button
-   (btn-emphasis in globals.css) with the brand colour taken from --btn.
-   Golden is light, so its ink is the colour itself darkened, as on the
-   homepage feedback form. */
-const DECISIONS: { status: ApplicationStatus; label: string; className: string }[] = [
-  { status: "accepted", label: "Accept", className: "[--btn:var(--color-brand-cyan)]" },
+/* One raised button per view. Undecided, that is Accept in the
+   dashboard's action blue, with the other two as quiet outlines so the eye
+   lands on the primary. Once decided, the decision taken is the raised
+   one instead, in its own status hue (the badge's text colour, dark
+   enough for white) with a small square as the second cue, and Accept
+   steps back to an outline so nothing competes with the current state.
+   Reject's label stays in the rejected red either way, so it reads as
+   the destructive one. */
+const DECISIONS: { status: ApplicationStatus; label: string; selected: string; quiet?: string }[] = [
+  { status: "accepted", label: "Accept", selected: "[--btn:var(--color-status-accepted-text)]" },
+  { status: "waitlisted", label: "Waitlist", selected: "[--btn:var(--color-status-waitlisted-text)]" },
   {
-    status: "waitlisted",
-    label: "Waitlist",
-    className:
-      "[--btn:var(--color-brand-golden)] font-semibold text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)] hover:text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)]",
+    status: "rejected",
+    label: "Reject",
+    selected: "[--btn:var(--color-status-rejected-text)]",
+    quiet: "text-status-rejected-text hover:text-status-rejected-text",
   },
-  { status: "rejected", label: "Reject", className: "[--btn:var(--color-brand-maroon)]" },
 ];
 
-/* The decision buttons. One form, three submitters: the clicked button's
-   value is the new status. The note goes along with whichever is pressed. */
+/* The decision form, filling the Decision card. One form, three
+   submitters: the clicked button's value is the new status, and the note
+   goes along with whichever is pressed. The footer carries what was
+   decided and, beside it, the way back. */
 export function StatusActions({
   applicationId,
   status,
   reviewNote,
+  decided,
 }: {
   applicationId: string;
   status: ApplicationStatus;
   reviewNote: string | null;
+  /** "Decided … by …" for a decided application, or null. */
+  decided: string | null;
 }) {
   const [state, action, pending] = useActionState<DecisionState, FormData>(setStatusAction, { ok: false });
   const reviewable = status !== "draft" && status !== "withdrawn";
 
   if (!reviewable) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="px-5 py-4 text-sm text-muted-foreground">
         {status === "draft" ? "Not submitted yet, so there is nothing to decide." : "Withdrawn by the applicant."}
       </p>
     );
   }
 
+  const message = pending ? "Saving…" : state.ok && state.at ? `Saved at ${formatDateTime(state.at)}.` : state.message;
+
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action}>
       <input type="hidden" name="applicationId" value={applicationId} />
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="review-note">Note for the committee (optional)</Label>
-        <Textarea
-          id="review-note"
-          name="note"
-          rows={3}
-          defaultValue={reviewNote ?? ""}
-          placeholder="Why this decision, or anything the mailing should mention."
-          className="min-h-20 resize-none px-3.5 py-3 leading-[1.5]"
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {DECISIONS.map((decision) => (
-          <Button
-            key={decision.status}
-            type="submit"
-            name="status"
-            value={decision.status}
-            variant="emphasis"
-            size="lg"
-            disabled={pending}
-            aria-pressed={status === decision.status}
-            className={cn("px-4", decision.className, status === decision.status && "ring-3 ring-ring/40")}
-          >
-            {decision.label}
-          </Button>
-        ))}
-        {status !== "submitted" && (
-          <Button type="submit" name="status" value="submitted" size="lg" variant="outline" disabled={pending} className="px-4">
-            Undo decision
-          </Button>
+      <div className="flex flex-col gap-4 px-5 py-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="review-note" className="text-muted-foreground">Note for the committee</Label>
+          <Textarea
+            id="review-note"
+            name="note"
+            rows={3}
+            defaultValue={reviewNote ?? ""}
+            placeholder="Why this decision, or anything the mailing should mention."
+            className="min-h-20 resize-none px-3 py-2.5 leading-[1.5]"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {DECISIONS.map((decision) => {
+            const selected = status === decision.status;
+            const primary = selected || (status === "submitted" && decision.status === "accepted");
+            return (
+              <Button
+                key={decision.status}
+                type="submit"
+                name="status"
+                value={decision.status}
+                variant={primary ? "emphasis" : "outline"}
+                size="lg"
+                disabled={pending}
+                aria-pressed={selected}
+                className={cn("px-3", selected ? cn("ps-2.5", decision.selected) : decision.quiet)}
+              >
+                {selected && <SquareIcon aria-hidden weight="fill" className="size-2.5" />}
+                {decision.label}
+              </Button>
+            );
+          })}
+        </div>
+        {message && (
+          <p role="status" aria-live="polite" className={cn("text-xs", state.ok ? "text-brand-forest" : "text-brand-maroon")}>
+            {message}
+          </p>
         )}
       </div>
-      <p role="status" aria-live="polite" className={cn("text-sm", state.ok ? "text-brand-forest" : "text-brand-maroon")}>
-        {pending ? "Saving…" : state.ok && state.at ? `Saved at ${formatDateTime(state.at)}.` : state.message}
-      </p>
+      {(decided || status !== "submitted") && (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border px-5 py-2.5">
+          <p className="text-xs text-muted-foreground tabular-nums">{decided}</p>
+          {status !== "submitted" && (
+            /* A text link on the footer's own baseline: it is the way back,
+               not a fourth decision, so it never dresses as a button. */
+            <Button
+              type="submit"
+              name="status"
+              value="submitted"
+              variant="link"
+              disabled={pending}
+              className="h-auto p-0 text-xs font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground hover:decoration-foreground"
+            >
+              Undo decision
+            </Button>
+          )}
+        </div>
+      )}
     </form>
   );
 }

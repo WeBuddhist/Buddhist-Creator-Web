@@ -17,7 +17,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { AccountMenu } from "@/components/account-menu";
-import { Button } from "@/components/ui/button";
+import { ExportMenu, type ExportCounts } from "@/components/admin/export-menu";
 import type { CurrentUser } from "@/lib/auth";
 import { hasRole } from "@/lib/auth-roles";
 import { SITE_NAME } from "@/lib/navigation";
@@ -74,16 +74,18 @@ function NavGroup({
   items,
   user,
   pathname,
+  className,
 }: {
   label: string;
   items: NavItem[];
   user: CurrentUser | null;
   pathname: string;
+  className?: string;
 }) {
   const shown = items.filter((item) => !item.superadmin || hasRole(user, "superadmin"));
   const id = `admin-nav-${label.toLowerCase().replace(/\W+/g, "-")}`;
   return (
-    <div className="flex flex-col gap-1">
+    <div className={cn("flex flex-col gap-1", className)}>
       <p id={id} className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
         {label}
       </p>
@@ -141,9 +143,12 @@ function SidebarContent({ user, trailing }: { user: CurrentUser | null; trailing
         {trailing}
       </div>
 
-      <nav aria-label="Dashboard" className="flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
+      {/* The workspace links at the top; the links off the dashboard sit at
+          the foot, just above the account, so the dashboard's own sections
+          come first and the way out is where a hand expects it. */}
+      <nav aria-label="Dashboard" className="flex flex-1 flex-col overflow-y-auto overscroll-contain px-3 pb-4">
         <NavGroup label="Convention 2027" items={WORKSPACE} user={user} pathname={pathname} />
-        <NavGroup label="Site" items={SITE} user={user} pathname={pathname} />
+        <NavGroup label="Site" items={SITE} user={user} pathname={pathname} className="mt-auto" />
       </nav>
 
       <div className="shrink-0 border-t border-border p-3">
@@ -293,7 +298,7 @@ function Breadcrumb() {
 /* The bar over the content. It is sticky and 4rem tall like the site's
    header, so --header-height from globals.css still describes it and the
    detail page's sticky column sits under it. */
-export function AdminTopbar({ user }: { user: CurrentUser | null }) {
+export function AdminTopbar({ user, exportCounts }: { user: CurrentUser | null; exportCounts: ExportCounts | null }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 pt-[env(safe-area-inset-top,0px)] backdrop-blur-sm reduced-transparency:bg-background reduced-transparency:backdrop-blur-none">
       <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -301,17 +306,7 @@ export function AdminTopbar({ user }: { user: CurrentUser | null }) {
           <MobileMenu user={user} />
           <Breadcrumb />
         </div>
-        <Button
-          variant="outline"
-          size="lg"
-          nativeButton={false}
-          render={<Link href="/" target="_blank" rel="noopener noreferrer" />}
-          className="shrink-0 ps-3 pe-2.5"
-        >
-          View site
-          <ArrowSquareOutIcon aria-hidden weight="bold" className="size-3.5" />
-          <span className="sr-only">(opens in new tab)</span>
-        </Button>
+        <ExportMenu counts={exportCounts} />
       </div>
     </header>
   );

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AdminSidebar, AdminTopbar } from "@/components/admin/admin-shell";
+import { countByStatus } from "@/lib/applications";
 import { requireRole } from "@/lib/auth";
+import type { ExportCounts } from "@/components/admin/export-menu";
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s · Admin · Buddhist Creators" },
@@ -35,15 +37,29 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
 
 async function AdminShell({ children }: { children: React.ReactNode }) {
   const user = await requireRole("admin", "/admin");
-  return <AdminFrame user={user}>{children}</AdminFrame>;
+  // The top bar's export menu lists each status with its count.
+  const exportCounts = await countByStatus();
+  return (
+    <AdminFrame user={user} exportCounts={exportCounts}>
+      {children}
+    </AdminFrame>
+  );
 }
 
-function AdminFrame({ user, children }: { user: Awaited<ReturnType<typeof requireRole>> | null; children: React.ReactNode }) {
+function AdminFrame({
+  user,
+  exportCounts = null,
+  children,
+}: {
+  user: Awaited<ReturnType<typeof requireRole>> | null;
+  exportCounts?: ExportCounts | null;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex min-h-full flex-1 bg-background">
       <AdminSidebar user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AdminTopbar user={user} />
+        <AdminTopbar user={user} exportCounts={exportCounts} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-[80rem]">{children}</div>
         </main>

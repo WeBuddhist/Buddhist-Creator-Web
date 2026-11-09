@@ -17,10 +17,13 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
         link: "text-primary underline-offset-4 hover:underline",
-        // The dashboard's raised button; the recipe is btn-emphasis in
-        // globals.css. White ink by default: set --btn and, on a light
-        // colour such as golden, a darker text colour at the call site.
-        emphasis: "btn-emphasis text-white hover:text-white",
+        // The dashboard's raised button, in the Cloudflare emphasis recipe:
+        // btn-emphasis in globals.css. Pair it with size "lg" (h-9) and px-3,
+        // as theirs is. Action blue by default; set --btn for another colour
+        // and, on a light one, a darker text colour at the call site.
+        // Border-free like theirs: the inset highlight is clipped at the
+        // padding box, so a border would leave a band between it and the ring.
+        emphasis: "btn-emphasis border-0 forced-colors:border text-white hover:text-white",
       },
       size: {
         default:

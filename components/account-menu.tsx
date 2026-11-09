@@ -36,8 +36,11 @@ const cardTrigger = cn(
 );
 
 const item = cn(
-  "flex cursor-default items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground outline-none",
+  "flex cursor-default items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground",
   "transition-[background-color] duration-150 ease-hover data-highlighted:bg-muted",
+  // The muted fill alone is too faint to mark keyboard focus. No
+  // `outline-none`: in Tailwind 4 it would also blank the ring's style.
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
 /* The provider's photo, or the generic icon when there is none or it fails
@@ -128,10 +131,14 @@ export function AccountMenu({
             )}
           >
             <Menu.Group>
+              {/* The card trigger already shows the photo, so its popup
+                  carries the name and address alone. */}
               <Menu.GroupLabel className="flex items-center gap-3 px-3 pt-2 pb-2.5">
-                <span className="size-9 shrink-0 text-muted-foreground">
-                  <Avatar src={picture} />
-                </span>
+                {!card && (
+                  <span className="size-9 shrink-0 text-muted-foreground">
+                    <Avatar src={picture} />
+                  </span>
+                )}
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate text-sm font-medium text-foreground">{name ?? email}</span>
                   {name && <span className="truncate text-xs text-muted-foreground">{email}</span>}

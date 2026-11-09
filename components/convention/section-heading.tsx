@@ -68,6 +68,11 @@ export const cardInner = "rounded-xl border border-transparent bg-card shadow-bo
 export const photo = "outline -outline-offset-1 outline-black/10";
 
 /* The primary button, in the homepage hero's recipe: a lighter top fading
-   to brand cyan, a faint inner highlight, a soft drop and a darker ring. */
+   to brand cyan, a 1px highlight along the top edge, a soft drop and a
+   ring one shade darker. No border: an inset shadow is clipped at the
+   padding box, so a transparent border would leave a band of plain
+   gradient between the ring and the highlight, and on a pill the top then
+   reads as a stepped double edge. Forced-colors mode gets the border back,
+   since it drops every shadow. */
 export const primaryButton =
-  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";
+  "border-0 forced-colors:border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan text-white shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--color-brand-cyan),white_30%),0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";

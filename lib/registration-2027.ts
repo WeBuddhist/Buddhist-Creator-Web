@@ -88,6 +88,21 @@ export function labelFor(options: readonly Option[], value: string | null | unde
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
+/** A single-choice answer as its label; "other" shows the free text. */
+export function withOther(options: readonly Option[], value: string | null, other: string | null) {
+  const label = labelFor(options, value);
+  if (!label) return null;
+  return value === "other" && other ? `Other: ${other}` : label;
+}
+
+/** A multi-choice answer as labels; "other" shows the free text. */
+export function listWithOther(options: readonly Option[], values: string[] | null, other: string | null): string[] {
+  if (!values?.length) return [];
+  return values
+    .map((value) => (value === "other" && other ? `Other: ${other}` : labelFor(options, value)))
+    .filter((v): v is string => Boolean(v));
+}
+
 /* Video limits. The server checks type and size; the browser also reads
    the length before uploading, so a too-long clip is refused before any
    bytes move. */

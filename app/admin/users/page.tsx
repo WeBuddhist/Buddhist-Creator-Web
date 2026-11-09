@@ -37,7 +37,7 @@ async function UsersList() {
     <div className={cn(panel, "overflow-x-auto")}>
       <table className="w-full min-w-[32rem] text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
+          <tr className="border-b border-border bg-muted/60 text-left text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
             <th scope="col" className="px-4 py-3">User</th>
             <th scope="col" className="px-4 py-3">Joined</th>
             <th scope="col" className="px-4 py-3">Role</th>

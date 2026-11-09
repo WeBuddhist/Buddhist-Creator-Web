@@ -31,9 +31,10 @@ export function Awards() {
                 className={cn("size-full object-cover", photo)}
               />
               {/* Same surface recipe as the primary button, in brand golden: a 14%
-                  lighter top fading to the base, a faint inner highlight, a soft
-                  drop and a 10% darker ring. Black text measures 10.1:1 on it. */}
-              <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full border border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-golden),white_14%)] to-brand-golden px-2.5 py-1 text-xs font-semibold text-black shadow-[0_0_1px_1px_--alpha(var(--color-white)/20%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-golden),black_10%)]">
+                  lighter top fading to the base, a 1px highlight along the top
+                  edge, a soft drop and a 10% darker ring, with no border for the
+                  reason given at primaryButton. Black text measures 10.1:1 on it. */}
+              <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full forced-colors:border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-golden),white_14%)] to-brand-golden px-2.5 py-1 text-xs font-semibold text-black shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--color-brand-golden),white_30%),0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-golden),black_10%)]">
                 <TrophyIcon aria-hidden weight="fill" className="size-3.5" />
                 Winner 2026
               </span>

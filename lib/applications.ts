@@ -229,6 +229,16 @@ export async function listApplications(filter: ListFilter, page = 1) {
   return { rows: rows as ApplicationListRow[], total, page, pageSize: PAGE_SIZE };
 }
 
+/** Every application the list would show for `filter`, in the list's
+    order and with the people attached, for the CSV export. */
+export async function exportApplications(filter: ListFilter) {
+  return db().query.applications.findMany({
+    where: filter === "all" ? ne(applications.status, "draft") : eq(applications.status, filter),
+    orderBy: [desc(applications.submittedAt), desc(applications.updatedAt)],
+    with: { user: true, decider: true },
+  });
+}
+
 export async function countByStatus() {
   const rows = await db()
     .select({ status: applications.status, count: sql<number>`count(*)::int` })
