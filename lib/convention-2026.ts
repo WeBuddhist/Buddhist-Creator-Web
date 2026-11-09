@@ -10,6 +10,13 @@ import awardChhewangDorjee from "@/public/convention/2026/award-chhewang-dorjee.
 import awardTashiChosgon from "@/public/convention/2026/award-tashi-chosgon.webp";
 import awardTenzinChime from "@/public/convention/2026/award-tenzin-chime.webp";
 import awardSonamDolma from "@/public/convention/2026/award-sonam-dolma.webp";
+import avatarSiddharthNegi from "@/public/convention/2026/avatar-siddharth-negi.webp";
+import avatarJamyangChozang from "@/public/convention/2026/avatar-jamyang-chozang.webp";
+import avatarSangit from "@/public/convention/2026/avatar-sangit.webp";
+import avatarSagarGautam from "@/public/convention/2026/avatar-sagar-gautam.webp";
+import avatarTsewangDorje from "@/public/convention/2026/avatar-tsewang-dorje.webp";
+import avatarPallaviDeshmukh from "@/public/convention/2026/avatar-pallavi-deshmukh.webp";
+import avatarSonamDolma from "@/public/convention/2026/avatar-sonam-dolma.webp";
 
 export const CONVENTION = {
   year: 2026,
@@ -444,21 +451,74 @@ export const AWARDS = {
   ],
 } as const;
 
+export const VOICES = {
+  eyebrow: "Community voices",
+  title: "What creators took home",
+  description:
+    "Seven participants on the Bodh Gaya masterclass, in their own words.",
+} as const;
+
+/* Participant feedback collected after the 2026 masterclass. Each avatar
+   is a square cut from the participant's convention photo, centred on
+   their face, on a transparent ground. */
 export const TESTIMONIALS = [
   {
-    quote: "I came for the skills, I stayed for the sangha. This place melted my doubt.",
-    name: "Thinle Dorjee",
-    location: "Nepal",
+    quote:
+      "Last February, I attended the WeBuddhist Masterclass in Bodh Gaya organized by WeBuddhist. It was an inspiring experience where I learned about being a Digital Bodhisattva, the Art of Validation, and the positive use of social media. The passionate coaches made learning meaningful. I sincerely thank the entire team for this transformative journey.",
+    name: "Siddharth Negi",
+    role: "PhD Scholar",
+    affiliation: "BHU, Varanasi",
+    avatar: avatarSiddharthNegi,
   },
   {
-    quote: "The Convention connected me with creators worldwide. Together we learned to share the Dharma better.",
-    name: "Rahul Dongre",
-    location: "India",
+    quote:
+      "Attending the Bodh Gaya WeBuddhist Masterclass was deeply inspiring. I learned new approaches to Buddhist content creation and how digital media can be used skillfully to share the Dharma with wider audiences. Meeting fellow practitioners and creators was especially meaningful, and the experience strengthened my aspiration to serve the Dharma through creative work.",
+    name: "Jamyang Chozang",
+    role: "Buddhist Scholar",
+    affiliation: "Dzongsar Institute, H.P.",
+    avatar: avatarJamyangChozang,
   },
   {
-    quote: "This community taught me that sharing the Dharma online is real, meaningful, and deeply needed.",
-    name: "Noah",
-    location: "Germany",
+    quote:
+      "Attending the WeBuddhist Masterclass gave me a clear direction for sharing the Buddha Dharma through digital media. The program helped me improve my scriptwriting, learn how to use AI effectively, and develop essential content creation skills. Beyond the valuable learning experience, I made wonderful friends and created unforgettable memories that I will cherish for a lifetime.",
+    name: "Sangit",
+    role: "Director",
+    affiliation: "Tour Marketing, Maharashtra",
+    avatar: avatarSangit,
+  },
+  {
+    quote:
+      "The Masterclass was a truly enriching and inspiring experience. It provided valuable insights into Buddhist studies, digital content creation, and the effective communication of Buddhist teachings. I learned from experienced mentors and connect with participants from diverse backgrounds. The knowledge and friendships I gained through this Masterclass will continue to support me",
+    name: "Sagar Gautam",
+    role: "PhD Scholar",
+    affiliation: "BHU, Varanasi",
+    avatar: avatarSagarGautam,
+  },
+  {
+    /* TODO: this quote arrived identical to Sangit’s above; replace once
+       Tsewang Dorje’s own words are confirmed. */
+    quote:
+      "Attending the WeBuddhist Masterclass gave me a clear direction for sharing the Buddha Dharma through digital media. The program helped me improve my scriptwriting, learn how to use AI effectively, and develop essential content creation skills. Beyond the valuable learning experience, I made wonderful friends and created unforgettable memories that I will cherish for a lifetime.",
+    name: "Tsewang Dorje",
+    role: "Buddhist Scholar & Creator",
+    affiliation: "Mindrolling Monastery, Dehradun",
+    avatar: avatarTsewangDorje,
+  },
+  {
+    quote:
+      "I learned a great deal at the WeBuddhist Masterclass from the two talented coaches. The step-by-step approach and attention to detail in building a strong foundation for creating impactful content were very thoughtful and brilliant.The practical Q&As and quizzes shifted our focus from theory to execution. Hands-on learning was both necessary and fun",
+    name: "Pallavi Deshmukh",
+    role: "Dharma Practitioner, Creative Arts Therapy Practitioner, Buddhist Counselor",
+    affiliation: null,
+    avatar: avatarPallaviDeshmukh,
+  },
+  {
+    quote:
+      "The Masterclass was held at a place of deep significance for Buddhists, it was filled with learning, and inspiration. We explored approaches to content creation, storytelling, audience engagement, and the responsible use of AI to create meaningful content. The experience offered fresh perspectives, practical knowledge, and renewed motivation to share great vlaue through digital platforms.",
+    name: "Sonam Dolma",
+    role: "M.Sc Chemistry, Delhi University",
+    affiliation: "Spiti",
+    avatar: avatarSonamDolma,
   },
 ] as const;
 
