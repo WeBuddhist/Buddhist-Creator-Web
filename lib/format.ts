@@ -7,6 +7,8 @@ const dateTime = new Intl.DateTimeFormat("en-GB", {
 
 const dateOnly = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Asia/Kolkata" });
 
+const timeOnly = new Intl.DateTimeFormat("en-GB", { timeStyle: "short", timeZone: "Asia/Kolkata" });
+
 export function formatDateTime(value: Date | string | null | undefined) {
   if (!value) return "";
   return dateTime.format(typeof value === "string" ? new Date(value) : value);
@@ -15,6 +17,11 @@ export function formatDateTime(value: Date | string | null | undefined) {
 export function formatDate(value: Date | string | null | undefined) {
   if (!value) return "";
   return dateOnly.format(typeof value === "string" ? new Date(value) : value);
+}
+
+export function formatTime(value: Date | string | null | undefined) {
+  if (!value) return "";
+  return timeOnly.format(typeof value === "string" ? new Date(value) : value);
 }
 
 export function formatBytes(bytes: number | null | undefined) {

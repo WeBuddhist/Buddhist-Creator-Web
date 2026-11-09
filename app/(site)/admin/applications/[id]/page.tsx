@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeftIcon, ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr";
-import { StatusBadge, STATUS_LABEL } from "@/components/admin/status-badge";
+import { StatusBadge } from "@/components/admin/status-badge";
+import { StatusHistory } from "@/components/admin/status-history";
 import { card, cardInner } from "@/components/convention/section-heading";
 import { getApplication } from "@/lib/applications";
 import { requireRole } from "@/lib/auth";
@@ -47,7 +48,7 @@ function listWithOther(options: readonly Option[], values: string[] | null, othe
 }
 
 async function ApplicationDetail({ params }: { params: PageProps<"/admin/applications/[id]">["params"] }) {
-  await requireRole("admin", "/admin");
+  const viewer = await requireRole("admin", "/admin");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const application = await getApplication(id);
@@ -173,25 +174,7 @@ async function ApplicationDetail({ params }: { params: PageProps<"/admin/applica
           <section className={card} aria-labelledby="history-title">
             <div className={cn(cardInner, "px-5 py-5 sm:px-6")}>
               <h3 id="history-title" className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">History</h3>
-              {application.events.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">No changes yet.</p>
-              ) : (
-                <ol className="mt-3 flex flex-col gap-3 text-sm">
-                  {application.events.map((event) => (
-                    <li key={event.id} className="flex flex-col gap-0.5">
-                      <span className="text-foreground">
-                        {event.fromStatus ? `${STATUS_LABEL[event.fromStatus]} → ` : ""}
-                        {STATUS_LABEL[event.toStatus]}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDateTime(event.createdAt)}
-                        {event.actor ? ` · ${event.actor.name ?? event.actor.email}` : ""}
-                      </span>
-                      {event.note && <span className="text-muted-foreground whitespace-pre-line">{event.note}</span>}
-                    </li>
-                  ))}
-                </ol>
-              )}
+              <StatusHistory events={application.events} viewerId={viewer.id} />
             </div>
           </section>
         </div>
