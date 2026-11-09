@@ -66,3 +66,8 @@ export const cardInner = "rounded-xl border border-transparent bg-card shadow-bo
 /* Content photos get a 1px inset outline in pure black so the edge never
    reads as a tinted fringe. */
 export const photo = "outline -outline-offset-1 outline-black/10";
+
+/* The primary button, in the homepage hero's recipe: a lighter top fading
+   to brand cyan, a faint inner highlight, a soft drop and a darker ring. */
+export const primaryButton =
+  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";

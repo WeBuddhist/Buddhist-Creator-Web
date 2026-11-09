@@ -16,7 +16,7 @@ const primaryButton =
 export default function NotFound() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:py-20">
-      <div className="w-full max-w-[320px] md:max-w-[460px]">
+      <div className="w-full max-w-[20rem] md:max-w-[28.75rem]">
         <Image
           src={notFoundArt}
           alt="A monk in saffron robes turning the Dharma wheel"

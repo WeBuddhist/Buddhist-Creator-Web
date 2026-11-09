@@ -216,6 +216,20 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
     /* Mobile baseline: no gray tap flash, no font inflation in landscape. */
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    /* Wide monitors. Up to 1920px the page is a 72rem column centred in
+       the viewport. Past that the column would stay 72rem while the
+       viewport keeps growing, so on a 4K or ultrawide display at 100%
+       scaling the site reads as a thin strip of 16px type with empty
+       margins either side. Scaling the root font size with the viewport
+       scales every rem-based size with it (containers, type, spacing, the
+       header pill), so the layout keeps the proportions it has at 1920px
+       instead of shrinking into the middle. The rem term keeps the
+       reader's font-size preference and zoom in play; the cap lands at
+       28px on a 3840px viewport. Breakpoints are unaffected: media query
+       rems resolve against the initial font size, not this one. */
+    @media (min-width: 120rem) {
+      font-size: clamp(1rem, 0.25rem + 0.625vw, 1.75rem);
+    }
   }
   button,
   a,

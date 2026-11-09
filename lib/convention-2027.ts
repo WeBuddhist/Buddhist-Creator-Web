@@ -9,7 +9,7 @@ export const CONVENTION_2027 = {
   location: "Nagaloka, Nagpur, India",
   dates: { label: "18 – 21 February 2027", start: "2027-02-18", end: "2027-02-21" },
   /** The line in the flyer's status pill. */
-  status: "Registration opens soon",
+  status: "Registration open",
 } as const;
 
 export const HOSTS = [
@@ -28,14 +28,13 @@ export const WELCOME = {
 
 export const REGISTRATION = {
   eyebrow: "Registration",
-  title: "Registration opens soon",
-  /** Flip to true once the form is live. Until then the register button
-      is shown disabled, and the flyer's status pill above says so. Keep
-      `status` above in step with this. */
-  open: false,
-  /** The registration form's URL, once it exists. */
-  href: "https://forms.gle/replace-me",
+  title: "Registration is open",
+  /** Flip to false to take the form offline: the register button is then
+      shown disabled. Keep `status` above in step with this. */
+  open: true,
+  /** The registration form. Signing in is required, see proxy.ts. */
+  href: "/convention/2027/register",
   label: "Register for the convention",
-  note: "Stay tuned for speaker announcements, schedule updates, and further details.",
+  note: "Applying takes about ten minutes and needs a short intro video. You can save a draft and come back. Sign in with Google or email first so we can reach you.",
   previous: { label: "Read the 2026 report", href: "/convention/2026" },
 } as const;

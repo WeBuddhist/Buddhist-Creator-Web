@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { NavLinks } from "@/components/nav-links";
 import { MobileNav } from "@/components/mobile-nav";
+import { UserMenu } from "@/components/user-menu";
 import { HeaderTone } from "@/components/header-tone";
 import { SITE_NAME } from "@/lib/navigation";
 import logoMark from "@/public/logo-mark.png";
@@ -36,17 +38,25 @@ export function SiteHeader() {
             preload
             className="site-logo size-10"
           />
-          <span className="text-[15px] font-semibold tracking-[-0.01em] text-(--header-fg) transition-[color] duration-150 ease-hover">
+          <span className="text-[0.9375rem] font-semibold tracking-[-0.01em] text-(--header-fg) transition-[color] duration-150 ease-hover">
             {SITE_NAME}
           </span>
         </Link>
 
-        <div className="hidden md:block">
-          <NavLinks />
-        </div>
+        <div className="flex items-center gap-1 md:gap-2">
+          <div className="hidden md:block">
+            <NavLinks />
+          </div>
 
-        <div className="md:hidden">
-          <MobileNav />
+          {/* Reads the session, so it streams in behind the boundary; the
+              rest of the header is part of the static shell. */}
+          <Suspense fallback={null}>
+            <UserMenu />
+          </Suspense>
+
+          <div className="md:hidden">
+            <MobileNav />
+          </div>
         </div>
       </div>
       <HeaderTone />

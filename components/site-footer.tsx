@@ -75,7 +75,7 @@ export function SiteFooter() {
                 placeholder="blur"
                 className="size-10 mix-blend-multiply"
               />
-              <span className="text-[15px] font-semibold tracking-[-0.01em]">
+              <span className="text-[0.9375rem] font-semibold tracking-[-0.01em]">
                 {SITE_NAME}
               </span>
             </Link>

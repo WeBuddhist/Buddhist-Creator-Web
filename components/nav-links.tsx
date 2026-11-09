@@ -116,7 +116,7 @@ export function NavLinks() {
                           )}
                         </span>
                         {child.description && (
-                          <span className="text-pretty text-[13px] leading-[1.4] text-muted-foreground">
+                          <span className="text-pretty text-[0.8125rem] leading-[1.4] text-muted-foreground">
                             {child.description}
                           </span>
                         )}

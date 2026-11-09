@@ -9,19 +9,15 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { ConventionFlyer } from "@/components/convention-flyer";
-import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
+import { SectionHeading, card, cardInner, primaryButton } from "@/components/convention/section-heading";
 import { ctaLink } from "@/components/events/event-card";
 import { cn } from "@/lib/utils";
 import { CONVENTION_2027, HOSTS, REGISTRATION, WELCOME } from "@/lib/convention-2027";
 
 export const metadata: Metadata = {
   title: CONVENTION_2027.title,
-  description: `${CONVENTION_2027.dates.label} at ${CONVENTION_2027.location}, co-hosted by WeBuddhist and the Nagarjuna Training Institute, Nagaloka. RSVP opens soon.`,
+  description: `${CONVENTION_2027.dates.label} at ${CONVENTION_2027.location}, co-hosted by WeBuddhist and the Nagarjuna Training Institute, Nagaloka. Registration is open.`,
 };
-
-/* The primary button, in the homepage hero's recipe. */
-const primaryButton =
-  "border-transparent bg-clip-border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_14%)] to-brand-cyan text-white shadow-[0_0_1px_1px_--alpha(var(--color-white)/8%)_inset,0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-cyan),black_10%)] transition-[filter,translate] hover:brightness-[1.06]";
 
 
 /* A link in the details card: underlined in the text's own colour. */
@@ -31,7 +27,7 @@ const detailLink =
 /* The flyer everyone knows from the homepage opens the page, then the
    announcement: the welcome copy on the left, and on the right one card
    holding the facts a reader came for and the one action, registering,
-   which stays disabled until the form is live. */
+   which is disabled whenever REGISTRATION.open is off. */
 export default function Convention2027Page() {
 
   return (
@@ -107,11 +103,10 @@ export default function Convention2027Page() {
                     size="pill"
                     nativeButton={false}
                     className={cn(primaryButton, "w-full sm:w-auto")}
-                    render={<a href={REGISTRATION.href} target="_blank" rel="noopener noreferrer" />}
+                    render={<Link href={REGISTRATION.href} />}
                   >
                     {REGISTRATION.label}
-                    <span className="sr-only">(opens in new tab)</span>
-                    <ArrowUpRightIcon data-icon="inline-end" weight="bold" />
+                    <ArrowRightIcon data-icon="inline-end" weight="bold" />
                   </Button>
                 ) : (
                   // Genuinely unavailable, so natively disabled: it leaves
