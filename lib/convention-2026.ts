@@ -26,6 +26,13 @@ export const CONVENTION = {
   },
 } as const;
 
+export const DOCUMENTARY = {
+  eyebrow: "The documentary",
+  title: "Relive the Gathering in Bodh Gaya",
+  description:
+    "A twenty minute documentary following the 2026 cohort from the opening ceremony to the awards night, told by the creators who were there.",
+} as const;
+
 export const HERO_STATS = [
   { value: "110", label: "Creators" },
   { value: "10", label: "Countries" },

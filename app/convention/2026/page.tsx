@@ -3,6 +3,7 @@ import { ConventionHero } from "@/components/convention/hero";
 import { CommunityDays, Program } from "@/components/convention/program";
 import { Masterclass } from "@/components/convention/masterclass";
 import { Awards } from "@/components/convention/awards";
+import { Documentary } from "@/components/convention/documentary";
 import { Collaborators, Voices } from "@/components/convention/voices";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function Convention2026Page() {
       <CommunityDays />
       <Masterclass />
       <Awards />
+      <Documentary />
       <Voices />
     </main>
   );

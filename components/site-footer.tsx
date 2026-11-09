@@ -9,7 +9,7 @@ import {
   MapPinIcon,
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import { NAV_ITEMS, SITE_NAME } from "@/lib/navigation";
+import { SITE_NAME } from "@/lib/navigation";
 import logo from "@/public/logo.jpg";
 
 type FooterLink = { label: string; href: string; external?: true };
@@ -18,19 +18,16 @@ type FooterLink = { label: string; href: string; external?: true };
 // which rejects values that change between renders.
 const COPYRIGHT_YEAR = 2026;
 
-// Placeholder content until the real pages exist.
+// Mirrors the header's top-level navigation, minus Products (those are
+// off-site). The Convention menu group is flattened to its editions, since
+// /convention itself has no page.
 const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Program", href: "/program" },
-  // /convention itself has no page; the header treats it as a menu group.
-  { label: "Convention", href: "/convention/2026" },
+  { label: "Convention 2027", href: "/convention/2027" },
+  { label: "Convention 2026", href: "/convention/2026" },
   { label: "People", href: "/people" },
 ];
-
-// The products column mirrors the Products menu in the header, so the two
-// never drift apart.
-const PRODUCTS: FooterLink[] =
-  NAV_ITEMS.find((item) => item.label === "Products")?.children ?? [];
 
 const SOCIAL = [
   {
@@ -62,9 +59,10 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1.2fr] md:gap-8">
-          {/* Brand */}
-          <div className="max-w-xs">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-[1.6fr_1fr_1.3fr] md:gap-8">
+          {/* Brand: full row on tablet so Explore and Contact pair up below it
+              instead of leaving one of them alone in a half-empty row. */}
+          <div className="max-w-xs sm:col-span-2 md:col-span-1">
             <Link
               href="/"
               aria-label={`${SITE_NAME} home`}
@@ -105,7 +103,6 @@ export function SiteFooter() {
           </div>
 
           <FooterColumn title="Explore" links={EXPLORE} />
-          <FooterColumn title="Products" links={PRODUCTS} />
 
           {/* Address */}
           <div>
