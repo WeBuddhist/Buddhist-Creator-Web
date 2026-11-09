@@ -32,30 +32,6 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: "People", href: "/people" },
-  {
-    label: "Products",
-    href: "/products",
-    children: [
-      {
-        label: "WeBuddhist",
-        href: "https://webuddhist.com/",
-        description: "A home for Dharma teachings, practice and community online.",
-        external: true,
-      },
-      {
-        label: "WeBuddhist App",
-        href: "https://apps.apple.com/in/app/webuddhist/id6745810914",
-        description: "Teachings, prayers and daily practice in your pocket.",
-        external: true,
-      },
-      {
-        label: "WeBuddhist Academy",
-        href: "https://apps.webuddhistacademy.com/catalog/",
-        description: "Structured courses on Buddhist study and practice.",
-        external: true,
-      },
-    ],
-  },
 ];
 
 export const SITE_NAME = "Buddhist Creators";

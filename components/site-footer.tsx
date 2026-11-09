@@ -18,9 +18,8 @@ type FooterLink = { label: string; href: string; external?: true };
 // which rejects values that change between renders.
 const COPYRIGHT_YEAR = 2026;
 
-// Mirrors the header's top-level navigation, minus Products (those are
-// off-site). The Convention menu group is flattened to its editions, since
-// /convention itself has no page.
+// Mirrors the header's top-level navigation. The Convention menu group is
+// flattened to its editions, since /convention itself has no page.
 const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Program", href: "/program" },

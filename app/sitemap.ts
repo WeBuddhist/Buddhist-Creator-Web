@@ -2,8 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/navigation";
 
 /* Every page under app/. Add a route here when you add a page. The nav's
-   /convention and /products entries are menu headings, not pages, so they
-   are not listed. No lastModified: it would need a real date per page, and
+   /convention entry is a menu heading, not a page, so it is not listed. No lastModified: it would need a real date per page, and
    a build-time timestamp would only mislead crawlers. */
 const ROUTES = [
   "/",
