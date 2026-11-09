@@ -9,7 +9,7 @@ export const CONVENTION_2027 = {
   location: "Nagaloka, Nagpur, India",
   dates: { label: "18 – 21 February 2027", start: "2027-02-18", end: "2027-02-21" },
   /** The line in the flyer's status pill. */
-  status: "RSVP opens soon",
+  status: "Registration opens soon",
 } as const;
 
 export const HOSTS = [
@@ -28,7 +28,7 @@ export const WELCOME = {
 
 export const REGISTRATION = {
   eyebrow: "Registration",
-  title: "RSVP opens soon",
+  title: "Registration opens soon",
   /** Flip to true once the form is live. Until then the register button
       is shown disabled, and the flyer's status pill above says so. Keep
       `status` above in step with this. */

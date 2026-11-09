@@ -109,12 +109,12 @@ export function SiteFooter() {
 
           {/* Address */}
           <div>
-            <h2 className="text-sm font-semibold">Find us</h2>
+            <h2 className="text-sm font-semibold">Contact us</h2>
             <address className="mt-4 space-y-3 text-sm not-italic leading-[1.6] text-muted-foreground">
               <p className="flex gap-2.5">
                 <MapPinIcon className="mt-1 size-4 shrink-0" />
                 <span>
-                  Dharmaduta, Trehan Cottage
+                  Trehan Cottage
                   <br />
                   H. No. 112, Ward No. 3, Near Delek Hospital
                   <br />
