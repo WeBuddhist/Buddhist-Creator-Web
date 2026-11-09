@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { FilePdfIcon, YoutubeLogoIcon } from "@phosphor-icons/react/dist/ssr";
+import { FilePdfIcon } from "@phosphor-icons/react/dist/ssr";
 import { WaveCorner } from "@/components/mission";
 import { CONVENTION, HERO_STATS } from "@/lib/convention-2026";
 import heroPhoto from "@/public/convention/2026/hero.webp";
@@ -48,21 +48,6 @@ export function ConventionHero() {
               <dt>{label}</dt>
             </div>
           ))}
-          <div className="flex items-baseline">
-            <dt className="sr-only">Documentary</dt>
-            <dd>
-              <a
-                href={CONVENTION.documentary.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={bylineLink}
-              >
-                <YoutubeLogoIcon weight="bold" className="size-4" />
-                Watch the documentary
-                <span className="sr-only">(YouTube, opens in new tab)</span>
-              </a>
-            </dd>
-          </div>
           <div className="flex items-baseline">
             <dt className="sr-only">Report</dt>
             <dd>
