@@ -162,7 +162,7 @@ export const FORM = {
     { icon: "dates", label: "Dates", value: "18 – 21 February 2027" },
     { icon: "language", label: "Language", value: "English / Hindi" },
     { icon: "participants", label: "Participants", value: "Approximately 120 in person" },
-    { icon: "fee", label: "Registration fee", value: "₹3,000, including meals and accommodation for all 4 days" },
+    { icon: "fee", label: "Registration fee", value: "₹3,000, covering meals and accommodation for all 4 days" },
     { icon: "scholarships", label: "Scholarships", value: "Available for ordained Sangha" },
   ],
   contact: "hello@buddhistcreators.com",
