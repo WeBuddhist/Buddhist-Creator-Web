@@ -21,7 +21,11 @@ function pageWindow(current: number, total: number): (number | "gap")[] {
 
 /* Page links for a long list. Renders nothing for a single page. Previous
    and Next stay in place when there is nowhere to go, disabled rather than
-   removed, so the row keeps its shape as the reader pages through. */
+   removed, so the row keeps its shape as the reader pages through.
+
+   The seven numbered slots and the two arrows need 22.25rem. A phone
+   narrower than 26rem does not have that beside the page's gutters, so
+   there the numbers give way to "Page 4 of 8" between the arrows. */
 export function Pagination({
   page,
   pages,
@@ -60,23 +64,28 @@ export function Pagination({
       </p>
       <div className="flex items-center gap-1">
         {arrow(page - 1, "Previous page", CaretLeftIcon)}
-        {pageWindow(page, pages).map((item, i) =>
-          item === "gap" ? (
-            <span key={`gap-${i}`} aria-hidden="true" className="inline-flex w-9 justify-center text-muted-foreground">
-              …
-            </span>
-          ) : (
-            <Link
-              key={item}
-              href={href(item)}
-              aria-current={item === page ? "page" : undefined}
-              aria-label={`Page ${item}`}
-              className={cn(pill, item === page && "bg-muted text-foreground")}
-            >
-              {item}
-            </Link>
-          ),
-        )}
+        <span className="px-2 text-sm font-medium text-foreground tabular-nums min-[26rem]:hidden">
+          Page {page} of {pages}
+        </span>
+        <div className="hidden items-center gap-1 min-[26rem]:flex">
+          {pageWindow(page, pages).map((item, i) =>
+            item === "gap" ? (
+              <span key={`gap-${i}`} aria-hidden="true" className="inline-flex w-9 justify-center text-muted-foreground">
+                …
+              </span>
+            ) : (
+              <Link
+                key={item}
+                href={href(item)}
+                aria-current={item === page ? "page" : undefined}
+                aria-label={`Page ${item}`}
+                className={cn(pill, item === page && "bg-muted text-foreground")}
+              >
+                {item}
+              </Link>
+            ),
+          )}
+        </div>
         {arrow(page + 1, "Next page", CaretRightIcon)}
       </div>
     </nav>

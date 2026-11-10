@@ -168,7 +168,7 @@ All call `assertRole("admin")` and validate with zod, like `setStatusAction`.
 | `sendDecisionEmailAction` | `app/admin/applications/[id]/actions.ts` | `applicationId`, `expectedStatus` | `sent` \| `skipped` \| `failed` \| `uncertain` \| `off`, with a message |
 | `resendDecisionEmailAction` | same | plus `expectedNotifiedAt` | same |
 | `resolveNotificationAction` | same | `notificationId`, `sent` \| `not_sent` | ok or message |
-| `previewBulkSendAction` | `app/admin/actions.ts` (new) | the tab's filter | `batchId`, delivery mode, recipients grouped by decision with a "previously told" flag, blocked rows, SES quota, a sample mail |
+| `previewBulkSendAction` | `app/admin/actions.ts` (new) | the tab's filter | `batchId`, delivery mode, recipients grouped by decision with a "previously told" flag, blocked rows, SES quota |
 | `sendBulkChunkAction` | same | `batchId`, up to 10 `{ id, status }` | per-id outcome, and an optional halt reason |
 | `sendTestEmailAction` | same | which template | Mails the signed-in admin; writes no ledger row |
 
@@ -182,7 +182,7 @@ All call `assertRole("admin")` and validate with zod, like `setStatusAction`.
 - A strip above the table: "15 decision emails waiting: 12 accepted, 3 waitlisted. 2 need review."
 - A "Send emails" button, scoped to the active tab. On "All" it covers all three decisions.
 - A line under each status badge: "Email not sent", "Emailed 6 Nov", "Told waitlisted; accepted not sent", or "Needs review".
-- Confirm dialog: delivery mode, a sample mail, counts per decision, the recipient list with "previously told a different decision" flagged, a quota warning if the run exceeds what SES allows today. Then a progress bar, a cancel button, and a summary.
+- Confirm drawer, from the right edge: delivery mode, counts per decision, the recipient list with "previously told a different decision" flagged, a quota warning if the run exceeds what SES allows today. Then a progress bar, a cancel button, and a summary.
 
 **Detail (`components/admin/application-detail.tsx`)**
 - A new "Email" section replaces the "Notified … / Not notified yet." text at line 126.
@@ -191,7 +191,7 @@ All call `assertRole("admin")` and validate with zod, like `setStatusAction`.
 
 **CSV export:** an "Emailed decision" column beside the date, which is now headed "Emailed at".
 
-**New UI pieces:** a dialog and a progress bar built on Base UI (`alert-dialog`, `progress`), styled like the popup in `export-menu.tsx`.
+**New UI pieces:** a drawer for the bulk send (`components/ui/drawer.tsx`, on Base UI `drawer`, moving like the mobile nav), a dialog for the single "Send again" confirm (`components/ui/dialog.tsx`, styled like the popup in `export-menu.tsx`), and a progress bar (Base UI `progress`).
 
 ## 7. Configuration and safety
 

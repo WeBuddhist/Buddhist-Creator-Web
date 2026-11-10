@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { assertRole, Unauthorized } from "@/lib/auth";
 import { DECISIONS, type Decision } from "@/lib/decisions";
-import { renderDecisionEmail, templateReady } from "@/lib/emails";
+import { templateReady } from "@/lib/emails";
 import { listOwed, sendDecisionEmail, sendTestEmail, type Recipient } from "@/lib/notifications";
 import { delivery, sendQuota, type DeliveryMode, type HaltCode, type SendQuota } from "@/lib/ses";
 
@@ -32,8 +32,6 @@ export type BulkGroup = {
   decision: Decision;
   /** False while the wording is still a placeholder. */
   ready: boolean;
-  /** The email as its first recipient would get it. */
-  sample: { subject: string; text: string };
   recipients: Recipient[];
 };
 
@@ -67,8 +65,7 @@ export async function previewBulkSendAction(scope: Decision[]): Promise<BulkPrev
   for (const decision of DECISIONS) {
     const mine = recipients.filter((recipient) => recipient.status === decision);
     if (mine.length === 0) continue;
-    const { subject, text } = renderDecisionEmail(decision, { name: mine[0].name });
-    groups.push({ decision, ready: templateReady(decision), sample: { subject, text }, recipients: mine });
+    groups.push({ decision, ready: templateReady(decision), recipients: mine });
   }
   return { ok: true, batchId: randomUUID(), mode, note, groups, blocked: blocked.length, quota };
 }
