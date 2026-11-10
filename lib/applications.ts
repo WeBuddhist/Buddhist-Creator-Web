@@ -1,17 +1,19 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { asc, desc, eq, ne, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { Application, ApplicationStatus, UserRole } from "@/lib/db/schema";
+import { DECISIONS as DECISION_LIST } from "@/lib/decisions";
+import { inFlightColumn, unsettledJoin, type InFlight } from "@/lib/notifications";
 import type { DraftValues } from "@/lib/registration-2027";
 
 /* Everything that reads or writes applications. Callers pass the current
    user in; the functions decide what that user may do. Status transitions
    live here, not in the UI. */
 
-const { applications, applicationEvents, users } = schema;
+const { applications, applicationEvents, applicationNotifications, users } = schema;
 
 export const EDITABLE: readonly ApplicationStatus[] = ["draft", "submitted"];
-export const DECISIONS: readonly ApplicationStatus[] = ["accepted", "rejected", "waitlisted"];
+export const DECISIONS: readonly ApplicationStatus[] = DECISION_LIST;
 export const REVIEWABLE: readonly ApplicationStatus[] = ["submitted", ...DECISIONS];
 
 export function isEditable(status: ApplicationStatus) {
@@ -196,6 +198,10 @@ export type ApplicationListRow = {
   updatedAt: Date;
   email: string;
   userName: string | null;
+  /** The decision last emailed, when, and any send still unsettled. */
+  notifiedStatus: ApplicationStatus | null;
+  notifiedAt: Date | null;
+  inFlight: InFlight | null;
 };
 
 export type ListFilter = "all" | ApplicationStatus;
@@ -219,9 +225,14 @@ export async function listApplications(filter: ListFilter, page = 1) {
         updatedAt: applications.updatedAt,
         email: users.email,
         userName: users.name,
+        notifiedStatus: applications.notifiedStatus,
+        notifiedAt: applications.notifiedAt,
+        inFlight: inFlightColumn,
       })
       .from(applications)
       .innerJoin(users, eq(users.id, applications.userId))
+      // At most one row: the ledger allows one unsettled send per application.
+      .leftJoin(applicationNotifications, unsettledJoin)
       .where(where)
       .orderBy(desc(applications.submittedAt), desc(applications.updatedAt))
       .limit(PAGE_SIZE)
@@ -258,6 +269,7 @@ export async function getApplication(id: string) {
       user: true,
       decider: true,
       events: { orderBy: [asc(applicationEvents.createdAt)], with: { actor: true } },
+      notifications: { orderBy: [desc(applicationNotifications.createdAt)], with: { sender: true } },
     },
   });
 }
@@ -286,8 +298,9 @@ export async function setApplicationStatus(args: {
         reviewNote: args.note ?? current.reviewNote,
         decidedBy: decided ? args.actorId : null,
         decidedAt: decided ? now : null,
-        // A changed decision has not been sent yet.
-        notifiedAt: current.status === args.status ? current.notifiedAt : null,
+        // The notified columns stay as they are: they record what the
+        // applicant was last emailed, and lib/notifications.ts compares
+        // that with the status to see who is owed a new one.
         updatedAt: now,
       })
       .where(eq(applications.id, current.id))
@@ -332,14 +345,4 @@ export async function setUserRole(args: { actorId: string; userId: string; role:
     .returning();
   if (!updated) throw new Error("NOT_FOUND");
   return updated;
-}
-
-/** Applications in the given statuses, for a bulk action. */
-export async function applicationsIn(statuses: ApplicationStatus[]) {
-  if (statuses.length === 0) return [];
-  return db()
-    .select({ id: applications.id, status: applications.status, email: users.email })
-    .from(applications)
-    .innerJoin(users, eq(users.id, applications.userId))
-    .where(and(inArray(applications.status, statuses)));
 }

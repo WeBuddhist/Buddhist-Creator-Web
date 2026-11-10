@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ApplicationsFilter, type FilterOption } from "@/components/admin/applications-filter";
+import { BulkSend } from "@/components/admin/bulk-send";
+import { EmailStatusLine } from "@/components/admin/email-status";
 import { EmptyRows, FilterSkeleton, TableHead, TableSkeleton } from "@/components/admin/applications-skeleton";
 import { PageHeader } from "@/components/admin/page-header";
 import { Pagination } from "@/components/admin/pagination";
@@ -11,7 +13,9 @@ import { StatusBadge, STATUS_LABEL } from "@/components/admin/status-badge";
 import { countByStatus, listApplications, PAGE_SIZE, type ListFilter } from "@/lib/applications";
 import { requireRole } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
+import { DECISIONS, isDecision, type Decision } from "@/lib/decisions";
 import { formatDateTime } from "@/lib/format";
+import { owedSummary } from "@/lib/notifications";
 import { labelFor, locationLabel, PLATFORMS } from "@/lib/registration-2027";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +62,14 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
   const filter = (FILTERS as string[]).includes(requested) ? (requested as ListFilter) : "all";
   const page = Math.max(1, Number(params.page) || 1);
 
-  const [list, counts] = await Promise.all([listApplications(filter, page), countByStatus()]);
+  // The tab decides who a bulk send reaches: one decision's tab is that
+  // email alone, "All" is all three. The other tabs hold nobody to write to.
+  const scope: Decision[] | null = filter === "all" ? [...DECISIONS] : isDecision(filter) ? [filter] : null;
+  const [list, counts, emails] = await Promise.all([
+    listApplications(filter, page),
+    countByStatus(),
+    scope ? owedSummary(scope) : null,
+  ]);
   const totalExceptDrafts = Object.entries(counts)
     .filter(([status]) => status !== "draft")
     .reduce((sum, [, n]) => sum + (n ?? 0), 0);
@@ -76,6 +87,7 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
 
   return (
     <ApplicationsFilter options={options} active={filter} pageSize={PAGE_SIZE}>
+      {scope && emails && <BulkSend key={filter} scope={scope} summary={emails} />}
       <div className={cn(panel, "overflow-x-auto")}>
         {list.rows.length === 0 ? (
           <EmptyRows />
@@ -101,6 +113,13 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={row.status} />
+                    <EmailStatusLine
+                      status={row.status}
+                      notifiedStatus={row.notifiedStatus}
+                      notifiedAt={row.notifiedAt}
+                      inFlight={row.inFlight}
+                      className="mt-1"
+                    />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
                     {row.submittedAt ? formatDateTime(row.submittedAt) : "—"}

@@ -1,5 +1,7 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  check,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -28,6 +30,16 @@ export const applicationStatus = pgEnum("application_status", [
   "waitlisted",
   "withdrawn",
 ]);
+
+/* One row of the mailing ledger (application_notifications) moves
+   sending → sent | failed | uncertain. `uncertain` is a send whose outcome
+   nobody knows (a timeout, a crash mid-call): it is never retried on its
+   own, an admin settles it. */
+export const notificationState = pgEnum("notification_state", ["sending", "sent", "failed", "uncertain"]);
+
+/* `decision` tells an applicant a decision they have not been told;
+   `resend` repeats the mail they already had, on an admin's say-so. */
+export const notificationKind = pgEnum("notification_kind", ["decision", "resend"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -95,14 +107,28 @@ export const applications = pgTable(
     reviewNote: text("review_note"),
     decidedBy: uuid("decided_by").references(() => users.id, { onDelete: "set null" }),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
-    /** Set by the mailing step once the decision has been sent. */
+    /** The decision the applicant was last emailed, and when. Written only
+        by the mailing step (lib/notifications.ts), never by a status
+        change: an applicant is owed an email while `status` is a decision
+        that differs from `notifiedStatus`. */
+    notifiedStatus: applicationStatus("notified_status"),
     notifiedAt: timestamp("notified_at", { withTimezone: true }),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     ...timestamps,
   },
-  // One application per person. Widen to (user_id, convention_year) if a
-  // later convention reuses the table.
-  (table) => [uniqueIndex("applications_user_id_idx").on(table.userId)],
+  (table) => [
+    // One application per person. Widen to (user_id, convention_year) if a
+    // later convention reuses the table.
+    uniqueIndex("applications_user_id_idx").on(table.userId),
+    check(
+      "applications_notified_status_check",
+      sql`${table.notifiedStatus} is null or ${table.notifiedStatus} in ('accepted', 'rejected', 'waitlisted')`,
+    ),
+    check(
+      "applications_notified_pair_check",
+      sql`(${table.notifiedStatus} is null) = (${table.notifiedAt} is null)`,
+    ),
+  ],
 );
 
 /* Every status change, so the dashboard can show history and the mailing
@@ -119,6 +145,51 @@ export const applicationEvents = pgTable("application_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/* The mailing ledger: one row per attempt to email a decision. The partial
+   unique index is the lock, at most one unsettled attempt per application,
+   so two admins (or a double click) cannot mail the same person twice. */
+export const applicationNotifications = pgTable(
+  "application_notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    /** The decision this mail announces. */
+    status: applicationStatus("status").notNull(),
+    kind: notificationKind("kind").default("decision").notNull(),
+    state: notificationState("state").default("sending").notNull(),
+    // Captured when the attempt starts: the address on the user can change
+    // at their next sign-in.
+    recipientEmail: text("recipient_email").notNull(),
+    recipientName: text("recipient_name"),
+    templateVersion: text("template_version"),
+    subject: text("subject"),
+    sesMessageId: text("ses_message_id"),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    sentBy: uuid("sent_by").references(() => users.id, { onDelete: "set null" }),
+    /** Groups the rows of one bulk run. */
+    batchId: uuid("batch_id"),
+    // Who settled an uncertain attempt, and when.
+    resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    /** When the attempt started. */
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("application_notifications_in_flight_idx")
+      .on(table.applicationId)
+      .where(sql`${table.state} in ('sending', 'uncertain')`),
+    index("application_notifications_application_idx").on(table.applicationId, table.createdAt),
+    check(
+      "application_notifications_status_check",
+      sql`${table.status} in ('accepted', 'rejected', 'waitlisted')`,
+    ),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one }) => ({
   application: one(applications, {
     fields: [users.id],
@@ -130,6 +201,15 @@ export const applicationsRelations = relations(applications, ({ one, many }) => 
   user: one(users, { fields: [applications.userId], references: [users.id] }),
   decider: one(users, { fields: [applications.decidedBy], references: [users.id] }),
   events: many(applicationEvents),
+  notifications: many(applicationNotifications),
+}));
+
+export const applicationNotificationsRelations = relations(applicationNotifications, ({ one }) => ({
+  application: one(applications, {
+    fields: [applicationNotifications.applicationId],
+    references: [applications.id],
+  }),
+  sender: one(users, { fields: [applicationNotifications.sentBy], references: [users.id] }),
 }));
 
 export const applicationEventsRelations = relations(applicationEvents, ({ one }) => ({
@@ -145,3 +225,6 @@ export type UserRole = User["role"];
 export type Application = typeof applications.$inferSelect;
 export type ApplicationStatus = Application["status"];
 export type ApplicationEvent = typeof applicationEvents.$inferSelect;
+export type ApplicationNotification = typeof applicationNotifications.$inferSelect;
+export type NotificationState = ApplicationNotification["state"];
+export type NotificationKind = ApplicationNotification["kind"];

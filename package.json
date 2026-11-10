@@ -14,6 +14,7 @@
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.33.0",
     "@aws-sdk/client-s3": "^3.1164.0",
+    "@aws-sdk/client-sesv2": "^3.1165.0",
     "@aws-sdk/lib-storage": "^3.1164.0",
     "@aws-sdk/s3-request-presigner": "^3.1164.0",
     "@base-ui/react": "^1.9.0",

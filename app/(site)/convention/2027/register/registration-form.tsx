@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COUNTRIES, isCountry, isStateOf, statesOf, suggestCountries, suggestStates } from "@/lib/countries";
-import type { ApplicationStatus } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
 import {
   AUDIENCE_LANGUAGES,
@@ -36,8 +35,14 @@ import { cn } from "@/lib/utils";
 import { reopenApplicationAction, saveApplicationAction, withdrawApplicationAction, type FormState } from "./actions";
 import { VideoUpload, type UploadedVideo } from "./video-upload";
 
+/* What the applicant's browser is told about where the application
+   stands. Accepted, waitlisted and rejected all arrive as "decided": the
+   outcome reaches them by email, when the committee sends it, and must not
+   be readable from the page before then. */
+export type FormStatus = "draft" | "submitted" | "withdrawn" | "decided";
+
 export type FormApplication = {
-  status: ApplicationStatus;
+  status: FormStatus;
   fullName: string | null;
   organization: string | null;
   state: string | null;
@@ -100,7 +105,7 @@ function toValues(application: FormApplication): Values {
    accepted, waitlisted or rejected; those all look like "received". */
 type Mode = "draft" | "submitted" | "withdrawn" | "locked";
 
-function modeFor(status: ApplicationStatus): Mode {
+function modeFor(status: FormStatus): Mode {
   if (status === "draft") return "draft";
   if (status === "submitted") return "submitted";
   if (status === "withdrawn") return "withdrawn";
@@ -574,7 +579,7 @@ function StatusBanner({
 }: {
   ref: React.Ref<HTMLDivElement>;
   mode: Mode;
-  status: ApplicationStatus;
+  status: FormStatus;
   submittedAt: string | null;
   email: string;
 }) {

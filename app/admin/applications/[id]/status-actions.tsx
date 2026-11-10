@@ -44,12 +44,15 @@ export function StatusActions({
   status,
   reviewNote,
   decided,
+  told,
 }: {
   applicationId: string;
   status: ApplicationStatus;
   reviewNote: string | null;
   /** "Decided … by …" for a decided application, or null. */
   decided: string | null;
+  /** A line on what saving does and does not do about the email. */
+  told: string;
 }) {
   const [state, action, pending] = useActionState<DecisionState, FormData>(setStatusAction, { ok: false });
   const reviewable = status !== "draft" && status !== "withdrawn";
@@ -75,7 +78,7 @@ export function StatusActions({
             name="note"
             rows={3}
             defaultValue={reviewNote ?? ""}
-            placeholder="Why this decision, or anything the mailing should mention."
+            placeholder="Why this decision. Only the committee sees this; it is never put in an email."
             className="min-h-20 resize-none px-3 py-2.5 leading-[1.5]"
           />
         </div>
@@ -103,6 +106,7 @@ export function StatusActions({
             );
           })}
         </div>
+        <p className="text-xs leading-[1.5] text-muted-foreground">{told}</p>
         {message && (
           <p role="status" aria-live="polite" className={cn("text-xs", state.ok ? "text-brand-forest" : "text-brand-maroon")}>
             {message}

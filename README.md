@@ -77,7 +77,8 @@ Applicants sign in through Auth0 (Google or email) and fill in the form at
 `/convention/2027/register`. They can save a draft, upload a 2-minute intro
 video, submit, and keep editing until the committee decides. Admins review at
 `/admin`: accept, reject or waitlist each application, with a note and a
-history of every change. Superadmins also manage roles at `/admin/users`.
+history of every change, then email the decision, one applicant at a time or
+everyone waiting in a tab. Superadmins also manage roles at `/admin/users`.
 
 How it fits together:
 
@@ -89,6 +90,8 @@ How it fits together:
 | Form copy, option lists, validation | `lib/registration-2027.ts` |
 | Reads and writes, status transitions | `lib/applications.ts` |
 | S3 (private bucket, presigned playback) | `lib/s3.ts`, upload handler at `app/api/applications/video/route.ts` |
+| Decision emails: who is owed one, sending, the send ledger | `lib/notifications.ts`, `lib/ses.ts` |
+| Wording of the three emails | `lib/emails/accepted.ts`, `rejected.ts`, `waitlisted.ts` |
 | The form | `app/convention/2027/register/` |
 | The dashboard | `app/admin/` |
 
@@ -117,6 +120,59 @@ How it fits together:
    ```
 
    From then on roles are managed at `/admin/users`.
+
+### Decision emails
+
+Saving a decision never emails anyone. An applicant is owed an email while
+their status is accepted, rejected or waitlisted and differs from the decision
+they were last emailed, so a changed decision is owed again and nobody is
+written to twice for the same one. Design and reasoning:
+`docs/design/decision-emails.md` and `docs/adr/0001-decision-emails-via-ses.md`.
+
+- **Wording.** One file per email in `lib/emails/`. To change one, edit its
+  subject or paragraphs and change `version`, which is stored with every
+  send. Setting `approved: false` stops the live site sending that email.
+- **`EMAIL_DELIVERY`.** `off` (the default) sends nothing. `simulate` runs
+  everything with a fake transport and only against a local database; an
+  address starting `fail+` is refused and one starting `timeout+` never
+  answers. `live` sends real mail: to applicants only from the production
+  site, and anywhere else only the "Send me a test" link in the bulk dialog.
+- **A send that never confirmed** (a timeout, a crash) shows as "needs
+  review" and blocks that applicant until an admin records whether it
+  arrived. Nothing is retried automatically.
+
+SES setup, once per AWS account:
+
+1. In the SES console, in the region you will put in `SES_REGION`, create a
+   **domain identity** for `buddhistcreators.com` with Easy DKIM and add its
+   three CNAME records in Cloudflare (DNS only, not proxied).
+2. Set a **custom MAIL FROM** domain such as `mail.buddhistcreators.com` and
+   add its MX and TXT records. Leave the apex SPF record alone; it serves
+   Google Workspace.
+3. Add a **DMARC** record: TXT at `_dmarc.buddhistcreators.com` with
+   `v=DMARC1; p=none; rua=mailto:<a mailbox you read>`.
+4. Turn on the **account-level suppression list** for bounces and complaints.
+5. Create an **IAM user** for sending only, with this policy, and put its
+   keys in `SES_ACCESS_KEY` and `SES_SECRET_KEY`:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": "ses:SendEmail",
+         "Resource": "*",
+         "Condition": { "StringEquals": { "ses:FromAddress": "hello@buddhistcreators.com" } }
+       },
+       { "Effect": "Allow", "Action": "ses:GetAccount", "Resource": "*" }
+     ]
+   }
+   ```
+6. **Request production access.** Until AWS grants it the account is in the
+   sandbox: mail reaches verified addresses only, 200 a day, one a second.
+7. Run `npm run db:migrate`, set the variables on the production service and
+   set `EMAIL_DELIVERY=live`.
 
 To take the form offline, set `REGISTRATION.open` to `false` in
 `lib/convention-2027.ts`; the register button is shown disabled.

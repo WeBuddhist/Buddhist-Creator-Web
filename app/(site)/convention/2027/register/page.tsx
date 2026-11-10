@@ -87,7 +87,9 @@ const EMPTY: FormApplication = {
 async function fromRow(row: NonNullable<Awaited<ReturnType<typeof getMyApplication>>>): Promise<FormApplication> {
   const videoUrl = row.videoKey ? await presignedGetUrl(row.videoKey) : null;
   return {
-    status: row.status,
+    // Never which decision: see FormStatus.
+    status:
+      row.status === "draft" || row.status === "submitted" || row.status === "withdrawn" ? row.status : "decided",
     fullName: row.fullName,
     organization: row.organization,
     state: row.state,
