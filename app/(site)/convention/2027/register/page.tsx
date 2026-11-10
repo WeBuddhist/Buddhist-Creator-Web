@@ -31,7 +31,7 @@ export default function RegisterPage() {
   return (
     <main className="flex flex-1 flex-col bg-background">
       <section aria-labelledby="register-title" className="border-b border-border">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 pt-14 pb-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-16 lg:pt-20 lg:pb-16">
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 pt-14 pb-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-16 lg:pt-20 lg:pb-16">
           <div>
             <SectionHeading id="register-title" eyebrow={FORM.eyebrow} title={FORM.title} />
             <div className="mt-6 max-w-[58ch] space-y-4 text-pretty text-lg leading-[1.6] text-muted-foreground">

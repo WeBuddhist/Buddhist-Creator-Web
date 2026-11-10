@@ -1,6 +1,8 @@
 import {
   CalendarBlankIcon,
+  CurrencyInrIcon,
   EnvelopeSimpleIcon,
+  HandHeartIcon,
   MapPinIcon,
   TranslateIcon,
   UsersThreeIcon,
@@ -15,11 +17,14 @@ const FACT_ICONS: Record<(typeof FORM.facts)[number]["icon"], Icon> = {
   dates: CalendarBlankIcon,
   language: TranslateIcon,
   participants: UsersThreeIcon,
+  fee: CurrencyInrIcon,
+  scholarships: HandHeartIcon,
 };
 
 const iconWell = "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full";
 
-/** The venue / dates / language / headcount card beside the registration intro. */
+/** The venue / dates / language / headcount / fee / scholarships card beside
+    the registration intro. */
 export function ConventionFacts() {
   return (
     <aside className={card} aria-label="Convention details">
@@ -36,7 +41,7 @@ export function ConventionFacts() {
               </span>
               <div className="flex min-w-0 flex-col">
                 <dt className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">{label}</dt>
-                <dd className="text-foreground">{value}</dd>
+                <dd className="text-pretty text-foreground">{value}</dd>
               </div>
             </div>
           );
