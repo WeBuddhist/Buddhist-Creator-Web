@@ -141,38 +141,11 @@ written to twice for the same one. Design and reasoning:
   review" and blocks that applicant until an admin records whether it
   arrived. Nothing is retried automatically.
 
-SES setup, once per AWS account:
-
-1. In the SES console, in the region you will put in `SES_REGION`, create a
-   **domain identity** for `buddhistcreators.com` with Easy DKIM and add its
-   three CNAME records in Cloudflare (DNS only, not proxied).
-2. Set a **custom MAIL FROM** domain such as `mail.buddhistcreators.com` and
-   add its MX and TXT records. Leave the apex SPF record alone; it serves
-   Google Workspace.
-3. Add a **DMARC** record: TXT at `_dmarc.buddhistcreators.com` with
-   `v=DMARC1; p=none; rua=mailto:<a mailbox you read>`.
-4. Turn on the **account-level suppression list** for bounces and complaints.
-5. Create an **IAM user** for sending only, with this policy, and put its
-   keys in `SES_ACCESS_KEY` and `SES_SECRET_KEY`:
-
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Action": "ses:SendEmail",
-         "Resource": "*",
-         "Condition": { "StringEquals": { "ses:FromAddress": "hello@buddhistcreators.com" } }
-       },
-       { "Effect": "Allow", "Action": "ses:GetAccount", "Resource": "*" }
-     ]
-   }
-   ```
-6. **Request production access.** Until AWS grants it the account is in the
-   sandbox: mail reaches verified addresses only, 200 a day, one a second.
-7. Run `npm run db:migrate`, set the variables on the production service and
-   set `EMAIL_DELIVERY=live`.
+The SES account, the DNS records, the IAM permissions and the move to
+`buddhistcreators.com` are written up in
+[`docs/setup/domain-and-email-setup.md`](docs/setup/domain-and-email-setup.md):
+what was set up, the exact records and policies, what is still to do before
+sending goes live, and the error messages met along the way.
 
 To take the form offline, set `REGISTRATION.open` to `false` in
 `lib/convention-2027.ts`; the register button is shown disabled.
