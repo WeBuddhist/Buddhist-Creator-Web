@@ -41,7 +41,7 @@ export const SITE_NAME = "Buddhist Creators";
     host until the site moves: once buddhistcreators.com serves this app,
     set NEXT_PUBLIC_SITE_URL to it. Read at build time. */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://buddhist-creator.onrender.com";
+  process.env.NEXT_PUBLIC_SITE_URL;
 
 /** The default meta description, and the homepage's social-card text. */
 export const SITE_DESCRIPTION =
