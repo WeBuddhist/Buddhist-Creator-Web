@@ -8,6 +8,13 @@
       "when": 1794211452388,
       "tag": "0000_registration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794288403884,
+      "tag": "0001_registration_committee_changes",
+      "breakpoints": true
     }
   ]
 }

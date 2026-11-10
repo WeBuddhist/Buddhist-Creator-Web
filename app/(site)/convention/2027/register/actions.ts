@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import {
   ApplicationLocked,
   InvalidTransition,
@@ -15,7 +14,14 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { loginUrl } from "@/lib/auth0";
 import type { ApplicationStatus } from "@/lib/db/schema";
-import { FORM, draftSchema, formValues, submitSchema, type FieldErrors } from "@/lib/registration-2027";
+import {
+  FORM,
+  draftSchema,
+  fieldErrors,
+  formValues,
+  submitSchema,
+  type FieldErrors,
+} from "@/lib/registration-2027";
 
 const PATH = "/convention/2027/register";
 
@@ -48,7 +54,7 @@ export async function saveApplicationAction(_prev: FormState, formData: FormData
   if (intent === "draft") {
     const parsed = draftSchema.safeParse(raw);
     if (!parsed.success) {
-      return { ok: false, intent, errors: z.flattenError(parsed.error).fieldErrors as FieldErrors };
+      return { ok: false, intent, errors: fieldErrors(parsed.error) };
     }
     try {
       const saved = await saveMyApplication(user.id, parsed.data);
@@ -61,7 +67,7 @@ export async function saveApplicationAction(_prev: FormState, formData: FormData
   }
 
   const parsed = submitSchema.safeParse(raw);
-  const errors: FieldErrors = parsed.success ? {} : (z.flattenError(parsed.error).fieldErrors as FieldErrors);
+  const errors: FieldErrors = parsed.success ? {} : fieldErrors(parsed.error);
   const current = await getMyApplication(user.id);
   if (!current?.videoKey) {
     errors.video = ["Upload your intro video before submitting."];

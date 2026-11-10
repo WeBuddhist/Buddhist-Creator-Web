@@ -14,7 +14,6 @@ import { card, primaryButton } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { ApplicationStatus } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
 import {
@@ -23,9 +22,12 @@ import {
   CONTENT_TOPICS,
   FORM,
   PLATFORMS,
+  PLATFORM_LINK_PLACEHOLDERS,
   TARGET_AUDIENCES,
   type FieldErrors,
   type Option,
+  type PlatformValue,
+  platformLinkTarget,
 } from "@/lib/registration-2027";
 import { cn } from "@/lib/utils";
 import { reopenApplicationAction, saveApplicationAction, withdrawApplicationAction, type FormState } from "./actions";
@@ -38,18 +40,16 @@ export type FormApplication = {
   location: string | null;
   contentTopics: string[];
   contentTopicsOther: string | null;
-  targetAudience: string | null;
+  targetAudience: string[];
   targetAudienceOther: string | null;
-  audienceRegion: string | null;
+  audienceRegion: string[];
   audienceRegionOther: string | null;
-  audienceLanguage: string | null;
+  audienceLanguage: string[];
   audienceLanguageOther: string | null;
   platforms: string[];
   platformsOther: string | null;
-  socialLinks: string | null;
-  awardAudienceChoiceUrl: string | null;
-  awardCreativeVideoUrl: string | null;
-  awardViralContentUrl: string | null;
+  /** The profile link for each chosen platform, keyed by its slug. */
+  platformLinks: Record<string, string | undefined>;
   video: UploadedVideo | null;
   submittedAt: string | null;
   /** Null until the first save: nothing is stored by merely opening the form. */
@@ -57,12 +57,11 @@ export type FormApplication = {
 };
 
 type Values = {
-  [K in Exclude<keyof FormApplication, "status" | "video" | "submittedAt" | "updatedAt">]: NonNullable<
-    FormApplication[K]
-  > extends string[]
-    ? string[]
-    : string;
-};
+  [K in Exclude<
+    keyof FormApplication,
+    "status" | "video" | "submittedAt" | "updatedAt" | "platformLinks"
+  >]: NonNullable<FormApplication[K]> extends string[] ? string[] : string;
+} & { platformLinks: Record<string, string> };
 
 function toValues(application: FormApplication): Values {
   return {
@@ -71,18 +70,15 @@ function toValues(application: FormApplication): Values {
     location: application.location ?? "",
     contentTopics: application.contentTopics,
     contentTopicsOther: application.contentTopicsOther ?? "",
-    targetAudience: application.targetAudience ?? "",
+    targetAudience: application.targetAudience,
     targetAudienceOther: application.targetAudienceOther ?? "",
-    audienceRegion: application.audienceRegion ?? "",
+    audienceRegion: application.audienceRegion,
     audienceRegionOther: application.audienceRegionOther ?? "",
-    audienceLanguage: application.audienceLanguage ?? "",
+    audienceLanguage: application.audienceLanguage,
     audienceLanguageOther: application.audienceLanguageOther ?? "",
     platforms: application.platforms,
     platformsOther: application.platformsOther ?? "",
-    socialLinks: application.socialLinks ?? "",
-    awardAudienceChoiceUrl: application.awardAudienceChoiceUrl ?? "",
-    awardCreativeVideoUrl: application.awardCreativeVideoUrl ?? "",
-    awardViralContentUrl: application.awardViralContentUrl ?? "",
+    platformLinks: Object.fromEntries(PLATFORMS.map(({ value }) => [value, application.platformLinks[value] ?? ""])),
   };
 }
 
@@ -108,7 +104,8 @@ const sectionTitle = "text-xl font-semibold leading-[1.2] tracking-[-0.02em] tex
 const errorText = "text-sm text-brand-maroon";
 const TOAST_ID = "application";
 
-/* The whole application on one page, in the Google Form's four sections.
+/* The whole application on one page: personal details, the content
+   creation journey and the intro video.
    Inputs are controlled so the browser's form reset after an action keeps
    what was typed. The submit buttons share one action: the pressed one
    says whether this is a draft or a submission. The actions live in a bar
@@ -323,7 +320,6 @@ export function RegistrationForm({
           name="contentTopics"
           legend="What is your content about?"
           required
-          type="checkbox"
           options={CONTENT_TOPICS}
           selected={values.contentTopics}
           onChange={(v) => set("contentTopics", v)}
@@ -336,10 +332,9 @@ export function RegistrationForm({
           name="targetAudience"
           legend="Who is your target audience?"
           required
-          type="radio"
           options={TARGET_AUDIENCES}
-          selected={values.targetAudience ? [values.targetAudience] : []}
-          onChange={(v) => set("targetAudience", v[0] ?? "")}
+          selected={values.targetAudience}
+          onChange={(v) => set("targetAudience", v)}
           other={values.targetAudienceOther}
           onOtherChange={(v) => set("targetAudienceOther", v)}
           error={errors.targetAudience?.[0] ?? errors.targetAudienceOther?.[0]}
@@ -348,10 +343,9 @@ export function RegistrationForm({
         <ChoiceGroup
           name="audienceRegion"
           legend="Which region is your audience primarily from?"
-          type="radio"
           options={AUDIENCE_REGIONS}
-          selected={values.audienceRegion ? [values.audienceRegion] : []}
-          onChange={(v) => set("audienceRegion", v[0] ?? "")}
+          selected={values.audienceRegion}
+          onChange={(v) => set("audienceRegion", v)}
           other={values.audienceRegionOther}
           onOtherChange={(v) => set("audienceRegionOther", v)}
           error={errors.audienceRegion?.[0] ?? errors.audienceRegionOther?.[0]}
@@ -360,10 +354,9 @@ export function RegistrationForm({
         <ChoiceGroup
           name="audienceLanguage"
           legend="What is the primary language of your audience?"
-          type="radio"
           options={AUDIENCE_LANGUAGES}
-          selected={values.audienceLanguage ? [values.audienceLanguage] : []}
-          onChange={(v) => set("audienceLanguage", v[0] ?? "")}
+          selected={values.audienceLanguage}
+          onChange={(v) => set("audienceLanguage", v)}
           other={values.audienceLanguageOther}
           onOtherChange={(v) => set("audienceLanguageOther", v)}
           error={errors.audienceLanguage?.[0] ?? errors.audienceLanguageOther?.[0]}
@@ -372,8 +365,8 @@ export function RegistrationForm({
         <ChoiceGroup
           name="platforms"
           legend="Which platform do you primarily create content for?"
+          hint="Add the link to your profile on each platform you choose."
           required
-          type="checkbox"
           options={PLATFORMS}
           selected={values.platforms}
           onChange={(v) => set("platforms", v)}
@@ -381,63 +374,20 @@ export function RegistrationForm({
           onOtherChange={(v) => set("platformsOther", v)}
           error={errors.platforms?.[0] ?? errors.platformsOther?.[0]}
           disabled={!editable}
-        />
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="socialLinks">Links to your social media handles</Label>
-          <Textarea
-            id="socialLinks"
-            name="socialLinks"
-            rows={4}
-            value={values.socialLinks}
-            onChange={(e) => set("socialLinks", e.target.value)}
-            placeholder={"https://www.youtube.com/@yourchannel\nhttps://www.instagram.com/yourhandle"}
-            aria-invalid={!!errors.socialLinks}
-            aria-describedby={errors.socialLinks ? "socialLinks-error" : undefined}
-            readOnly={!editable}
-            className={cn("min-h-28 px-3.5 py-3 leading-[1.5]", !editable && readOnlyField)}
-          />
-          {errors.socialLinks && (
-            <p id="socialLinks-error" className={errorText}>
-              {errors.socialLinks[0]}
-            </p>
+          detail={(option) => (
+            <PlatformLink
+              platform={option}
+              value={values.platformLinks[option.value] ?? ""}
+              onChange={(v) => set("platformLinks", { ...values.platformLinks, [option.value]: v })}
+              error={errors[`platformLinks.${option.value as PlatformValue}`]?.[0]}
+            />
           )}
-        </div>
+        />
       </Section>
 
       {/* Video */}
       <Section title={FORM.sections.video.title} description={FORM.sections.video.description} required>
         <VideoUpload video={video} onChange={setVideo} disabled={!editable} error={errors.video?.[0]} />
-      </Section>
-
-      {/* Section 4: awards */}
-      <Section title={FORM.sections.awards.title} description={FORM.sections.awards.description}>
-        {(
-          [
-            ["awardAudienceChoiceUrl", 0],
-            ["awardCreativeVideoUrl", 1],
-            ["awardViralContentUrl", 2],
-          ] as const
-        ).map(([key, index]) => {
-          const award = FORM.sections.awards.items[index];
-          return (
-            <div key={key} className="flex flex-col gap-2 border-t border-border pt-5 first:border-t-0 first:pt-0">
-              <h3 className="text-base font-semibold text-foreground">{award.name}</h3>
-              <p className="text-pretty text-sm leading-[1.5] text-muted-foreground">{award.description}</p>
-              <TextField
-                id={key}
-                label="Public link to your entry"
-                type="url"
-                inputMode="url"
-                placeholder="https://"
-                value={values[key]}
-                onChange={(v) => set(key, v)}
-                error={errors[key]?.[0]}
-                readOnly={!editable}
-                className="mt-1"
-              />
-            </div>
-          );
-        })}
       </Section>
 
       {errors.form && (
@@ -710,14 +660,15 @@ function TextField({
   );
 }
 
-/* A list of checkboxes or radios. The native controls carry the state and
-   the keyboard behaviour; only the colour is the site's. "Other" opens a
-   text field beside it. An optional radio group can be cleared again. */
+/* A list of checkboxes: every question takes any number of answers. The
+   native controls carry the state and the keyboard behaviour; only the
+   colour is the site's. "Other" opens a text field under it, and `detail`
+   adds whatever else a ticked option asks for. */
 function ChoiceGroup({
   name,
   legend,
+  hint,
   required,
-  type,
   options,
   selected,
   onChange,
@@ -725,11 +676,12 @@ function ChoiceGroup({
   onOtherChange,
   error,
   disabled,
+  detail,
 }: {
   name: string;
   legend: string;
+  hint?: string;
   required?: boolean;
-  type: "checkbox" | "radio";
   options: readonly Option[];
   selected: string[];
   onChange: (values: string[]) => void;
@@ -737,20 +689,22 @@ function ChoiceGroup({
   onOtherChange: (value: string) => void;
   error?: string;
   disabled?: boolean;
+  /** Rendered under an option while it is ticked. */
+  detail?: (option: Option) => React.ReactNode;
 }) {
-  const otherPicked = selected.includes("other");
   const errorId = `${name}-error`;
+  const hintId = `${name}-hint`;
   return (
     <fieldset
       className="flex flex-col gap-3"
       aria-required={required || undefined}
       aria-invalid={!!error || undefined}
-      aria-describedby={error ? errorId : undefined}
+      aria-describedby={[hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined}
       disabled={disabled}
     >
       {/* A legend sits outside the fieldset's flex flow, so the gap above
           never reaches it: the space below it is its own margin. */}
-      <legend className="mb-3 flex items-center gap-2 text-sm font-medium leading-none">
+      <legend className={cn("flex items-center gap-2 text-sm font-medium leading-none", hint ? "mb-2" : "mb-3")}>
         {legend}
         {required && (
           <>
@@ -759,6 +713,11 @@ function ChoiceGroup({
           </>
         )}
       </legend>
+      {hint && (
+        <p id={hintId} className="text-sm text-muted-foreground">
+          {hint}
+        </p>
+      )}
       <div className="flex flex-col gap-2.5">
         {options.map((option) => {
           const id = `${name}-${option.value}`;
@@ -774,51 +733,85 @@ function ChoiceGroup({
               >
                 <input
                   id={id}
-                  type={type}
+                  type="checkbox"
                   name={name}
                   value={option.value}
                   checked={checked}
-                  onChange={(e) => {
-                    if (type === "radio") {
-                      onChange([option.value]);
-                    } else {
-                      onChange(
-                        e.target.checked ? [...selected, option.value] : selected.filter((v) => v !== option.value),
-                      );
-                    }
-                  }}
+                  onChange={(e) =>
+                    onChange(
+                      e.target.checked ? [...selected, option.value] : selected.filter((v) => v !== option.value),
+                    )
+                  }
                   className="mt-0.5 size-4 shrink-0 accent-brand-cyan"
                 />
                 {option.label}
               </label>
-              {option.value === "other" && otherPicked && (
-                <Input
-                  name={`${name}Other`}
-                  value={other}
-                  onChange={(e) => onOtherChange(e.target.value)}
-                  aria-label={`${legend} Other, please specify`}
-                  placeholder="Please specify"
-                  className={cn(field, "ml-7 max-w-md")}
-                />
+              {option.value === "other" && checked && (
+                // The indent is the wrapper's: a full-width input with its
+                // own margin runs past the card's edge on a phone.
+                <div className="ml-7 max-w-md">
+                  <Input
+                    name={`${name}Other`}
+                    value={other}
+                    onChange={(e) => onOtherChange(e.target.value)}
+                    aria-label={`${legend} Other, please specify`}
+                    placeholder="Please specify"
+                    className={field}
+                  />
+                </div>
               )}
+              {checked && detail?.(option)}
             </div>
           );
         })}
       </div>
-      {type === "radio" && !required && selected.length > 0 && !disabled && (
-        <button
-          type="button"
-          onClick={() => onChange([])}
-          className="self-start text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
-          Clear choice
-        </button>
-      )}
       {error && (
         <p id={errorId} className={errorText}>
           {error}
         </p>
       )}
     </fieldset>
+  );
+}
+
+/* The link to the applicant's profile on one platform, shown under that
+   platform while it is ticked. A plain text field, not type="url": the
+   server adds a missing "https://", and the browser's own URL check would
+   refuse "instagram.com/name" before the form could even save a draft. */
+function PlatformLink({
+  platform,
+  value,
+  onChange,
+  error,
+}: {
+  platform: Option;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+}) {
+  const id = `platformLinks-${platform.value}`;
+  return (
+    <div className="ml-7 flex max-w-md flex-col gap-2">
+      <Input
+        id={id}
+        name={`platformLinks.${platform.value}`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        inputMode="url"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        aria-label={`Link to ${platformLinkTarget(platform.value)} (required)`}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+        placeholder={PLATFORM_LINK_PLACEHOLDERS[platform.value as PlatformValue]}
+        className={field}
+      />
+      {error && (
+        <p id={`${id}-error`} className={errorText}>
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

@@ -3,7 +3,8 @@ import { z } from "zod";
 /* The registration form for the 2027 convention: its copy, its option
    lists and the schemas that validate it. The option lists are the Google
    Form's, one slug per choice; the database stores slugs, the UI shows
-   labels, and "other" pairs with a free-text field. */
+   labels, and "other" pairs with a free-text field. Every question with a
+   list takes any number of answers. */
 
 export type Option = { readonly value: string; readonly label: string };
 
@@ -83,16 +84,30 @@ export const PLATFORMS = [
   { value: "other", label: "Other" },
 ] as const satisfies readonly Option[];
 
+export type PlatformValue = (typeof PLATFORMS)[number]["value"];
+
+/** One profile link per chosen platform, keyed by the platform's slug. */
+export type PlatformLinks = Partial<Record<PlatformValue, string>>;
+
+/* What the link field under each chosen platform shows while empty. */
+export const PLATFORM_LINK_PLACEHOLDERS: Record<PlatformValue, string> = {
+  instagram: "https://www.instagram.com/yourhandle",
+  youtube: "https://www.youtube.com/@yourchannel",
+  facebook: "https://www.facebook.com/yourpage",
+  tiktok: "https://www.tiktok.com/@yourhandle",
+  other: "https://",
+};
+
+/** What a platform's link points at, as it reads after "Link to": "your
+    YouTube channel". Shared by the field's name and its error message. */
+export function platformLinkTarget(platform: string) {
+  if (platform === "other") return "your profile on this platform";
+  return `your ${labelFor(PLATFORMS, platform)} ${platform === "youtube" ? "channel" : "profile"}`;
+}
+
 export function labelFor(options: readonly Option[], value: string | null | undefined) {
   if (!value) return null;
   return options.find((option) => option.value === value)?.label ?? value;
-}
-
-/** A single-choice answer as its label; "other" shows the free text. */
-export function withOther(options: readonly Option[], value: string | null, other: string | null) {
-  const label = labelFor(options, value);
-  if (!label) return null;
-  return value === "other" && other ? `Other: ${other}` : label;
 }
 
 /** A multi-choice answer as labels; "other" shows the free text. */
@@ -101,6 +116,19 @@ export function listWithOther(options: readonly Option[], values: string[] | nul
   return values
     .map((value) => (value === "other" && other ? `Other: ${other}` : labelFor(options, value)))
     .filter((v): v is string => Boolean(v));
+}
+
+/** The chosen platforms in the order picked, each with its label and link. */
+export function platformsWithLinks(
+  values: string[] | null,
+  other: string | null,
+  links: Record<string, string | undefined> | null,
+): { value: string; label: string; url: string | null }[] {
+  return (values ?? []).map((value) => ({
+    value,
+    label: (value === "other" && other ? `Other: ${other}` : labelFor(PLATFORMS, value)) ?? value,
+    url: links?.[value] || null,
+  }));
 }
 
 /* Video limits. The server checks type and size; the browser also reads
@@ -141,28 +169,6 @@ export const FORM = {
       description:
         "Upload a short video, up to 2 minutes, covering: a) a quick introduction about yourself, b) why you want to be part of the Buddhist Content Creators Convention 2027 and what you're bringing to it, and c) your expectations from this gathering.",
     },
-    awards: {
-      title: "Award submissions",
-      description:
-        "These awards recognise and celebrate the valuable contributions of Buddhist content creators in sharing the Buddha's Dharma through digital media. Review the three awards below and submit a public link to your eligible content under the relevant award. All three are optional.",
-      items: [
-        {
-          name: "Audience Choice Award",
-          description:
-            "Buddhist-related content that meaningfully connects with and inspires audiences. Content must have been published after 10 February 2026. Twenty eligible entries will be shortlisted, and the winner will be selected through a public vote by followers and subscribers.",
-        },
-        {
-          name: "Most Creative Video Award",
-          description:
-            "An original Buddhist-related video that demonstrates creativity, sincerity, strong storytelling and emotional impact. Creative use of AI tools, lighting, camera work, sound and editing may also be considered. The video must have been produced after 10 February 2026. Shortlisted entries will be presented for public voting.",
-        },
-        {
-          name: "Most Viral Content Award",
-          description:
-            "Buddhist-related content that has achieved exceptional reach and engagement. Eligible content must have been published between 10 February 2026 and 31 January 2027. Views, likes, comments, shares and other engagement figures will be reviewed and verified by the selection committee.",
-        },
-      ],
-    },
   },
 } as const;
 
@@ -175,14 +181,40 @@ const values = <T extends readonly Option[]>(options: T) =>
 
 const trimmed = z.string().trim();
 const optionalText = trimmed.max(500).optional().or(z.literal("")).transform((v) => v || null);
-const optionalLong = trimmed.max(4000).optional().or(z.literal("")).transform((v) => v || null);
-const optionalUrl = trimmed
+
+/* A link as people paste it: "instagram.com/name" is as good as the full
+   address, so a missing scheme is added rather than refused. A bare handle
+   or a name is not a link. */
+function isWebLink(value: string) {
+  if (/\s/.test(value) || !URL.canParse(value)) return false;
+  const { protocol, hostname } = new URL(value);
+  return (protocol === "https:" || protocol === "http:") && /^[^.]+(\.[^.]+)+$/.test(hostname);
+}
+const optionalLink = trimmed
   .max(1000)
   .optional()
   .or(z.literal(""))
-  .transform((v) => v || null)
-  .refine((v) => v === null || /^https?:\/\/\S+$/i.test(v), {
-    message: "Enter a full link starting with https://",
+  .transform((v) => (v ? (/^https?:\/\//i.test(v) ? v : `https://${v}`) : null))
+  .refine((v) => v === null || isWebLink(v), {
+    message: "Enter the full link, like https://www.youtube.com/@yourchannel",
+  });
+
+/* One optional link per platform; only the filled ones are kept. */
+const platformLinks = z
+  .object({
+    instagram: optionalLink,
+    youtube: optionalLink,
+    facebook: optionalLink,
+    tiktok: optionalLink,
+    other: optionalLink,
+  } satisfies Record<PlatformValue, typeof optionalLink>)
+  .transform((links) => {
+    const filled: PlatformLinks = {};
+    for (const { value } of PLATFORMS) {
+      const link = links[value];
+      if (link) filled[value] = link;
+    }
+    return filled;
   });
 
 export const draftSchema = z.object({
@@ -191,18 +223,15 @@ export const draftSchema = z.object({
   location: optionalText,
   contentTopics: z.array(values(CONTENT_TOPICS)).default([]),
   contentTopicsOther: optionalText,
-  targetAudience: values(TARGET_AUDIENCES).optional().or(z.literal("")).transform((v) => v || null),
+  targetAudience: z.array(values(TARGET_AUDIENCES)).default([]),
   targetAudienceOther: optionalText,
-  audienceRegion: values(AUDIENCE_REGIONS).optional().or(z.literal("")).transform((v) => v || null),
+  audienceRegion: z.array(values(AUDIENCE_REGIONS)).default([]),
   audienceRegionOther: optionalText,
-  audienceLanguage: values(AUDIENCE_LANGUAGES).optional().or(z.literal("")).transform((v) => v || null),
+  audienceLanguage: z.array(values(AUDIENCE_LANGUAGES)).default([]),
   audienceLanguageOther: optionalText,
   platforms: z.array(values(PLATFORMS)).default([]),
   platformsOther: optionalText,
-  socialLinks: optionalLong,
-  awardAudienceChoiceUrl: optionalUrl,
-  awardCreativeVideoUrl: optionalUrl,
-  awardViralContentUrl: optionalUrl,
+  platformLinks,
 });
 
 export type DraftValues = z.infer<typeof draftSchema>;
@@ -215,13 +244,12 @@ export const submitSchema = draftSchema
     organization: trimmed.min(1, "Write NA if you are coming as an individual").max(500),
     location: trimmed.min(1, REQUIRED).max(500),
     contentTopics: z.array(values(CONTENT_TOPICS)).min(1, "Choose at least one"),
-    targetAudience: z.string().min(1, REQUIRED).pipe(values(TARGET_AUDIENCES)),
+    targetAudience: z.array(values(TARGET_AUDIENCES)).min(1, "Choose at least one"),
     platforms: z.array(values(PLATFORMS)).min(1, "Choose at least one"),
   })
   .superRefine((data, ctx) => {
-    const needsOther = (list: readonly string[] | string | null, field: keyof typeof data) => {
-      const picked = Array.isArray(list) ? list.includes("other") : list === "other";
-      if (picked && !data[field]) {
+    const needsOther = (list: readonly string[], field: keyof typeof data) => {
+      if (list.includes("other") && !data[field]) {
         ctx.addIssue({ code: "custom", path: [field], message: "Tell us what “Other” is" });
       }
     };
@@ -230,10 +258,35 @@ export const submitSchema = draftSchema
     needsOther(data.audienceRegion, "audienceRegionOther");
     needsOther(data.audienceLanguage, "audienceLanguageOther");
     needsOther(data.platforms, "platformsOther");
+    // Every chosen platform comes with the link to the profile on it.
+    for (const platform of data.platforms) {
+      if (!data.platformLinks[platform]) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["platformLinks", platform],
+          message: `Add the link to ${platformLinkTarget(platform)}`,
+        });
+      }
+    }
   });
 
 export type SubmitValues = z.infer<typeof submitSchema>;
-export type FieldErrors = Partial<Record<keyof DraftValues | "video" | "form", string[]>>;
+export type FieldErrors = Partial<
+  Record<keyof DraftValues | `platformLinks.${PlatformValue}` | "video" | "form", string[]>
+>;
+
+/** A failed parse as messages per field. A platform's link keeps its own
+    key, "platformLinks.youtube", so the message lands under that field. */
+export function fieldErrors(error: z.ZodError): FieldErrors {
+  const errors: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const [field, sub] = issue.path;
+    const key =
+      field === "platformLinks" && typeof sub === "string" ? `platformLinks.${sub}` : String(field ?? "form");
+    (errors[key] ??= []).push(issue.message);
+  }
+  return errors as FieldErrors;
+}
 
 /** The form's FormData as the object the schemas read. */
 export function formValues(formData: FormData) {
@@ -242,23 +295,27 @@ export function formValues(formData: FormData) {
     return typeof value === "string" ? value : "";
   };
   const list = (name: string) => formData.getAll(name).filter((v): v is string => typeof v === "string");
+  const platforms = list("platforms");
   return {
     fullName: text("fullName"),
     organization: text("organization"),
     location: text("location"),
     contentTopics: list("contentTopics"),
     contentTopicsOther: text("contentTopicsOther"),
-    targetAudience: text("targetAudience"),
+    targetAudience: list("targetAudience"),
     targetAudienceOther: text("targetAudienceOther"),
-    audienceRegion: text("audienceRegion"),
+    audienceRegion: list("audienceRegion"),
     audienceRegionOther: text("audienceRegionOther"),
-    audienceLanguage: text("audienceLanguage"),
+    audienceLanguage: list("audienceLanguage"),
     audienceLanguageOther: text("audienceLanguageOther"),
-    platforms: list("platforms"),
+    platforms,
     platformsOther: text("platformsOther"),
-    socialLinks: text("socialLinks"),
-    awardAudienceChoiceUrl: text("awardAudienceChoiceUrl"),
-    awardCreativeVideoUrl: text("awardCreativeVideoUrl"),
-    awardViralContentUrl: text("awardViralContentUrl"),
+    // Only the links of platforms still chosen: unticking one drops its link.
+    platformLinks: Object.fromEntries(
+      PLATFORMS.filter(({ value }) => platforms.includes(value)).map(({ value }) => [
+        value,
+        text(`platformLinks.${value}`),
+      ]),
+    ),
   };
 }

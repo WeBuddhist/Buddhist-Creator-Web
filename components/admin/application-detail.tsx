@@ -11,11 +11,10 @@ import {
   AUDIENCE_LANGUAGES,
   AUDIENCE_REGIONS,
   CONTENT_TOPICS,
-  FORM,
-  PLATFORMS,
   TARGET_AUDIENCES,
   listWithOther,
-  withOther,
+  platformsWithLinks,
+  type PlatformLinks,
 } from "@/lib/registration-2027";
 
 /* What the page shows of one application. A plain data shape rather than
@@ -29,18 +28,15 @@ export type ApplicationDetailData = {
   location: string | null;
   contentTopics: string[] | null;
   contentTopicsOther: string | null;
-  targetAudience: string | null;
+  targetAudience: string[] | null;
   targetAudienceOther: string | null;
-  audienceRegion: string | null;
+  audienceRegion: string[] | null;
   audienceRegionOther: string | null;
-  audienceLanguage: string | null;
+  audienceLanguage: string[] | null;
   audienceLanguageOther: string | null;
   platforms: string[] | null;
   platformsOther: string | null;
-  socialLinks: string | null;
-  awardAudienceChoiceUrl: string | null;
-  awardCreativeVideoUrl: string | null;
-  awardViralContentUrl: string | null;
+  platformLinks: PlatformLinks;
   videoSizeBytes: number | null;
   videoUploadedAt: Date | null;
   reviewNote: string | null;
@@ -56,23 +52,30 @@ export type ApplicationDetailData = {
 const link =
   "break-all text-foreground underline decoration-foreground/30 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-foreground";
 
-/* Free text with links in it, each one made clickable. */
-function Links({ text }: { text: string }) {
-  const parts = text.split(/(https?:\/\/\S+)/g);
+/* The chosen platforms, one to a line, each with the link the applicant
+   gave for it. The name leads so the links share an edge from `sm` up. */
+function Platforms({ items }: { items: ReturnType<typeof platformsWithLinks> }) {
   return (
-    <>
-      {parts.map((part, index) =>
-        /^https?:\/\//.test(part) ? (
-          <a key={index} href={part} target="_blank" rel="noopener noreferrer" className={link}>
-            {part}
-          </a>
-        ) : (
-          <span key={index}>{part}</span>
-        ),
-      )}
-    </>
+    <ul className="flex flex-col gap-1.5">
+      {items.map(({ value, label, url }) => (
+        <li key={value} className="grid gap-x-3 sm:grid-cols-[8rem_minmax(0,1fr)]">
+          <span className="font-medium">{label}</span>
+          {url ? (
+            <a href={url} target="_blank" rel="noopener noreferrer" className={link}>
+              {url}
+            </a>
+          ) : (
+            <span className="text-muted-foreground">No link given</span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
+
+/* Several answers as one line each: the audience options are sentences,
+   too long for chips. */
+const lines = (items: string[]) => (items.length ? items.join("\n") : null);
 
 /* One fact in the header's meta line. Every item but the first carries
    its own separator, so when the line wraps the dot moves with its item
@@ -101,25 +104,17 @@ export function ApplicationDetail({
     { label: "Email", value: <a href={`mailto:${application.user.email}`} className={link}>{application.user.email}</a> },
     { label: "Organisation", value: application.organization },
     { label: "Location", value: application.location },
-    { label: "Social media", value: application.socialLinks ? <Links text={application.socialLinks} /> : null },
   ];
 
   const topics = listWithOther(CONTENT_TOPICS, application.contentTopics, application.contentTopicsOther);
-  const platforms = listWithOther(PLATFORMS, application.platforms, application.platformsOther);
+  const platforms = platformsWithLinks(application.platforms, application.platformsOther, application.platformLinks);
   const content: Fact[] = [
     { label: "Content is about", value: topics.length ? <Chips items={topics} /> : null },
-    { label: "Target audience", value: withOther(TARGET_AUDIENCES, application.targetAudience, application.targetAudienceOther) },
-    { label: "Audience region", value: withOther(AUDIENCE_REGIONS, application.audienceRegion, application.audienceRegionOther) },
-    { label: "Audience language", value: withOther(AUDIENCE_LANGUAGES, application.audienceLanguage, application.audienceLanguageOther) },
-    { label: "Platforms", value: platforms.length ? <Chips items={platforms} /> : null },
+    { label: "Target audience", value: lines(listWithOther(TARGET_AUDIENCES, application.targetAudience, application.targetAudienceOther)) },
+    { label: "Audience region", value: lines(listWithOther(AUDIENCE_REGIONS, application.audienceRegion, application.audienceRegionOther)) },
+    { label: "Audience language", value: lines(listWithOther(AUDIENCE_LANGUAGES, application.audienceLanguage, application.audienceLanguageOther)) },
+    { label: "Platforms", value: platforms.length ? <Platforms items={platforms} /> : null },
   ];
-
-  const awardLinks: { name: string; url: string | null }[] = [
-    { name: FORM.sections.awards.items[0].name, url: application.awardAudienceChoiceUrl },
-    { name: FORM.sections.awards.items[1].name, url: application.awardCreativeVideoUrl },
-    { name: FORM.sections.awards.items[2].name, url: application.awardViralContentUrl },
-  ];
-  const awards = awardLinks.filter((award): award is { name: string; url: string } => Boolean(award.url));
 
   const decided = application.decidedAt
     ? `Decided ${formatDateTime(application.decidedAt)}${
@@ -186,24 +181,6 @@ export function ApplicationDetail({
               </>
             ) : (
               <p className="text-sm text-muted-foreground">No video uploaded.</p>
-            )}
-          </Section>
-
-          <Section id="awards-title" title="Award submissions">
-            {awards.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None submitted.</p>
-            ) : (
-              <Facts
-                items={awards.map((award) => ({
-                  label: award.name,
-                  value: (
-                    <a href={award.url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 ${link}`}>
-                      {award.url}
-                      <ArrowUpRightIcon aria-hidden weight="bold" className="size-3 shrink-0" />
-                    </a>
-                  ),
-                }))}
-              />
             )}
           </Section>
         </div>

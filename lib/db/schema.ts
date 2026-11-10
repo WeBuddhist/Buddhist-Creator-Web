@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -8,6 +9,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { PlatformLinks } from "@/lib/registration-2027";
 
 /* Who may do what. `member` is everyone who has signed in; `admin` reviews
    applications; `superadmin` also manages roles. The first superadmin is set
@@ -70,26 +72,22 @@ export const applications = pgTable(
     // (lib/registration-2027.ts); "other" pairs with its free-text field.
     contentTopics: text("content_topics").array(),
     contentTopicsOther: text("content_topics_other"),
-    targetAudience: text("target_audience"),
+    targetAudience: text("target_audience").array(),
     targetAudienceOther: text("target_audience_other"),
-    audienceRegion: text("audience_region"),
+    audienceRegion: text("audience_region").array(),
     audienceRegionOther: text("audience_region_other"),
-    audienceLanguage: text("audience_language"),
+    audienceLanguage: text("audience_language").array(),
     audienceLanguageOther: text("audience_language_other"),
     platforms: text("platforms").array(),
     platformsOther: text("platforms_other"),
-    socialLinks: text("social_links"),
+    /** The profile link for each chosen platform, keyed by its slug. */
+    platformLinks: jsonb("platform_links").$type<PlatformLinks>().default({}).notNull(),
 
     // The intro video: a private S3 object, served through presigned URLs.
     videoKey: text("video_key"),
     videoSizeBytes: integer("video_size_bytes"),
     videoMime: text("video_mime"),
     videoUploadedAt: timestamp("video_uploaded_at", { withTimezone: true }),
-
-    // Award submissions, all optional.
-    awardAudienceChoiceUrl: text("award_audience_choice_url"),
-    awardCreativeVideoUrl: text("award_creative_video_url"),
-    awardViralContentUrl: text("award_viral_content_url"),
 
     // Review.
     reviewNote: text("review_note"),

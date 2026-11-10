@@ -7,18 +7,17 @@ import {
   AUDIENCE_LANGUAGES,
   AUDIENCE_REGIONS,
   CONTENT_TOPICS,
-  FORM,
   PLATFORMS,
   TARGET_AUDIENCES,
   listWithOther,
-  withOther,
 } from "@/lib/registration-2027";
 
 /* The applications list as a CSV file. `filter` takes the same values as
    the list's status pills, so the file holds exactly the rows the admin
    was looking at: everything but drafts by default. Answers are written
    as the detail page shows them (labels, "Other: …"), one row per
-   application, dates in the convention's time zone. */
+   application, dates in the convention's time zone. Each platform's link
+   has its own column, so a cell holds one address a spreadsheet can open. */
 
 const HEADERS = [
   "Name",
@@ -26,16 +25,13 @@ const HEADERS = [
   "Status",
   "Organisation",
   "Location",
-  "Social media",
   "Content is about",
   "Target audience",
   "Audience region",
   "Audience language",
   "Platforms",
+  ...PLATFORMS.map((platform) => `${platform.label} link`),
   "Intro video",
-  FORM.sections.awards.items[0].name,
-  FORM.sections.awards.items[1].name,
-  FORM.sections.awards.items[2].name,
   "Review note",
   "Decided by",
   "Decided at",
@@ -43,7 +39,7 @@ const HEADERS = [
   "Submitted at",
   "Last edited",
   "Application ID",
-] as const;
+];
 
 export async function applicationsCsv(filter: ListFilter) {
   const rows = await exportApplications(filter);
@@ -55,16 +51,13 @@ export async function applicationsCsv(filter: ListFilter) {
       STATUS_LABEL[row.status],
       row.organization,
       row.location,
-      row.socialLinks,
       listWithOther(CONTENT_TOPICS, row.contentTopics, row.contentTopicsOther).join("; "),
-      withOther(TARGET_AUDIENCES, row.targetAudience, row.targetAudienceOther),
-      withOther(AUDIENCE_REGIONS, row.audienceRegion, row.audienceRegionOther),
-      withOther(AUDIENCE_LANGUAGES, row.audienceLanguage, row.audienceLanguageOther),
+      listWithOther(TARGET_AUDIENCES, row.targetAudience, row.targetAudienceOther).join("; "),
+      listWithOther(AUDIENCE_REGIONS, row.audienceRegion, row.audienceRegionOther).join("; "),
+      listWithOther(AUDIENCE_LANGUAGES, row.audienceLanguage, row.audienceLanguageOther).join("; "),
       listWithOther(PLATFORMS, row.platforms, row.platformsOther).join("; "),
+      ...PLATFORMS.map(({ value }) => row.platformLinks[value] ?? null),
       row.videoKey ? "Yes" : "No",
-      row.awardAudienceChoiceUrl,
-      row.awardCreativeVideoUrl,
-      row.awardViralContentUrl,
       row.reviewNote,
       row.decider ? (row.decider.name ?? row.decider.email) : null,
       formatDateTime(row.decidedAt),
