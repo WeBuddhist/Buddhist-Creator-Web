@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { useActionState, useTransition } from "react";
+import { Combobox } from "@base-ui/react/combobox";
 import {
   ArrowCounterClockwiseIcon,
+  CaretDownIcon,
   CheckCircleIcon,
   FloppyDiskIcon,
   PaperPlaneTiltIcon,
@@ -14,6 +16,7 @@ import { card, primaryButton } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { COUNTRIES, isCountry, isStateOf, statesOf, suggestCountries, suggestStates } from "@/lib/countries";
 import type { ApplicationStatus } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
 import {
@@ -37,7 +40,8 @@ export type FormApplication = {
   status: ApplicationStatus;
   fullName: string | null;
   organization: string | null;
-  location: string | null;
+  state: string | null;
+  country: string | null;
   contentTopics: string[];
   contentTopicsOther: string | null;
   targetAudience: string[];
@@ -64,10 +68,15 @@ type Values = {
 } & { platformLinks: Record<string, string> };
 
 function toValues(application: FormApplication): Values {
+  // An answer saved before the lists existed ("india") is not a choice the
+  // fields can show: it reads as unanswered, to be picked again.
+  const country = application.country && isCountry(application.country) ? application.country : "";
+  const state = application.state && isStateOf(country, application.state) ? application.state : "";
   return {
     fullName: application.fullName ?? "",
     organization: application.organization ?? "",
-    location: application.location ?? "",
+    state,
+    country,
     contentTopics: application.contentTopics,
     contentTopicsOther: application.contentTopicsOther ?? "",
     targetAudience: application.targetAudience,
@@ -153,6 +162,11 @@ export function RegistrationForm({
   const errors: FieldErrors = editable ? (state.errors ?? {}) : {};
   const set = <K extends keyof Values>(key: K, value: Values[K]) =>
     setValues((previous) => ({ ...previous, [key]: value }));
+  const stateOptions = statesOf(values.country);
+  const suggestStatesHere = React.useCallback(
+    (query: string) => suggestStates(values.country, query),
+    [values.country],
+  );
 
   // Each action result is announced once: a toast at the bottom, and focus
   // moved to where the result is, the banner on success or the first
@@ -303,15 +317,48 @@ export function RegistrationForm({
           autoComplete="organization"
           readOnly={!editable}
         />
-        <TextField
-          id="location"
-          label="Current location and country"
-          required
-          value={values.location}
-          onChange={(v) => set("location", v)}
-          error={errors.location?.[0]}
-          readOnly={!editable}
-        />
+        {/* Country and state: one answer in two parts, side by side from
+            `sm` up. The country comes first because the state's list is
+            that country's: choosing another country drops a state that
+            is no longer in it, and a country with a single region (Hong
+            Kong, Gibraltar) fills it in. */}
+        <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
+          <PlaceField
+            id="country"
+            label="Country"
+            required
+            noun="country"
+            options={COUNTRIES}
+            suggest={suggestCountries}
+            value={values.country}
+            onChange={(country) => {
+              const states = statesOf(country);
+              setValues((previous) => ({
+                ...previous,
+                country,
+                state: states.length === 1 ? states[0] : states.includes(previous.state) ? previous.state : "",
+              }));
+            }}
+            error={errors.country?.[0]}
+            readOnly={!editable}
+          />
+          <PlaceField
+            // A new country is a new list: start the field over with it.
+            key={values.country}
+            id="state"
+            label="State"
+            required
+            noun="state"
+            options={stateOptions}
+            suggest={suggestStatesHere}
+            value={values.state}
+            onChange={(v) => set("state", v)}
+            placeholder={values.country ? undefined : "Choose a country first"}
+            disabled={!values.country}
+            error={errors.state?.[0]}
+            readOnly={!editable}
+          />
+        </div>
       </Section>
 
       {/* Section 3: content creation journey */}
@@ -651,6 +698,136 @@ function TextField({
           {hint}
         </p>
       )}
+      {error && (
+        <p id={`${id}-error`} className={errorText}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* A country or a state: a field that only takes a name from its list.
+   Typing narrows the list, best match first ("ind" → India, Indonesia),
+   and Enter or a click takes one; clicking the empty field shows it all.
+   Text that was typed but not picked is not an answer: on leaving, the
+   field goes back to the last choice. The chosen name is submitted by the
+   hidden input Base UI renders for `name`.
+
+   The matching is ours (lib/countries.ts), so the list is whatever
+   `suggest` returns for what is typed: everything while the field still
+   shows the current choice. The popup borrows the account menu's surface
+   so the site's popups read as one family.
+
+   Read-only, it is a plain field like its neighbours: a list that opens
+   and then refuses every choice would only mislead. */
+function PlaceField({
+  id,
+  label,
+  required,
+  error,
+  value,
+  onChange,
+  options,
+  suggest,
+  noun,
+  placeholder,
+  disabled,
+  readOnly,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  suggest: (query: string) => string[];
+  /** What the list holds, for the "nothing found" line: "country". */
+  noun: string;
+  placeholder?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
+}) {
+  const [query, setQuery] = React.useState(value);
+  const matches = React.useMemo(
+    () => (query === value ? [...options] : suggest(query)),
+    [query, value, options, suggest],
+  );
+  if (readOnly) {
+    return <TextField id={id} label={label} required={required} value={value} onChange={() => {}} readOnly />;
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={id}>
+        {label}
+        {required && (
+          <>
+            <RequiredMark />
+            <span className="sr-only">(required)</span>
+          </>
+        )}
+      </Label>
+      <Combobox.Root
+        name={id}
+        items={options}
+        filteredItems={matches}
+        value={value || null}
+        onValueChange={(next: string | null) => onChange(next ?? "")}
+        onInputValueChange={setQuery}
+        disabled={disabled}
+        autoHighlight
+      >
+        <div className="relative">
+          <Combobox.Input
+            id={id}
+            // The browser's own address suggestions would open over ours.
+            autoComplete="off"
+            placeholder={placeholder}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-error` : undefined}
+            render={<Input className={cn(field, "pr-10")} />}
+          />
+          <CaretDownIcon
+            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+            weight="bold"
+            aria-hidden
+          />
+        </div>
+        <Combobox.Portal>
+          <Combobox.Positioner sideOffset={6} collisionPadding={16} className="z-50">
+            <Combobox.Popup
+              className={cn(
+                "w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) p-1.5",
+                // Outer radius 12px = the items' 8px + 4px of padding.
+                "rounded-xl border border-transparent bg-popover text-popover-foreground",
+                "shadow-[0_0_0_1px_--alpha(var(--color-black)/6%),0_1px_2px_-1px_--alpha(var(--color-black)/6%),0_8px_24px_-8px_--alpha(var(--color-black)/12%)]",
+                "transition-[opacity,scale] duration-200 ease-out",
+                "data-starting-style:scale-95 data-starting-style:opacity-0",
+                "data-ending-style:scale-95 data-ending-style:opacity-0 data-ending-style:duration-150",
+                "motion-reduce:data-starting-style:scale-100 motion-reduce:data-ending-style:scale-100",
+              )}
+            >
+              <Combobox.Empty>
+                <p className="px-3 py-2 text-sm text-muted-foreground">
+                  No {noun} matches “{query.trim()}”.
+                </p>
+              </Combobox.Empty>
+              <Combobox.List className="max-h-[min(18rem,var(--available-height))] overflow-y-auto overscroll-contain">
+                {(option: string) => (
+                  <Combobox.Item
+                    key={option}
+                    value={option}
+                    className="flex cursor-default items-center rounded-lg px-3 py-2 text-sm text-foreground select-none data-highlighted:bg-muted data-selected:font-medium"
+                  >
+                    {option}
+                  </Combobox.Item>
+                )}
+              </Combobox.List>
+            </Combobox.Popup>
+          </Combobox.Positioner>
+        </Combobox.Portal>
+      </Combobox.Root>
       {error && (
         <p id={`${id}-error`} className={errorText}>
           {error}

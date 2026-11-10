@@ -15,6 +15,13 @@
       "when": 1794288403884,
       "tag": "0001_registration_committee_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794289106524,
+      "tag": "0002_state_and_country",
+      "breakpoints": true
     }
   ]
 }

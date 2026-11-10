@@ -13,6 +13,7 @@ import {
   CONTENT_TOPICS,
   TARGET_AUDIENCES,
   listWithOther,
+  locationLabel,
   platformsWithLinks,
   type PlatformLinks,
 } from "@/lib/registration-2027";
@@ -25,7 +26,8 @@ export type ApplicationDetailData = {
   status: ApplicationStatus;
   fullName: string | null;
   organization: string | null;
-  location: string | null;
+  state: string | null;
+  country: string | null;
   contentTopics: string[] | null;
   contentTopicsOther: string | null;
   targetAudience: string[] | null;
@@ -98,12 +100,14 @@ export function ApplicationDetail({
   viewerId: string;
 }) {
   const title = application.fullName || application.user.name || application.user.email;
+  const location = locationLabel(application.state, application.country);
 
   const applicant: Fact[] = [
     { label: "Name", value: application.fullName },
     { label: "Email", value: <a href={`mailto:${application.user.email}`} className={link}>{application.user.email}</a> },
     { label: "Organisation", value: application.organization },
-    { label: "Location", value: application.location },
+    { label: "State", value: application.state },
+    { label: "Country", value: application.country },
   ];
 
   const topics = listWithOther(CONTENT_TOPICS, application.contentTopics, application.contentTopicsOther);
@@ -134,7 +138,7 @@ export function ApplicationDetail({
             <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <Meta>{application.user.email}</Meta>
               {application.organization && <Meta>{application.organization}</Meta>}
-              {application.location && <Meta>{application.location}</Meta>}
+              {location && <Meta>{location}</Meta>}
             </span>
             {/* The two dates do not fit one phone line, so there they stack
                 as plain lines with no separator between them. */}

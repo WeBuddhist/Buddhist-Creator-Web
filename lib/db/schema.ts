@@ -66,7 +66,9 @@ export const applications = pgTable(
     // Personal details. Email lives on the user, not here.
     fullName: text("full_name"),
     organization: text("organization"),
-    location: text("location"),
+    // Names from lib/countries.ts: a listed country and one of its states.
+    country: text("country"),
+    state: text("state"),
 
     // Content creation journey. Multi-choice answers hold option slugs
     // (lib/registration-2027.ts); "other" pairs with its free-text field.

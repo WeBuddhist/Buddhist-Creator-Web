@@ -189,7 +189,8 @@ export type ApplicationListRow = {
   status: ApplicationStatus;
   fullName: string | null;
   organization: string | null;
-  location: string | null;
+  state: string | null;
+  country: string | null;
   platforms: string[] | null;
   submittedAt: Date | null;
   updatedAt: Date;
@@ -211,7 +212,8 @@ export async function listApplications(filter: ListFilter, page = 1) {
         status: applications.status,
         fullName: applications.fullName,
         organization: applications.organization,
-        location: applications.location,
+        state: applications.state,
+        country: applications.country,
         platforms: applications.platforms,
         submittedAt: applications.submittedAt,
         updatedAt: applications.updatedAt,

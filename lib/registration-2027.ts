@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isCountry, isStateOf } from "@/lib/countries";
 
 /* The registration form for the 2027 convention: its copy, its option
    lists and the schemas that validate it. The option lists are the Google
@@ -110,6 +111,11 @@ export function labelFor(options: readonly Option[], value: string | null | unde
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
+/** Where the applicant is, on one line: "Himachal Pradesh, India". */
+export function locationLabel(state: string | null, country: string | null) {
+  return [state, country].filter(Boolean).join(", ") || null;
+}
+
 /** A multi-choice answer as labels; "other" shows the free text. */
 export function listWithOther(options: readonly Option[], values: string[] | null, other: string | null): string[] {
   if (!values?.length) return [];
@@ -217,10 +223,26 @@ const platformLinks = z
     return filled;
   });
 
-export const draftSchema = z.object({
+/* The country is one from the list and the state one of that country's:
+   "India" with "Texas" is refused, as is a state with no country. The form
+   only offers valid pairs; this is the same rule for anything that did not
+   come through the form. */
+function checkPlace(data: { state: string | null; country: string | null }, ctx: z.RefinementCtx) {
+  const { state, country } = data;
+  if (country && !isCountry(country)) {
+    ctx.addIssue({ code: "custom", path: ["country"], message: "Choose a country from the list" });
+  } else if (state && !country) {
+    ctx.addIssue({ code: "custom", path: ["state"], message: "Choose the country first" });
+  } else if (state && country && !isStateOf(country, state)) {
+    ctx.addIssue({ code: "custom", path: ["state"], message: `Choose a state in ${country}` });
+  }
+}
+
+const answers = z.object({
   fullName: optionalText,
   organization: optionalText,
-  location: optionalText,
+  state: optionalText,
+  country: optionalText,
   contentTopics: z.array(values(CONTENT_TOPICS)).default([]),
   contentTopicsOther: optionalText,
   targetAudience: z.array(values(TARGET_AUDIENCES)).default([]),
@@ -234,20 +256,24 @@ export const draftSchema = z.object({
   platformLinks,
 });
 
+export const draftSchema = answers.superRefine(checkPlace);
+
 export type DraftValues = z.infer<typeof draftSchema>;
 
 const REQUIRED = "This answer is required";
 
-export const submitSchema = draftSchema
+export const submitSchema = answers
   .extend({
     fullName: trimmed.min(1, REQUIRED).max(500),
     organization: trimmed.min(1, "Write NA if you are coming as an individual").max(500),
-    location: trimmed.min(1, REQUIRED).max(500),
+    state: trimmed.min(1, REQUIRED).max(500),
+    country: trimmed.min(1, REQUIRED).max(500),
     contentTopics: z.array(values(CONTENT_TOPICS)).min(1, "Choose at least one"),
     targetAudience: z.array(values(TARGET_AUDIENCES)).min(1, "Choose at least one"),
     platforms: z.array(values(PLATFORMS)).min(1, "Choose at least one"),
   })
   .superRefine((data, ctx) => {
+    checkPlace(data, ctx);
     const needsOther = (list: readonly string[], field: keyof typeof data) => {
       if (list.includes("other") && !data[field]) {
         ctx.addIssue({ code: "custom", path: [field], message: "Tell us what “Other” is" });
@@ -299,7 +325,8 @@ export function formValues(formData: FormData) {
   return {
     fullName: text("fullName"),
     organization: text("organization"),
-    location: text("location"),
+    state: text("state"),
+    country: text("country"),
     contentTopics: list("contentTopics"),
     contentTopicsOther: text("contentTopicsOther"),
     targetAudience: list("targetAudience"),

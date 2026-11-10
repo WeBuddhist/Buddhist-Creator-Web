@@ -12,7 +12,7 @@ import { countByStatus, listApplications, PAGE_SIZE, type ListFilter } from "@/l
 import { requireRole } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
-import { labelFor, PLATFORMS } from "@/lib/registration-2027";
+import { labelFor, locationLabel, PLATFORMS } from "@/lib/registration-2027";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Applications" };
@@ -95,7 +95,7 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
                     <div className="text-xs text-muted-foreground">{row.email}</div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{row.organization}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{locationLabel(row.state, row.country)}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {(row.platforms ?? []).map((p) => labelFor(PLATFORMS, p)).join(", ")}
                   </td>
