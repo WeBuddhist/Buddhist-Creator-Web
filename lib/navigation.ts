@@ -36,12 +36,18 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const SITE_NAME = "Buddhist Creators";
 
+/* NEXT_PUBLIC_SITE_URL is required and has no fallback: a build without
+   it stops here, instead of shipping a sitemap and social cards that point
+   at the wrong host. */
+function siteUrl() {
+  const url = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!url) throw new Error("NEXT_PUBLIC_SITE_URL is not set");
+  return url.replace(/\/+$/, "");
+}
+
 /** Canonical origin, with no trailing slash. Absolute URLs in metadata,
-    the sitemap and robots.txt are built from it. Falls back to the Render
-    host until the site moves: once buddhistcreators.com serves this app,
-    set NEXT_PUBLIC_SITE_URL to it. Read at build time. */
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL;
+    the sitemap and robots.txt are built from it. Read at build time. */
+export const SITE_URL = siteUrl();
 
 /** The default meta description, and the homepage's social-card text. */
 export const SITE_DESCRIPTION =
