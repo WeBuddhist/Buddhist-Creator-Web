@@ -300,7 +300,11 @@ export function RegistrationForm({
           readOnly={!editable}
         />
         <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">
+            Email
+            <RequiredMark />
+            <span className="sr-only">(required)</span>
+          </Label>
           <Input id="email" value={user.email} readOnly className={cn(field, "bg-muted/50 text-muted-foreground")} />
           <p className="text-sm text-muted-foreground">
             From your sign-in. We will write to this address about your application.
@@ -309,7 +313,7 @@ export function RegistrationForm({
         <TextField
           id="organization"
           label="Organization"
-          hint="If you are coming as an individual, write NA."
+          hint="If you are coming as an individual, write N/A."
           required
           value={values.organization}
           onChange={(v) => set("organization", v)}

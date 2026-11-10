@@ -267,7 +267,7 @@ const REQUIRED = "This answer is required";
 export const submitSchema = answers
   .extend({
     fullName: trimmed.min(1, REQUIRED).max(500),
-    organization: trimmed.min(1, "Write NA if you are coming as an individual").max(500),
+    organization: trimmed.min(1, "Write N/A if you are coming as an individual").max(500),
     state: trimmed.min(1, REQUIRED).max(500),
     country: trimmed.min(1, REQUIRED).max(500),
     contentTopics: z.array(values(CONTENT_TOPICS)).min(1, "Choose at least one"),
