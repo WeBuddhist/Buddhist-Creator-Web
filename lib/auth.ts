@@ -11,7 +11,8 @@ import { hasRole } from "@/lib/auth-roles";
    handler that needs to know who is calling goes through here; nothing
    reads the Auth0 session directly. With Cache Components on, the session
    is request data, so callers must sit inside a <Suspense> boundary (or be
-   an action or a handler). */
+   an action or a handler). A component that reads it inside a try/catch
+   awaits connection() first, outside the try; see components/user-menu.tsx. */
 
 export type CurrentUser = {
   id: string;
@@ -62,11 +63,20 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
         .returning();
       return updated;
     }
+    // A first sign-in arrives as several requests at once (the page and the
+    // links it prefetches), and each of them gets this far. The unique
+    // indexes let one insert through; the others insert nothing and take
+    // the row the first one wrote, which this statement can see because it
+    // waited for that insert to commit.
     const [created] = await tx
       .insert(schema.users)
       .values({ auth0Sub: profile.sub, email, name, picture })
+      .onConflictDoNothing()
       .returning();
-    return created;
+    if (created) return created;
+    const existing = await tx.query.users.findFirst({ where: eq(schema.users.auth0Sub, profile.sub) });
+    if (!existing) throw new Error("users: the insert conflicted, but no row has this auth0_sub");
+    return existing;
   });
 
   return { id: row.id, email: row.email, name: row.name, picture: row.picture, role: row.role };

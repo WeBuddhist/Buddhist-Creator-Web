@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { ArrowRightIcon, ArrowUpRightIcon, CheckCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { primaryButton } from "@/components/convention/section-heading";
@@ -8,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
 import { REGISTRATION } from "@/lib/convention-2027";
 import { formatDateTime } from "@/lib/format";
+import { forLog } from "@/lib/log-error";
 import { FORM } from "@/lib/registration-2027";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +59,9 @@ export function RegisterCallToAction() {
 export async function RegistrationAction() {
   if (!REGISTRATION.open) return <RegisterCallToAction />;
 
+  // As in the header's account corner (components/user-menu.tsx): wait
+  // for the real request, outside the try, before reading the session.
+  await connection();
   let application: Awaited<ReturnType<typeof getMyApplication>> = null;
   let email: string | null = null;
   try {
@@ -68,7 +73,7 @@ export async function RegistrationAction() {
   } catch (error) {
     // Redirects and prerender interruptions are Next's, not ours.
     unstable_rethrow(error);
-    console.error("RegistrationAction: could not read the application", error);
+    console.error("RegistrationAction: could not read the application", forLog(error));
   }
 
   if (!application || !email) return <RegisterCallToAction />;

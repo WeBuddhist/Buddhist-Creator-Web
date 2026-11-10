@@ -1,8 +1,10 @@
 import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { SignInIcon } from "@phosphor-icons/react/dist/ssr";
 import { AccountMenu } from "@/components/account-menu";
 import { SignInLink } from "@/components/sign-in-link";
 import { getCurrentUser, hasRole } from "@/lib/auth";
+import { forLog } from "@/lib/log-error";
 import { cn } from "@/lib/utils";
 
 /* The header's account corner. It reads the session, so it renders inside
@@ -27,13 +29,18 @@ const iconPill = cn(
 const REGISTER = "/convention/2027/register";
 
 export async function UserMenu() {
+  // Wait for the real request before reading the session: checking the
+  // session's expiry reads the clock, which Next does not allow while it
+  // prepares a page ahead of the request. Outside the try on purpose, so
+  // a render Next abandons is not caught and logged as a failure below.
+  await connection();
   let user: Awaited<ReturnType<typeof getCurrentUser>> = null;
   try {
     user = await getCurrentUser();
   } catch (error) {
     // Redirects and prerender interruptions are Next's, not ours.
     unstable_rethrow(error);
-    console.error("UserMenu: could not read the session", error);
+    console.error("UserMenu: could not read the session", forLog(error));
   }
 
   if (!user) {
