@@ -193,7 +193,6 @@ export type ApplicationListRow = {
   organization: string | null;
   state: string | null;
   country: string | null;
-  platforms: string[] | null;
   submittedAt: Date | null;
   updatedAt: Date;
   email: string;
@@ -220,7 +219,6 @@ export async function listApplications(filter: ListFilter, page = 1) {
         organization: applications.organization,
         state: applications.state,
         country: applications.country,
-        platforms: applications.platforms,
         submittedAt: applications.submittedAt,
         updatedAt: applications.updatedAt,
         email: users.email,

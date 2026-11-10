@@ -1,7 +1,7 @@
 import { panel } from "@/components/admin/panel";
 import { cn } from "@/lib/utils";
 
-export const COLUMNS = ["Applicant", "Organisation", "Location", "Platforms", "Status", "Submitted"] as const;
+export const COLUMNS = ["Applicant", "Organisation", "Location", "Email", "Status", "Submitted"] as const;
 
 export function TableHead() {
   return (
@@ -27,8 +27,8 @@ const bar = "block h-3.5 rounded bg-muted";
    grid of identical bars. The applicant cell carries two lines, name and
    email, so a skeleton row keeps the height of a real one. */
 const WIDTHS = [
-  ["w-32", "w-20", "w-14", "w-16", "w-20", "w-28"],
-  ["w-24", "w-24", "w-16", "w-24", "w-20", "w-28"],
+  ["w-32", "w-20", "w-14", "w-20", "w-20", "w-28"],
+  ["w-24", "w-24", "w-16", "w-14", "w-20", "w-28"],
   ["w-36", "w-16", "w-12", "w-20", "w-20", "w-28"],
 ];
 

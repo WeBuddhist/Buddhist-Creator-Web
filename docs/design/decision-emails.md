@@ -181,7 +181,7 @@ All call `assertRole("admin")` and validate with zod, like `setStatusAction`.
 **List (`app/admin/page.tsx`)**
 - A strip above the table: "15 decision emails waiting: 12 accepted, 3 waitlisted. 2 need review."
 - A "Send emails" button, scoped to the active tab. On "All" it covers all three decisions.
-- A line under each status badge: "Email not sent", "Emailed 6 Nov", "Told waitlisted; accepted not sent", or "Needs review".
+- An Email column before Status, an icon and a word: "Sent", "Not sent", "Sending…" or "Needs review"; a dash when there is no decision to send. The date, or the decision they were told before, is the cell's tooltip.
 - Confirm drawer, from the right edge: delivery mode, counts per decision, the recipient list with "previously told a different decision" flagged, a quota warning if the run exceeds what SES allows today. Then a progress bar, a cancel button, and a summary.
 
 **Detail (`components/admin/application-detail.tsx`)**

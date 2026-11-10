@@ -16,7 +16,7 @@ import type { ApplicationStatus } from "@/lib/db/schema";
 import { DECISIONS, isDecision, type Decision } from "@/lib/decisions";
 import { formatDateTime } from "@/lib/format";
 import { owedSummary } from "@/lib/notifications";
-import { labelFor, locationLabel, PLATFORMS } from "@/lib/registration-2027";
+import { locationLabel } from "@/lib/registration-2027";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Applications" };
@@ -108,18 +108,16 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{row.organization}</td>
                   <td className="px-4 py-3 text-muted-foreground">{locationLabel(row.state, row.country)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {(row.platforms ?? []).map((p) => labelFor(PLATFORMS, p)).join(", ")}
-                  </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={row.status} />
                     <EmailStatusLine
                       status={row.status}
                       notifiedStatus={row.notifiedStatus}
                       notifiedAt={row.notifiedAt}
                       inFlight={row.inFlight}
-                      className="mt-1"
                     />
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={row.status} />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
                     {row.submittedAt ? formatDateTime(row.submittedAt) : "—"}
