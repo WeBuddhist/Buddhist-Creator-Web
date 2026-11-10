@@ -1,9 +1,10 @@
 import "server-only";
-import { asc, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { Application, ApplicationStatus, UserRole } from "@/lib/db/schema";
 import { DECISIONS as DECISION_LIST } from "@/lib/decisions";
-import { inFlightColumn, unsettledJoin, type InFlight } from "@/lib/notifications";
+import type { EmailFilter, ListView } from "@/lib/applications-view";
+import { emailStateWhere, inFlightColumn, unsettledJoin, type InFlight } from "@/lib/notifications";
 import type { DraftValues } from "@/lib/registration-2027";
 
 /* Everything that reads or writes applications. Callers pass the current
@@ -207,8 +208,27 @@ export type ListFilter = "all" | ApplicationStatus;
 
 export const PAGE_SIZE = 50;
 
-export async function listApplications(filter: ListFilter, page = 1) {
-  const where = filter === "all" ? ne(applications.status, "draft") : eq(applications.status, filter);
+/* The text columns sort on what the table shows: trimmed, without regard
+   to case, and with blanks last in either direction. Location is the one
+   line the cell prints, state then country. */
+const organisationKey = sql`lower(nullif(btrim(${applications.organization}), ''))`;
+const locationKey = sql`lower(nullif(concat_ws(', ', nullif(btrim(${applications.state}), ''), nullif(btrim(${applications.country}), '')), ''))`;
+const newestFirst = [desc(applications.submittedAt), desc(applications.updatedAt)];
+
+function listOrder({ sort, dir }: ListView) {
+  if (sort === "submitted") return dir === "desc" ? newestFirst : [asc(applications.submittedAt), asc(applications.updatedAt)];
+  const key = sort === "organisation" ? organisationKey : locationKey;
+  // Ties fall back to newest first, so pages stay stable.
+  return [dir === "asc" ? sql`${key} asc nulls last` : sql`${key} desc nulls last`, ...newestFirst];
+}
+
+function listWhere(filter: ListFilter, email: EmailFilter | null) {
+  const status = filter === "all" ? ne(applications.status, "draft") : eq(applications.status, filter);
+  return email ? and(status, emailStateWhere(email)) : status;
+}
+
+export async function listApplications(view: ListView, page = 1) {
+  const where = listWhere(view.status, view.email);
   const offset = Math.max(0, page - 1) * PAGE_SIZE;
   const [rows, [{ total }]] = await Promise.all([
     db()
@@ -232,10 +252,14 @@ export async function listApplications(filter: ListFilter, page = 1) {
       // At most one row: the ledger allows one unsettled send per application.
       .leftJoin(applicationNotifications, unsettledJoin)
       .where(where)
-      .orderBy(desc(applications.submittedAt), desc(applications.updatedAt))
+      .orderBy(...listOrder(view))
       .limit(PAGE_SIZE)
       .offset(offset),
-    db().select({ total: sql<number>`count(*)::int` }).from(applications).where(where),
+    db()
+      .select({ total: sql<number>`count(*)::int` })
+      .from(applications)
+      .leftJoin(applicationNotifications, unsettledJoin)
+      .where(where),
   ]);
   return { rows: rows as ApplicationListRow[], total, page, pageSize: PAGE_SIZE };
 }
@@ -250,10 +274,14 @@ export async function exportApplications(filter: ListFilter) {
   });
 }
 
-export async function countByStatus() {
+/** How many applications each status holds; with an email state, how
+    many of them are in it, so the pills count what their tab will show. */
+export async function countByStatus(email: EmailFilter | null = null) {
   const rows = await db()
     .select({ status: applications.status, count: sql<number>`count(*)::int` })
     .from(applications)
+    .leftJoin(applicationNotifications, unsettledJoin)
+    .where(email ? emailStateWhere(email) : undefined)
     .groupBy(applications.status);
   const counts: Partial<Record<ApplicationStatus, number>> = {};
   for (const row of rows) counts[row.status] = row.count;

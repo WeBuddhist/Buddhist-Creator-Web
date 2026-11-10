@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { ApplicationsFilter, type FilterOption } from "@/components/admin/applications-filter";
 import { BulkSend } from "@/components/admin/bulk-send";
 import { EmailStatusLine } from "@/components/admin/email-status";
-import { EmptyRows, FilterSkeleton, TableHead, TableSkeleton } from "@/components/admin/applications-skeleton";
+import { ListFrame, TableHead } from "@/components/admin/applications-head";
+import { EmptyRows, FilterSkeleton, TableSkeleton } from "@/components/admin/applications-skeleton";
 import { PageHeader } from "@/components/admin/page-header";
 import { Pagination } from "@/components/admin/pagination";
 import { panel } from "@/components/admin/panel";
@@ -13,6 +14,7 @@ import { StatusBadge, STATUS_LABEL } from "@/components/admin/status-badge";
 import { countByStatus, listApplications, PAGE_SIZE, type ListFilter } from "@/lib/applications";
 import { requireRole } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
+import { parseView, viewHref } from "@/lib/applications-view";
 import { DECISIONS, isDecision, type Decision } from "@/lib/decisions";
 import { formatDateTime } from "@/lib/format";
 import { owedSummary } from "@/lib/notifications";
@@ -24,14 +26,6 @@ export const metadata: Metadata = { title: "Applications" };
 const FILTERS: ListFilter[] = ["all", "submitted", "accepted", "waitlisted", "rejected", "withdrawn", "draft"];
 
 const filterLabel = (filter: ListFilter) => (filter === "all" ? "All" : STATUS_LABEL[filter]);
-
-function pageHref(filter: ListFilter, page: number) {
-  const params = new URLSearchParams();
-  if (filter !== "all") params.set("status", filter);
-  if (page > 1) params.set("page", String(page));
-  const query = params.toString();
-  return query ? `/admin?${query}` : "/admin";
-}
 
 export default function AdminPage(props: PageProps<"/admin">) {
   return (
@@ -58,16 +52,17 @@ export default function AdminPage(props: PageProps<"/admin">) {
 async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/admin">["searchParams"] }) {
   await requireRole("admin", "/admin");
   const params = await searchParams;
-  const requested = typeof params.status === "string" ? params.status : "all";
-  const filter = (FILTERS as string[]).includes(requested) ? (requested as ListFilter) : "all";
+  const view = parseView(params, FILTERS);
+  const filter = view.status;
   const page = Math.max(1, Number(params.page) || 1);
 
   // The tab decides who a bulk send reaches: one decision's tab is that
   // email alone, "All" is all three. The other tabs hold nobody to write to.
   const scope: Decision[] | null = filter === "all" ? [...DECISIONS] : isDecision(filter) ? [filter] : null;
   const [list, counts, emails] = await Promise.all([
-    listApplications(filter, page),
-    countByStatus(),
+    listApplications(view, page),
+    // Under an email filter the pills count what their tab would show.
+    countByStatus(view.email),
     scope ? owedSummary(scope) : null,
   ]);
   const totalExceptDrafts = Object.entries(counts)
@@ -76,21 +71,20 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
   // A page past the end (a stale link, or a decision that emptied the last
   // page) lands on the last real page rather than an empty table.
-  if (page > pages) redirect(pageHref(filter, pages));
+  if (page > pages) redirect(viewHref(view, pages));
 
   const options: FilterOption[] = FILTERS.map((value) => ({
     value,
     label: filterLabel(value),
     count: value === "all" ? totalExceptDrafts : (counts[value as ApplicationStatus] ?? 0),
-    href: pageHref(value, 1),
   }));
 
   return (
-    <ApplicationsFilter options={options} active={filter} pageSize={PAGE_SIZE}>
+    <ApplicationsFilter options={options} view={view} pageSize={PAGE_SIZE}>
       {scope && emails && <BulkSend key={filter} scope={scope} summary={emails} />}
-      <div className={cn(panel, "overflow-x-auto")}>
+      <ListFrame className={cn(panel, "overflow-x-auto")}>
         {list.rows.length === 0 ? (
-          <EmptyRows />
+          <EmptyRows clearHref={view.email ? viewHref({ ...view, email: null }) : undefined} />
         ) : (
           <table className="w-full min-w-[48rem] text-sm">
             <TableHead />
@@ -127,14 +121,14 @@ async function ApplicationsList({ searchParams }: { searchParams: PageProps<"/ad
             </tbody>
           </table>
         )}
-      </div>
+      </ListFrame>
 
       <Pagination
         page={page}
         pages={pages}
         total={list.total}
         pageSize={list.pageSize}
-        href={(n) => pageHref(filter, n)}
+        href={(n) => viewHref(view, n)}
         className="mt-4"
       />
     </ApplicationsFilter>

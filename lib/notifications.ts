@@ -1,5 +1,6 @@
 import "server-only";
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, not, or, sql } from "drizzle-orm";
+import type { EmailFilter } from "@/lib/applications-view";
 import { db, schema } from "@/lib/db";
 import type { NotificationState } from "@/lib/db/schema";
 import { DECISIONS, isDecision, type Decision } from "@/lib/decisions";
@@ -48,6 +49,20 @@ end`;
 
 /** The join that brings an application's one unsettled attempt, if any. */
 export const unsettledJoin = and(eq(notifications.applicationId, applications.id), unsettled);
+
+/** The rows whose Email cell shows a given state: the SQL twin of
+    emailStatus() in components/admin/email-status.tsx, in the same order
+    of precedence, so the four states split the list with no overlap. The
+    query needs `unsettledJoin`. A send still in flight counts by what was
+    true before it started. */
+export function emailStateWhere(state: EmailFilter) {
+  const review = and(isNotNull(notifications.id), needsReview);
+  if (state === "review") return review;
+  const noReview = or(isNull(notifications.id), not(needsReview));
+  const decided = inArray(applications.status, [...DECISIONS]);
+  if (state === "none") return and(noReview, not(decided));
+  return and(noReview, decided, state === "sent" ? not(owed) : owed);
+}
 
 /* ---------------------------------------------------------------------- */
 /* Reading                                                                 */

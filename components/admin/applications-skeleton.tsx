@@ -1,24 +1,29 @@
+import Link from "next/link";
+import { TableHead } from "@/components/admin/applications-head";
 import { panel } from "@/components/admin/panel";
 import { cn } from "@/lib/utils";
 
-export const COLUMNS = ["Applicant", "Organisation", "Location", "Email", "Status", "Submitted"] as const;
-
-export function TableHead() {
+/* The table with nothing in it. Under an email filter the heading row
+   stays above the message, since that is where the filter is changed, and
+   the message offers the way back to the whole list. */
+export function EmptyRows({ clearHref }: { clearHref?: string }) {
+  if (!clearHref) return <p className="px-5 py-10 text-center text-sm text-muted-foreground">No applications here yet.</p>;
   return (
-    <thead>
-      <tr className="border-b border-border bg-muted/60 text-left text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
-        {COLUMNS.map((label) => (
-          <th key={label} scope="col" className="px-4 py-3">
-            {label}
-          </th>
-        ))}
-      </tr>
-    </thead>
+    <>
+      <table className="w-full min-w-[48rem] text-sm">
+        <TableHead />
+      </table>
+      <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+        No applications match this email filter.{" "}
+        <Link
+          href={clearHref}
+          className="font-medium text-foreground underline decoration-foreground/20 underline-offset-4 hover:decoration-foreground"
+        >
+          Show all
+        </Link>
+      </p>
+    </>
   );
-}
-
-export function EmptyRows() {
-  return <p className="px-5 py-10 text-center text-sm text-muted-foreground">No applications here yet.</p>;
 }
 
 const bar = "block h-3.5 rounded bg-muted";
