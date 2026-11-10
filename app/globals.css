@@ -58,11 +58,10 @@
   --color-logo-excel: #1d6f42;
   --color-brand-maroon: oklch(0.36 0.09 25);
 
-  /* The dashboard's action colour: a plain product blue for the one raised
-     button on a page, deliberately off the brand palette so it reads as a
-     control rather than a piece of the site. White measures 5.3:1 on it
-     and about 4.2:1 on the 15% lighter top of the button's gradient. */
-  --color-action: oklch(0.54 0.2 264);
+  /* The dashboard's action colour, for the one raised button on a page:
+     brand cyan, so the control belongs to the site. White measures 6.2:1
+     on it and about 4.5:1 on the 15% lighter top of the button's gradient. */
+  --color-action: var(--color-brand-cyan);
 
   /* Application status. Each state is one hue in three steps with jobs:
      a light fill, text on that fill, and a solid for the dot. Chroma is the

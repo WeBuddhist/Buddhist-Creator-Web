@@ -19,7 +19,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         // The dashboard's raised button, in the Cloudflare emphasis recipe:
         // btn-emphasis in globals.css. Pair it with size "lg" (h-9) and px-3,
-        // as theirs is. Action blue by default; set --btn for another colour
+        // as theirs is. Brand cyan by default; set --btn for another colour
         // and, on a light one, a darker text colour at the call site.
         // Border-free like theirs: the inset highlight is clipped at the
         // padding box, so a border would leave a band between it and the ring.
