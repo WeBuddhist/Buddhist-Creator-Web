@@ -32,12 +32,13 @@ export const WELCOME = {
   lede: "The Buddha walked from village to village, sharing the Dharma in words people could understand. Today that path runs through screens and stories, and we’d love for you to walk it with us!",
   paragraphs: [
     "For our second convention, Buddhist creators from around the world are gathering at Nagaloka, under the gentle gaze of its great Walking Buddha. Monastics and lay followers, Theravada, Mahayana and Vajrayana, big voices and brand-new ones: everyone is welcome.",
+    "Come share your practice journey: the joys, the struggles, and what keeps you going. That’s how we become kalyanamitras, good friends on the path for one another.",
   ],
 } as const;
 
 export type ProgrammeItem = {
   /** Keys the icon the page draws beside the title. */
-  id: "journeys" | "dharma" | "create" | "sangha";
+  id: "journeys" | "dharma" | "create" | "practice" | "sangha";
   title: string;
   body: string;
 };
@@ -48,17 +49,22 @@ export const IN_STORE = {
     {
       id: "journeys",
       title: "Creator Journeys",
-      body: "Inspiring creators share the real stories behind their work.",
+      body: "Inspiring creators share the real stories behind their practice and their work.",
     },
     {
       id: "dharma",
       title: "Dharma Made Simple",
-      body: "Fun, hands-on workshops on sharing teachings clearly in any language.",
+      body: "Fun, hands-on workshops on sharing your journey clearly in any language.",
     },
     {
       id: "create",
       title: "Create Together",
       body: "Team up across countries and traditions to make content for people new to the Dharma.",
+    },
+    {
+      id: "practice",
+      title: "Practice & Pilgrimage",
+      body: "Meditation, chanting and visits to sacred sites.",
     },
     {
       id: "sangha",
@@ -69,10 +75,10 @@ export const IN_STORE = {
 } as const;
 
 export const BRING_HOME = {
-  eyebrow: "For organisations and communities",
+  eyebrow: "For organizations and communities",
   title: "Bring the convention home!",
   description:
-    "The convention is meant to travel. Buddhist organisations and communities everywhere are invited to join us as partners, and maybe host the next one!",
+    "The convention is meant to travel. Buddhist organizations and communities everywhere are invited to join us as partners, and maybe host the next one!",
   /** Goes to the partner section of the Get Involved page; the page builds
       the address from that section's id. */
   actionLabel: "Become a partner",
@@ -80,7 +86,7 @@ export const BRING_HOME = {
 
 export const CLOSING = {
   /** The second sentence takes the golden highlight. */
-  title: ["Come as a creator.", "Leave as part of a global sangha."],
+  title: ["Come as a creator.", "Leave as a kalyanamitra."],
   body: "Registration is open. It takes just 10 minutes.",
 } as const;
 

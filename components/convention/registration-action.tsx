@@ -184,7 +184,7 @@ function closingCopy(status: ApplicationStatus | null) {
   if (status === null) return { line: CLOSING.body, label: REGISTRATION.label };
   if (status === "draft") return { line: "Your application is saved as a draft.", label: "Continue your application" };
   if (status === "withdrawn") return { line: "You withdrew your application.", label: "Reopen your application" };
-  return { line: "Your application is in. We will write to you by email.", label: "View your application" };
+  return { line: "Your application is in. We will write to you by email soon.", label: "View your application" };
 }
 
 /** Pure, so it can be rendered for every status without a session. */

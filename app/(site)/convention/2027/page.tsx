@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowRightIcon,
+  FlowerLotusIcon,
   GlobeHemisphereEastIcon,
   LightbulbIcon,
   MicrophoneStageIcon,
@@ -49,6 +50,7 @@ const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
   journeys: MicrophoneStageIcon,
   dharma: LightbulbIcon,
   create: VideoCameraIcon,
+  practice: FlowerLotusIcon,
   sangha: GlobeHemisphereEastIcon,
 };
 
@@ -61,7 +63,7 @@ const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
    2. Registration, one wide panel: the facts a reader came for as a
       labelled list, and beside them the one action (applying, or for
       someone with an application, getting back to it).
-   3. What the four days hold, as a plain grid of four.
+   3. What the four days hold, as a plain grid of five.
 
    The invitation to partners and the closing band follow. Both actions
    read the session, so each streams in behind a Suspense boundary whose
@@ -140,7 +142,7 @@ export default function Convention2027Page() {
                     <dd className="mt-1 text-pretty font-medium text-foreground">{CONVENTION_2027.location}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-muted-foreground">Organised by</dt>
+                    <dt className="text-sm text-muted-foreground">Organized by</dt>
                     <dd className="mt-1">
                       <a href={ORGANISER.href} target="_blank" rel="noopener noreferrer" className={detailLink}>
                         {ORGANISER.name}
@@ -168,7 +170,7 @@ export default function Convention2027Page() {
             </div>
           </section>
 
-          {/* The programme: four parts of equal weight, so a plain grid
+          {/* The programme: five parts of equal weight, so a plain grid
               rather than a sequence. Each sits under a hairline with its
               mark in the brand colour, and they arrive one after another
               the first time the grid scrolls into view, through the paused
@@ -183,7 +185,7 @@ export default function Convention2027Page() {
               {IN_STORE.title}
             </h2>
             <InView className="art mt-8 lg:mt-10">
-              <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-5">
                 {IN_STORE.items.map(({ id, title, body }, index) => {
                   const Icon = ICONS[id];
                   return (
