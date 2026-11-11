@@ -36,7 +36,7 @@ import { PARTNER } from "@/lib/get-involved";
 
 export const metadata: Metadata = {
   title: CONVENTION_2027.title,
-  description: `${CONVENTION_2027.theme}: Buddhist creators from around the world gather at ${CONVENTION_2027.location}, ${CONVENTION_2027.dates.label}. Registration is open.`,
+  description: `${CONVENTION_2027.theme} Buddhist creators from around the world gather at ${CONVENTION_2027.location}, ${CONVENTION_2027.dates.label}. Registration is open.`,
 };
 
 /* A link in the details card: underlined in the text's own colour. */
@@ -75,14 +75,21 @@ export default function Convention2027Page() {
           footer's on the homepage. */}
       <section aria-labelledby="welcome-title" className="border-t border-border bg-background">
         <div className="mx-auto w-full max-w-6xl px-4 pt-16 sm:px-6 lg:pt-24">
-          <div className="grid gap-x-16 gap-y-8 lg:grid-cols-12">
+          {/* Two columns, not five of twelve: the twelve-column grid spent
+              its eleven gaps and left the title too narrow for "Share your
+              journey." at 48px (about 27rem). 28rem holds it with room. */}
+          <div className="grid gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
             <SectionHeading
               id="welcome-title"
               eyebrow={WELCOME.eyebrow}
-              title={WELCOME.title}
-              className="lg:col-span-5"
+              title={WELCOME.title.map((line, index) => (
+                <span key={line} className="block">
+                  {index > 0 && " "}
+                  {line}
+                </span>
+              ))}
             />
-            <div className="lg:col-span-7 lg:pt-8">
+            <div className="lg:pt-8">
               <p className="max-w-[46ch] text-pretty text-xl leading-[1.5] text-foreground sm:text-2xl sm:leading-[1.45]">
                 {WELCOME.lede}
               </p>

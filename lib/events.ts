@@ -77,7 +77,7 @@ export const UPCOMING_EVENTS: EventEntry[] = [
     title: "Buddhist Creators Convention 2027",
     date: { label: "18 – 21 February 2027", start: "2027-02-18", end: "2027-02-21" },
     location: "Nagaloka, Nagpur, India",
-    description: "Walking the Path Together: our second global gathering, under the great Walking Buddha at Nagaloka. Registration is open.",
+    description: "Walk the path. Share your journey. Our second global gathering, under the great Walking Buddha at Nagaloka. Registration is open.",
     href: "/convention/2027",
     cta: "See the convention",
     image: {

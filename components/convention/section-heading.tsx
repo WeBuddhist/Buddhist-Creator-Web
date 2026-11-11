@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type SectionHeadingProps = {
   id: string;
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   description?: string;
   align?: "start" | "center";
   /** h2 is a page section; h3 is a subsection one step smaller. */
@@ -42,10 +43,13 @@ export function SectionHeading({
       <Heading
         id={id}
         className={cn(
-          "mt-4 text-balance font-semibold leading-[1.15] tracking-[-0.02em] text-foreground",
+          "mt-4 text-balance font-semibold tracking-[-0.02em] text-foreground",
           size === "h2"
             ? "text-3xl sm:text-4xl lg:text-5xl"
             : "text-2xl sm:text-3xl lg:text-4xl",
+          /* After the sizes: each text-* size carries its own line-height,
+             and cn drops a leading-* that comes before one. */
+          "leading-[1.15]",
         )}
       >
         {title}

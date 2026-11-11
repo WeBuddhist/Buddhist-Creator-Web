@@ -2,11 +2,14 @@
    top of the page is the one on the homepage; what follows it is the
    announcement copy below, in the order the page shows it. */
 
+/* The theme is two sentences, and the page sets each on its own line. */
+const THEME_LINES = ["Walk the path.", "Share your journey."] as const;
+
 export const CONVENTION_2027 = {
   year: 2027,
   title: "Buddhist Creators Convention 2027",
   shortTitle: "BCC 2027",
-  theme: "Walking the Path Together",
+  theme: THEME_LINES.join(" "),
   location: "Nagaloka, Nagpur, India",
   dates: { label: "18 – 21 February 2027", start: "2027-02-18", end: "2027-02-21" },
   /** The line in the flyer's status pill. */
@@ -23,7 +26,8 @@ export const SUPPORTER = {
 
 export const WELCOME = {
   eyebrow: "The 2027 theme",
-  title: CONVENTION_2027.theme,
+  /** One line per sentence, so the break falls at the full stop. */
+  title: THEME_LINES,
   /** Set larger than the paragraphs after it. */
   lede: "The Buddha walked from village to village, sharing the Dharma in words people could understand. Today that path runs through screens and stories, and we’d love for you to walk it with us!",
   paragraphs: [
