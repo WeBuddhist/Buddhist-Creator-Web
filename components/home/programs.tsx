@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRightIcon,
-  ChalkboardTeacherIcon,
   MegaphoneIcon,
   TrophyIcon,
   UsersThreeIcon,
@@ -16,7 +15,6 @@ import { PROGRAMS, type Program } from "@/lib/home";
    page. Hidden from assistive tech; the title carries the meaning. */
 const ICONS: Record<Program["id"], typeof UsersThreeIcon> = {
   convention: UsersThreeIcon,
-  masterclass: ChalkboardTeacherIcon,
   awards: TrophyIcon,
   campaigns: MegaphoneIcon,
 };
@@ -32,7 +30,7 @@ export function Programs() {
           description={PROGRAMS.description}
         />
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4 lg:gap-6">
+        <ul className="mt-12 grid gap-4 md:grid-cols-3 lg:mt-16 lg:gap-6">
           {PROGRAMS.items.map(({ id, title, body, href, cta }) => {
             const Icon = ICONS[id];
             return (

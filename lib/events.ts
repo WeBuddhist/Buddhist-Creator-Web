@@ -3,7 +3,6 @@
    that. Move an entry between the two lists when it passes. */
 
 import type { StaticImageData } from "next/image";
-import masterclass2026 from "@/public/events/masterclass-2026.webp";
 import bodhisattvaChallenge from "@/public/events/bodhisattva-challenge.webp";
 import dailyTipitaka from "@/public/events/daily-tipitaka.webp";
 import convention2027 from "@/public/events/convention-2027.webp";
@@ -89,16 +88,6 @@ export const UPCOMING_EVENTS: EventEntry[] = [
 ];
 
 export const PAST_EVENTS: EventEntry[] = [
-  {
-    title: "WeBuddhist Influencer Masterclass 2026",
-    date: { label: "1 – 6 November 2026", start: "2026-11-01", end: "2026-11-06" },
-    location: "Dzongsar Khyentse Chökyi Lodrö Institute, Himachal Pradesh, India",
-    gist: "Six days on marketing the Dharma, hosted by Khyentse Foundation.",
-    image: {
-      src: masterclass2026,
-      alt: "Monks in maroon robes debating on a monastery courtyard at sunset, with mountains behind the red and gold temple.",
-    },
-  },
   {
     title: "Guru Rinpoche Day",
     date: { label: "Several Guru Rinpoche Days" },

@@ -33,12 +33,20 @@ export type Challenge = {
   image?: { src: StaticImageData; alt: string };
 };
 
+/** One way an institution can take part. With an href it renders as a
+    link card to that page; without one, as a plain card. */
+export type PartnerWay = {
+  title: string;
+  body: string;
+  href?: string;
+};
+
 export const CREATOR = {
   id: "creator",
   eyebrow: "As a creator",
   title: "Join a challenge, or bring your own content to the community",
   description:
-    "Two challenges are open right now, and every convention, masterclass and award season is another chance to create alongside the community.",
+    "Two challenges are open right now, and every convention and award season is another chance to create alongside the community.",
   challenges: [
     {
       title: "Bodhisattva Challenge",
@@ -60,8 +68,8 @@ export const CREATOR = {
     },
   ] as Challenge[],
   programs: {
-    title: "Looking for the next convention or masterclass?",
-    body: "The annual convention, the WeBuddhist Influencer Masterclass and the Buddhist Influencer of the Year awards are where creators go deeper together.",
+    title: "Looking for the next convention?",
+    body: "The annual convention and the Buddhist Influencer of the Year awards are where creators go deeper together.",
     actions: [
       { label: "See full program", href: "/program" },
       { label: "Explore the 2026 convention", href: "/convention/2026" },
@@ -74,19 +82,14 @@ export const PARTNER = {
   eyebrow: "As an institution or group",
   title: "Support to the next convention",
   description:
-    "Monasteries, foundations and organisations already power our two flagship initiatives. Join them in bringing the Dharma to the digital age.",
-  /** A way with an href renders as a link card to that page. */
+    "Monasteries, foundations and organisations already power the convention. Join them in bringing the Dharma to the digital age.",
   ways: [
     {
       title: "Buddhist Creators Convention",
       body: "Join us at our next convention, 18 to 21 February 2027, at Nagaloka, Nagpur.",
       href: "/convention/2027",
     },
-    {
-      title: "WeBuddhist Influencer Masterclass",
-      body: "An intensive, practice-led training that runs at partner institutes through the year. Host the next one at your centre.",
-    },
-  ],
+  ] as PartnerWay[],
   partnersTitle: "Past organisations that supported the convention",
   partners: [
     { name: "Shechen Monastery", logo: collaboratorShechenWide, href: null },
@@ -125,6 +128,6 @@ export const TEAM = {
   eyebrow: "Join our team",
   title: "Help us build the movement from the inside",
   description:
-    "We are a small, fast-growing team behind the convention, the masterclass and the awards, and we are always glad to hear from people who want to contribute their time and skills. Tell us a little about yourself and where you would like to help.",
+    "We are a small, fast-growing team behind the convention, the awards and the campaigns, and we are always glad to hear from people who want to contribute their time and skills. Tell us a little about yourself and where you would like to help.",
   action: { label: "Introduce yourself", href: mailto("Join the Team") },
 } as const;

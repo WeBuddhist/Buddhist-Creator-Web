@@ -12,7 +12,7 @@ export const PARTNERS = {
 
 export type Program = {
   /** Keys the icon the component draws beside the title. */
-  id: "convention" | "masterclass" | "awards" | "campaigns";
+  id: "convention" | "awards" | "campaigns";
   title: string;
   body: string;
   href: string;
@@ -24,7 +24,7 @@ export const PROGRAMS = {
   eyebrow: "What we do",
   title: "Where creators learn, meet and publish",
   description:
-    "A global convention, an intensive masterclass, an awards night and campaigns through the year, each one another chance to create alongside the community.",
+    "A global convention, an awards night and campaigns through the year, each one another chance to create alongside the community.",
   items: [
     {
       id: "convention",
@@ -32,13 +32,6 @@ export const PROGRAMS = {
       body: "Our annual global gathering. In 2026, 110 creators from 10 countries spent nine days together in Bodh Gaya. The next one opens in Nagpur in February 2027.",
       href: "/convention/2026",
       cta: "Read the 2026 report",
-    },
-    {
-      id: "masterclass",
-      title: "WeBuddhist Influencer Masterclass",
-      body: "Six intensive days on marketing the Dharma, led by senior marketers who are long-time practitioners and hosted at partner institutes through the year.",
-      href: "/convention/2026#masterclass",
-      cta: "See the masterclass",
     },
     {
       id: "awards",

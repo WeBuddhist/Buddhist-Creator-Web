@@ -27,7 +27,7 @@ export function Mission() {
           </span>
         </h2>
         <p className="mt-6 max-w-xl text-pretty text-lg leading-[1.6] text-white/80">
-          Every gathering, award, and masterclass we run is one step toward
+          Every gathering, award, and campaign we run is one step toward
           that goal to helping creators turn practice into content the world can
           find.
         </p>

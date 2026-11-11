@@ -174,7 +174,7 @@ export default function GetInvolvedPage() {
               <li key={way.title} className={card}>
                 {/* A way with a page is the whole card a link, with the
                     arrow the homepage's Find Your Place cards use. */}
-                {"href" in way ? (
+                {way.href ? (
                   <Link
                     href={way.href}
                     className={cn(
