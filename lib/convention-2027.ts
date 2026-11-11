@@ -44,7 +44,7 @@ export type ProgrammeItem = {
 };
 
 export const IN_STORE = {
-  title: "What’s in store",
+  title: "What We’ll Do Together",
   items: [
     {
       id: "journeys",
@@ -57,14 +57,14 @@ export const IN_STORE = {
       body: "Fun, hands-on workshops on sharing your journey clearly in any language.",
     },
     {
-      id: "tools",
-      title: "Smart Tools, Real Stories",
-      body: "Learn how AI can help you create faster, while your journey stays authentically yours.",
-    },
-    {
       id: "create",
       title: "Create Together",
       body: "Team up across countries and traditions to make content for people new to the Dharma.",
+    },
+    {
+      id: "tools",
+      title: "Creating with AI",
+      body: "Practical sessions on using AI tools to brainstorm, edit, translate and share your content, while keeping your own voice at the heart of it.",
     },
     {
       id: "sangha",
