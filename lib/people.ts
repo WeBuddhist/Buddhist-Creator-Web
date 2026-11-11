@@ -4,7 +4,6 @@
 
 import type { StaticImageData } from "next/image";
 import achal from "@/public/people/achal.webp";
-import jenniferYo from "@/public/people/jennifer-yo.webp";
 import karmaPhuntsokNamgyal from "@/public/people/karma-phuntsok-namgyal.webp";
 import norbuTsering from "@/public/people/norbu-tsering.webp";
 import tenzinNoryang from "@/public/people/tenzin-noryang.webp";
@@ -166,11 +165,6 @@ const portrait = (src: StaticImageData, name: string) => ({
 });
 
 export const TEAM: TeamMember[] = [
-  {
-    name: "Jennifer Yo",
-    role: "Lead",
-    image: portrait(jenniferYo, "Jennifer Yo"),
-  },
   {
     name: "Tenzin Noryang",
     role: "Finance and Admin",
