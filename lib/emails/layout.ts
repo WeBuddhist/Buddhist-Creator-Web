@@ -1,4 +1,4 @@
-import { SITE_NAME } from "@/lib/navigation";
+import { SITE_NAME, SITE_URL } from "@/lib/navigation";
 
 /* What a decision email is made of. A template says who it greets and
    what it says, as plain paragraphs and the odd link; this file turns that
@@ -45,6 +45,14 @@ function escapeHtml(value: string) {
    through escapeHtml: a name is something a stranger typed. */
 const FONT = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
+/* The logo is fetched by the reader's mail service, so it has to sit at a
+   public address: a laptop's localhost would show a broken image in a test
+   send. It is the JPEG, not the transparent mark, and is cut to a circle,
+   so the black lines keep a white ground when a client darkens the page. */
+const LOGO_ORIGIN = /\/\/(localhost|127\.0\.0\.1)(:|$)/.test(SITE_URL) ? "https://buddhistcreators.com" : SITE_URL;
+const LOGO_URL = `${LOGO_ORIGIN}/logo.jpg`;
+const LOGO_SIZE = 72;
+
 function htmlBlock(block: EmailBlock) {
   if (typeof block === "string") {
     return `<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:#1f2933;">${escapeHtml(block).replace(/\r?\n/g, "<br>")}</p>`;
@@ -68,12 +76,12 @@ export function renderEmail(template: EmailTemplate, vars: EmailVars): RenderedE
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f5f5f4;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f4;">
-<tr><td align="center" style="padding:24px 12px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;">
-<tr><td style="padding:24px 28px 8px;font-family:${FONT};font-size:14px;font-weight:600;letter-spacing:0.02em;color:#136986;">${escapeHtml(SITE_NAME)}</td></tr>
-<tr><td style="padding:8px 28px 12px;">
+<body style="margin:0;padding:0;background-color:#ffffff;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;">
+<tr><td align="center" style="padding:32px 16px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+<tr><td align="center" style="padding:0 0 28px;"><img src="${escapeHtml(LOGO_URL)}" width="${LOGO_SIZE}" height="${LOGO_SIZE}" alt="${escapeHtml(SITE_NAME)}" style="display:block;margin:0 auto;width:${LOGO_SIZE}px;height:${LOGO_SIZE}px;border:0;border-radius:50%;font-family:${FONT};font-size:13px;line-height:1.3;color:#1f2933;"></td></tr>
+<tr><td>
 ${blocks.map(htmlBlock).join("\n")}
 </td></tr>
 </table>
