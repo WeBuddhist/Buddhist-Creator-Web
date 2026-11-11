@@ -42,7 +42,7 @@ export const CREATOR = {
   challenges: [
     {
       title: "Bodhisattva Challenge",
-      body: "A year-long daily practice inspired by The Way of the Bodhisattva, delivered through the WeBuddhist Creator Assistant.",
+      body: "A year-long daily practice inspired by The Way of the Bodhisattva.",
       href: "https://webuddhist.com/plans",
       image: {
         src: bodhisattvaChallenge,

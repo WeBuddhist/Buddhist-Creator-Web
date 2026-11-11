@@ -5,6 +5,7 @@
 import type { StaticImageData } from "next/image";
 import masterclass2026 from "@/public/events/masterclass-2026.webp";
 import bodhisattvaChallenge from "@/public/events/bodhisattva-challenge.webp";
+import dailyTipitaka from "@/public/events/daily-tipitaka.webp";
 import convention2027 from "@/public/events/convention-2027.webp";
 import guruRinpocheDay from "@/public/events/guru-rinpoche-day.webp";
 import sakaDawa from "@/public/events/saka-dawa.webp";
@@ -45,20 +46,9 @@ export const EVENTS_PAGE = {
 /* Figures below are placeholders until the real numbers are in. */
 export const ONGOING_EVENTS: EventEntry[] = [
   {
-    title: "WeBuddhist Influencer Masterclass 2026",
-    date: { label: "1 – 6 November 2026", start: "2026-11-01", end: "2026-11-06" },
-    location: "Dzongsar Khyentse Chökyi Lodrö Institute, Himachal Pradesh, India",
-    description: "Six days on marketing the Dharma, hosted by Khyentse Foundation.",
-    image: {
-      src: masterclass2026,
-      alt: "Monks in maroon robes debating on a monastery courtyard at sunset, with mountains behind the red and gold temple.",
-    },
-    featured: true,
-  },
-  {
     title: "Bodhisattva Challenge",
     date: { label: "Daily, through 2026", start: "2026-01-01", end: "2026-12-31" },
-    location: "Online, WeBuddhist Creator Assistant",
+    location: "Online",
     description: "A year-long daily practice inspired by The Way of the Bodhisattva, open to anyone who wants to take part.",
     href: "https://webuddhist.com/plans",
     external: true,
@@ -66,6 +56,19 @@ export const ONGOING_EVENTS: EventEntry[] = [
     image: {
       src: bodhisattvaChallenge,
       alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
+    },
+  },
+  {
+    title: "Daily Tipitaka",
+    date: { label: "Daily" },
+    location: "Online",
+    description: "A daily reading of the Pali canon, one passage at a time, shared with monastics and lay practitioners around the world.",
+    href: "https://webuddhist.com/plans",
+    external: true,
+    cta: "Join the challenge",
+    image: {
+      src: dailyTipitaka,
+      alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",
     },
   },
 ];
@@ -86,6 +89,16 @@ export const UPCOMING_EVENTS: EventEntry[] = [
 ];
 
 export const PAST_EVENTS: EventEntry[] = [
+  {
+    title: "WeBuddhist Influencer Masterclass 2026",
+    date: { label: "1 – 6 November 2026", start: "2026-11-01", end: "2026-11-06" },
+    location: "Dzongsar Khyentse Chökyi Lodrö Institute, Himachal Pradesh, India",
+    gist: "Six days on marketing the Dharma, hosted by Khyentse Foundation.",
+    image: {
+      src: masterclass2026,
+      alt: "Monks in maroon robes debating on a monastery courtyard at sunset, with mountains behind the red and gold temple.",
+    },
+  },
   {
     title: "Guru Rinpoche Day",
     date: { label: "Several Guru Rinpoche Days" },
