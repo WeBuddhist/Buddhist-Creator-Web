@@ -24,9 +24,9 @@ export default function Convention2026Page() {
       <Collaborators />
       <Program />
       <CommunityDays />
+      <Documentary />
       <Masterclass />
       <Awards />
-      <Documentary />
       <Voices />
     </main>
   );

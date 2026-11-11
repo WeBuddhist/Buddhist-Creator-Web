@@ -8,9 +8,17 @@ export function Documentary() {
 
   return (
     <section id="documentary" aria-labelledby="documentary-title" className="bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+      {/* No padding of its own: Phase 1's bottom padding above and Phase 2's
+          top padding below are the gaps, one section gap each side rather
+          than two. */}
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+        {/* The film sits between Phase 1 and Phase 2, inside the program.
+            An h3 like the phases around it, so they stay under the
+            program's heading, at the size it has always had. */}
         <SectionHeading
           id="documentary-title"
+          level="h3"
+          size="h2"
           align="center"
           eyebrow={DOCUMENTARY.eyebrow}
           title={DOCUMENTARY.title}
