@@ -3,10 +3,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowRightIcon,
-  FlowerLotusIcon,
   GlobeHemisphereEastIcon,
   LightbulbIcon,
   MicrophoneStageIcon,
+  SparkleIcon,
   VideoCameraIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { ConventionFlyer } from "@/components/convention-flyer";
@@ -49,8 +49,8 @@ const detailLink =
 const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
   journeys: MicrophoneStageIcon,
   dharma: LightbulbIcon,
+  tools: SparkleIcon,
   create: VideoCameraIcon,
-  practice: FlowerLotusIcon,
   sangha: GlobeHemisphereEastIcon,
 };
 

@@ -38,7 +38,7 @@ export const WELCOME = {
 
 export type ProgrammeItem = {
   /** Keys the icon the page draws beside the title. */
-  id: "journeys" | "dharma" | "create" | "practice" | "sangha";
+  id: "journeys" | "dharma" | "tools" | "create" | "sangha";
   title: string;
   body: string;
 };
@@ -57,14 +57,14 @@ export const IN_STORE = {
       body: "Fun, hands-on workshops on sharing your journey clearly in any language.",
     },
     {
+      id: "tools",
+      title: "Smart Tools, Real Stories",
+      body: "Learn how AI can help you create faster, while your journey stays authentically yours.",
+    },
+    {
       id: "create",
       title: "Create Together",
       body: "Team up across countries and traditions to make content for people new to the Dharma.",
-    },
-    {
-      id: "practice",
-      title: "Practice & Pilgrimage",
-      body: "Meditation, chanting and visits to sacred sites.",
     },
     {
       id: "sangha",
