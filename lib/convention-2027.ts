@@ -13,8 +13,8 @@ export const CONVENTION_2027 = {
   status: "Registration open",
 } as const;
 
-/* Who runs the convention and who supports it. The page sets the two in
-   one sentence: "Organised by … with the generous support of …". */
+/* Who runs the convention and who supports it. The registration panel
+   lists each under its own label. */
 export const ORGANISER = { name: "WeBuddhist", href: "https://webuddhist.com/" } as const;
 export const SUPPORTER = {
   name: "Nagarjuna Training Institute, Nagaloka",
@@ -81,7 +81,6 @@ export const CLOSING = {
 } as const;
 
 export const REGISTRATION = {
-  eyebrow: "Registration",
   title: "Registration is open",
   /** Flip to false to take the form offline: the register button is then
       shown disabled. Keep `status` above in step with this. */

@@ -3,11 +3,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowRightIcon,
-  CalendarBlankIcon,
   GlobeHemisphereEastIcon,
-  HandshakeIcon,
   LightbulbIcon,
-  MapPinIcon,
   MicrophoneStageIcon,
   VideoCameraIcon,
 } from "@phosphor-icons/react/dist/ssr";
@@ -46,9 +43,8 @@ export const metadata: Metadata = {
 const detailLink =
   "rounded-sm font-medium text-foreground underline decoration-foreground/30 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring";
 
-/* One mark per part of the programme, in the homepage programs' recipe:
-   the brand colour on a soft disc of the same colour. Hidden from assistive
-   tech; the title carries the meaning. */
+/* One mark per part of the programme, in the brand colour. Hidden from
+   assistive tech; the title carries the meaning. */
 const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
   journeys: MicrophoneStageIcon,
   dharma: LightbulbIcon,
@@ -57,15 +53,19 @@ const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
 };
 
 /* The flyer everyone knows from the homepage opens the page. Under it the
-   announcement reads down the left: the theme, then what the four days
-   hold. Beside both sits one card with the facts a reader came for and the
-   one action: applying, or for someone with an application, getting back
-   to it. It follows the theme in the source, so on a phone it comes before
-   the programme, and from `lg` it stays in view while the programme scrolls
-   past. The invitation to partners and the closing band follow.
+   announcement reads in three steps down one column, each using the full
+   width:
 
-   Both actions read the session, so each streams in behind a Suspense
-   boundary whose fallback is the visitor's version. */
+   1. The theme, as an editorial split: the title on the left, the lede and
+      the welcome on the right, closing on a link to last year's report.
+   2. Registration, one wide panel: the facts a reader came for as a
+      labelled list, and beside them the one action (applying, or for
+      someone with an application, getting back to it).
+   3. What the four days hold, as a plain grid of four.
+
+   The invitation to partners and the closing band follow. Both actions
+   read the session, so each streams in behind a Suspense boundary whose
+   fallback is the visitor's version. */
 export default function Convention2027Page() {
   return (
     <main className="flex flex-1 flex-col">
@@ -74,73 +74,24 @@ export default function Convention2027Page() {
       {/* The illustration's ground meets this hairline, as it meets the
           footer's on the homepage. */}
       <section aria-labelledby="welcome-title" className="border-t border-border bg-background">
-        <div className="mx-auto grid w-full max-w-6xl gap-x-16 gap-y-12 px-4 pt-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-y-20 lg:pt-24">
-          <div>
-            <SectionHeading id="welcome-title" eyebrow={WELCOME.eyebrow} title={WELCOME.title} />
-            <p className="mt-6 max-w-[46ch] text-pretty text-xl leading-[1.5] text-foreground sm:text-2xl sm:leading-[1.45]">
-              {WELCOME.lede}
-            </p>
-            <div className="mt-6 max-w-[58ch] space-y-5 text-pretty text-lg leading-[1.6] text-muted-foreground">
-              {WELCOME.paragraphs.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-          </div>
-
-          {/* The details card: the same double-bordered surface as the
-              site's other cards. It spans both rows of the left column, so
-              it has the programme's height to stay sticky through. */}
-          <aside
-            aria-labelledby="registration-title"
-            className={cn(card, "lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:row-span-2")}
-          >
-            <div className={cn(cardInner, "flex flex-col px-5 pt-5 pb-6 sm:px-6 sm:pb-7")}>
-              <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">
-                {REGISTRATION.eyebrow}
+        <div className="mx-auto w-full max-w-6xl px-4 pt-16 sm:px-6 lg:pt-24">
+          <div className="grid gap-x-16 gap-y-8 lg:grid-cols-12">
+            <SectionHeading
+              id="welcome-title"
+              eyebrow={WELCOME.eyebrow}
+              title={WELCOME.title}
+              className="lg:col-span-5"
+            />
+            <div className="lg:col-span-7 lg:pt-8">
+              <p className="max-w-[46ch] text-pretty text-xl leading-[1.5] text-foreground sm:text-2xl sm:leading-[1.45]">
+                {WELCOME.lede}
               </p>
-              <h2
-                id="registration-title"
-                className="mt-3 text-balance text-2xl font-semibold leading-[1.2] tracking-[-0.02em] text-foreground"
-              >
-                {REGISTRATION.title}
-              </h2>
-
-              <dl className="mt-5 flex flex-col gap-3 border-t border-border pt-5 text-base leading-[1.5] text-muted-foreground">
-                <div className="flex items-start gap-3">
-                  <dt className="sr-only">Dates</dt>
-                  <CalendarBlankIcon aria-hidden className="mt-1 size-4 shrink-0" />
-                  <dd>
-                    <time dateTime={CONVENTION_2027.dates.start}>{CONVENTION_2027.dates.label}</time>
-                  </dd>
-                </div>
-                <div className="flex items-start gap-3">
-                  <dt className="sr-only">Venue</dt>
-                  <MapPinIcon aria-hidden className="mt-1 size-4 shrink-0" />
-                  <dd className="text-pretty">{CONVENTION_2027.location}</dd>
-                </div>
-                <div className="flex items-start gap-3">
-                  <dt className="sr-only">Organiser</dt>
-                  <HandshakeIcon aria-hidden className="mt-1 size-4 shrink-0" />
-                  <dd className="text-pretty">
-                    Organised by{" "}
-                    <a href={ORGANISER.href} target="_blank" rel="noopener noreferrer" className={detailLink}>
-                      {ORGANISER.name}
-                      <span className="sr-only"> (opens in new tab)</span>
-                    </a>
-                    , with the generous support of the{" "}
-                    <a href={SUPPORTER.href} target="_blank" rel="noopener noreferrer" className={detailLink}>
-                      {SUPPORTER.name}
-                      <span className="sr-only"> (opens in new tab)</span>
-                    </a>
-                  </dd>
-                </div>
-              </dl>
-
-              <Suspense fallback={<RegisterCallToAction />}>
-                <RegistrationAction />
-              </Suspense>
-
-              <p className="mt-5 border-t border-border pt-5">
+              <div className="mt-6 max-w-[58ch] space-y-5 text-pretty text-lg leading-[1.6] text-muted-foreground">
+                {WELCOME.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+              <p className="mt-6">
                 <Link href={REGISTRATION.previous.href} className={ctaLink}>
                   {REGISTRATION.previous.label}
                   <ArrowRightIcon
@@ -151,15 +102,73 @@ export default function Convention2027Page() {
                 </Link>
               </p>
             </div>
-          </aside>
+          </div>
 
-          {/* The programme, as stops along a path: each disc is joined to
-              the next by a dashed trail. The stops arrive one after another
-              the first time the list scrolls into view, through the paused
+          {/* Registration: the site's double-bordered card, split in two.
+              The facts read first; the action sits beside them from `lg`,
+              under them before that, with a hairline between the two. */}
+          <section aria-labelledby="registration-title" className={cn(card, "mt-16 lg:mt-24")}>
+            <div
+              className={cn(
+                cardInner,
+                "grid gap-8 px-5 py-7 sm:px-8 sm:py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-0 lg:p-10",
+              )}
+            >
+              <div className="lg:pe-10">
+                <h2
+                  id="registration-title"
+                  className="text-balance text-2xl font-semibold leading-[1.2] tracking-[-0.02em] text-foreground sm:text-3xl"
+                >
+                  {REGISTRATION.title}
+                </h2>
+                <dl className="mt-8 grid gap-x-8 gap-y-6 text-base leading-[1.5] sm:grid-cols-2">
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Dates</dt>
+                    <dd className="mt-1 font-medium text-foreground">
+                      <time dateTime={CONVENTION_2027.dates.start}>{CONVENTION_2027.dates.label}</time>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Venue</dt>
+                    <dd className="mt-1 text-pretty font-medium text-foreground">{CONVENTION_2027.location}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Organised by</dt>
+                    <dd className="mt-1">
+                      <a href={ORGANISER.href} target="_blank" rel="noopener noreferrer" className={detailLink}>
+                        {ORGANISER.name}
+                        <span className="sr-only"> (opens in new tab)</span>
+                      </a>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">With the support of</dt>
+                    <dd className="mt-1 text-pretty">
+                      <a href={SUPPORTER.href} target="_blank" rel="noopener noreferrer" className={detailLink}>
+                        {SUPPORTER.name}
+                        <span className="sr-only"> (opens in new tab)</span>
+                      </a>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="border-t border-border pt-8 lg:border-t-0 lg:border-s lg:pt-0 lg:ps-10">
+                <Suspense fallback={<RegisterCallToAction />}>
+                  <RegistrationAction />
+                </Suspense>
+              </div>
+            </div>
+          </section>
+
+          {/* The programme: four parts of equal weight, so a plain grid
+              rather than a sequence. Each sits under a hairline with its
+              mark in the brand colour, and they arrive one after another
+              the first time the grid scrolls into view, through the paused
               entrance the homepage illustrations use (.art in globals.css);
               without scripts, or with reduced motion, they simply show or
               fade. */}
-          <section aria-labelledby="in-store-title">
+          <section aria-labelledby="in-store-title" className="pt-16 lg:pt-24">
             <h2
               id="in-store-title"
               className="text-balance text-2xl font-semibold leading-[1.2] tracking-[-0.02em] text-foreground sm:text-3xl"
@@ -167,36 +176,23 @@ export default function Convention2027Page() {
               {IN_STORE.title}
             </h2>
             <InView className="art mt-8 lg:mt-10">
-              <ul className="flex flex-col">
+              <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
                 {IN_STORE.items.map(({ id, title, body }, index) => {
                   const Icon = ICONS[id];
                   return (
                     <li
                       key={id}
                       data-animate
-                      className="reveal relative flex gap-4 pb-8 last:pb-0 sm:gap-5"
+                      className="reveal border-t border-border pt-6"
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
-                      {index < IN_STORE.items.length - 1 && (
-                        <span
-                          aria-hidden
-                          className="absolute top-12 bottom-2 left-5 border-l border-dashed border-brand-cyan/40"
-                        />
-                      )}
-                      <span
-                        aria-hidden
-                        className="flex size-10 shrink-0 items-center justify-center border-2 border-action/10 rounded-full bg-brand-cyan/10 text-brand-cyan"
-                      >
-                        <Icon weight="bold" className="size-5" />
-                      </span>
-                      <div className="min-w-0 pt-1.5">
-                        <h3 className="text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
-                          {title}
-                        </h3>
-                        <p className="mt-1 max-w-[52ch] text-pretty text-base leading-[1.6] text-muted-foreground">
-                          {body}
-                        </p>
-                      </div>
+                      <Icon aria-hidden weight="regular" className="size-6 text-brand-cyan" />
+                      <h3 className="mt-5 text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
+                        {title}
+                      </h3>
+                      <p className="mt-2 max-w-[40ch] text-pretty text-base leading-[1.6] text-muted-foreground">
+                        {body}
+                      </p>
                     </li>
                   );
                 })}

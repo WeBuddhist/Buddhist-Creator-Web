@@ -34,7 +34,7 @@ export function RegisterCallToAction() {
     // and reads as disabled to assistive tech.
     return (
       <>
-        <div className="mt-6">
+        <div>
           <Button size="pill" disabled className={buttonClass}>
             {REGISTRATION.label}
             <ArrowUpRightIcon data-icon="inline-end" weight="bold" />
@@ -46,7 +46,7 @@ export function RegisterCallToAction() {
   }
   return (
     <>
-      <div className="mt-6">
+      <div>
         <Button size="pill" nativeButton={false} className={buttonClass} render={<Link href={REGISTRATION.href} />}>
           {REGISTRATION.label}
           <ArrowRightIcon data-icon="inline-end" weight="bold" />
@@ -109,7 +109,7 @@ export function RegistrationActionView({
   if (status === "draft") {
     return (
       <>
-        <div className="mt-6">
+        <div>
           <Button size="pill" nativeButton={false} className={buttonClass} render={<Link href={REGISTRATION.href} />}>
             Continue your application
             <ArrowRightIcon data-icon="inline-end" weight="bold" />
@@ -123,7 +123,7 @@ export function RegistrationActionView({
   if (status === "withdrawn") {
     return (
       <>
-        <p className="mt-6 text-sm font-medium leading-[1.5] text-foreground">You withdrew your application.</p>
+        <p className="text-sm font-medium leading-[1.5] text-foreground">You withdrew your application.</p>
         <div className="mt-4">
           <Button
             size="pill"
@@ -145,7 +145,7 @@ export function RegistrationActionView({
   const canEdit = status === "submitted";
   return (
     <>
-      <p className="mt-6 flex items-start gap-2 text-sm font-medium leading-[1.5] text-foreground">
+      <p className="flex items-start gap-2 text-sm font-medium leading-[1.5] text-foreground">
         <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />
         <span>Application submitted on {formatDateTime(submittedAt)}</span>
       </p>
