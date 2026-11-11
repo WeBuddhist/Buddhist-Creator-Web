@@ -8,6 +8,9 @@ type SectionHeadingProps = {
   align?: "start" | "center";
   /** h2 is a page section; h3 is a subsection one step smaller. */
   level?: "h2" | "h3";
+  /** The title's size, when it should not follow from the level: a page
+      section set as quietly as a subsection is `level="h2" size="h3"`. */
+  size?: "h2" | "h3";
   className?: string;
 };
 
@@ -20,6 +23,7 @@ export function SectionHeading({
   description,
   align = "start",
   level = "h2",
+  size = level,
   className,
 }: SectionHeadingProps) {
   const centered = align === "center";
@@ -39,7 +43,7 @@ export function SectionHeading({
         id={id}
         className={cn(
           "mt-4 text-balance font-semibold leading-[1.15] tracking-[-0.02em] text-foreground",
-          level === "h2"
+          size === "h2"
             ? "text-3xl sm:text-4xl lg:text-5xl"
             : "text-2xl sm:text-3xl lg:text-4xl",
         )}

@@ -73,7 +73,7 @@ The homepage suggestion box doesn't save anything yet. `submitFeedback` in `app/
 
 ## Registration and the admin dashboard
 
-Applicants sign in through Auth0 (Google or email) and fill in the form at
+Applicants sign in through Auth0 (Google or Apple) and fill in the form at
 `/convention/2027/register`. They can save a draft, upload a 2-minute intro
 video, submit, and keep editing until the committee decides. Admins review at
 `/admin`: accept, reject or waitlist each application, with a note and a

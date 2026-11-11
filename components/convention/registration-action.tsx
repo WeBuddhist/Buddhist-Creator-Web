@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
@@ -7,7 +8,7 @@ import { primaryButton } from "@/components/convention/section-heading";
 import { getMyApplication } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
-import { REGISTRATION } from "@/lib/convention-2027";
+import { CLOSING, REGISTRATION } from "@/lib/convention-2027";
 import { formatDateTime } from "@/lib/format";
 import { forLog } from "@/lib/log-error";
 import { FORM } from "@/lib/registration-2027";
@@ -56,27 +57,32 @@ export function RegisterCallToAction() {
   );
 }
 
-export async function RegistrationAction() {
-  if (!REGISTRATION.open) return <RegisterCallToAction />;
-
+/* The signed-in visitor's application and the address a decision goes to,
+   or null for anyone else. The card and the closing band both ask, so the
+   answer is read once per request. */
+const getRegistration = cache(async () => {
   // As in the header's account corner (components/user-menu.tsx): wait
   // for the real request, outside the try, before reading the session.
   await connection();
-  let application: Awaited<ReturnType<typeof getMyApplication>> = null;
-  let email: string | null = null;
   try {
     const user = await getCurrentUser();
-    if (user) {
-      email = user.email;
-      application = await getMyApplication(user.id);
-    }
+    if (!user?.email) return null;
+    const application = await getMyApplication(user.id);
+    return application ? { application, email: user.email } : null;
   } catch (error) {
     // Redirects and prerender interruptions are Next's, not ours.
     unstable_rethrow(error);
     console.error("RegistrationAction: could not read the application", forLog(error));
+    return null;
   }
+});
 
-  if (!application || !email) return <RegisterCallToAction />;
+export async function RegistrationAction() {
+  if (!REGISTRATION.open) return <RegisterCallToAction />;
+
+  const registration = await getRegistration();
+  if (!registration) return <RegisterCallToAction />;
+  const { application, email } = registration;
   return (
     <RegistrationActionView
       status={application.status}
@@ -162,3 +168,60 @@ export function RegistrationActionView({
   );
 }
 
+
+/* The same action at the foot of the page, on the brand band: one line and
+   one button, centred. A visitor is invited to apply; someone with an
+   application is told where it stands and taken back to it, as in the card,
+   which carries the detail. The button is the white pill, so it reads as
+   the one control on the cyan, and its focus ring is white for the same
+   reason: the grey ring measures under 3:1 there. */
+
+const closingLine = "mt-6 max-w-xl text-pretty text-lg leading-[1.6] text-white/80";
+const closingButton = "focus-visible:ring-white/70";
+
+/** What the closing band says for each application status. */
+function closingCopy(status: ApplicationStatus | null) {
+  if (status === null) return { line: CLOSING.body, label: REGISTRATION.label };
+  if (status === "draft") return { line: "Your application is saved as a draft.", label: "Continue your application" };
+  if (status === "withdrawn") return { line: "You withdrew your application.", label: "Reopen your application" };
+  return { line: "Your application is in. We will write to you by email.", label: "View your application" };
+}
+
+/** Pure, so it can be rendered for every status without a session. */
+export function ClosingCallToAction({ status = null }: { status?: ApplicationStatus | null }) {
+  if (!REGISTRATION.open) {
+    // No line: the one the band has says registration is open.
+    return (
+      <div className="mt-8">
+        <Button size="pill" variant="outline" disabled>
+          {REGISTRATION.label}
+          <ArrowRightIcon data-icon="inline-end" weight="bold" />
+        </Button>
+      </div>
+    );
+  }
+  const { line, label } = closingCopy(status);
+  return (
+    <>
+      <p className={closingLine}>{line}</p>
+      <div className="mt-8">
+        <Button
+          size="pill"
+          variant="outline"
+          nativeButton={false}
+          className={closingButton}
+          render={<Link href={REGISTRATION.href} />}
+        >
+          {label}
+          <ArrowRightIcon data-icon="inline-end" weight="bold" />
+        </Button>
+      </div>
+    </>
+  );
+}
+
+export async function ClosingAction() {
+  if (!REGISTRATION.open) return <ClosingCallToAction />;
+  const registration = await getRegistration();
+  return <ClosingCallToAction status={registration?.application.status ?? null} />;
+}
