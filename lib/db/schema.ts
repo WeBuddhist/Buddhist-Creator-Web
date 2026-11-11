@@ -190,6 +190,34 @@ export const applicationNotifications = pgTable(
   ],
 );
 
+/* The homepage suggestion box (components/home/feedback.tsx). Anyone may
+   write, signed in or not, and a row is never tied to a user: the email is
+   there only when the writer asked for a reply. The limits are the form's
+   `maxLength`s and the checks below. */
+export const SUGGESTION_MAX_LENGTH = 2000;
+export const SUGGESTION_EMAIL_MAX_LENGTH = 254;
+
+export const suggestions = pgTable(
+  "suggestions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    body: text("body").notNull(),
+    /** As typed. Nothing mails it; a person reads it and writes back. */
+    email: text("email"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    check(
+      "suggestions_body_check",
+      sql`char_length(${table.body}) between 1 and ${sql.raw(String(SUGGESTION_MAX_LENGTH))}`,
+    ),
+    check(
+      "suggestions_email_check",
+      sql`char_length(${table.email}) between 1 and ${sql.raw(String(SUGGESTION_EMAIL_MAX_LENGTH))}`,
+    ),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one }) => ({
   application: one(applications, {
     fields: [users.id],
@@ -228,3 +256,4 @@ export type ApplicationEvent = typeof applicationEvents.$inferSelect;
 export type ApplicationNotification = typeof applicationNotifications.$inferSelect;
 export type NotificationState = ApplicationNotification["state"];
 export type NotificationKind = ApplicationNotification["kind"];
+export type Suggestion = typeof suggestions.$inferSelect;

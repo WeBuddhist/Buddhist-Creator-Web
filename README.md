@@ -69,7 +69,7 @@ Events are grouped by hand rather than by date, so move an entry to the right li
 
 ## Known gaps
 
-The homepage suggestion box doesn't save anything yet. `submitFeedback` in `app/actions.ts` is a placeholder until there's a backend.
+The homepage suggestion box saves each suggestion to the `suggestions` table (`lib/suggestions.ts`, called from `submitFeedback` in `app/actions.ts`), but nothing shows them yet: read them with `select * from suggestions order by created_at desc`. The form also clears without telling the visitor it was sent.
 
 ## Registration and the admin dashboard
 

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { WaveCorner } from "@/components/mission";
 import { cn } from "@/lib/utils";
+import { SUGGESTION_EMAIL_MAX_LENGTH, SUGGESTION_MAX_LENGTH } from "@/lib/db/schema";
 import { FEEDBACK } from "@/lib/home";
 
 /* Fields on the brand band itself, no card. Each is a well sunk into the
@@ -59,8 +60,9 @@ export function Feedback() {
           </p>
         </div>
 
-        {/* The form posts to a server action that does nothing yet. Fields are
-            grouped by space: 8px inside a field, 20px between fields. */}
+        {/* The form posts to a server action that stores the suggestion; the
+            lengths are the table's own limits. Fields are grouped by space:
+            8px inside a field, 20px between fields. */}
         <form action={submitFeedback} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Label htmlFor="feedback-suggestion" className="text-white">
@@ -70,6 +72,7 @@ export function Feedback() {
               id="feedback-suggestion"
               name="suggestion"
               required
+              maxLength={SUGGESTION_MAX_LENGTH}
               rows={5}
               placeholder={form.suggestion.placeholder}
               // Grows with its content, so the drag grip is redundant and hidden.
@@ -87,6 +90,7 @@ export function Feedback() {
               name="email"
               type="email"
               autoComplete="email"
+              maxLength={SUGGESTION_EMAIL_MAX_LENGTH}
               placeholder={form.email.placeholder}
               aria-describedby="feedback-email-hint"
               className={cn(well, "h-11 px-3.5")}

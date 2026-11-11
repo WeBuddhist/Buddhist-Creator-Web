@@ -29,6 +29,13 @@
       "when": 1794301787252,
       "tag": "0003_decision_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794377106248,
+      "tag": "0004_suggestions",
+      "breakpoints": true
     }
   ]
 }
