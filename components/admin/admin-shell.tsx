@@ -8,6 +8,7 @@ import { Drawer } from "@base-ui/react/drawer";
 import {
   ArrowSquareOutIcon,
   CaretRightIcon,
+  ChatTeardropTextIcon,
   ClipboardTextIcon,
   HouseIcon,
   ListIcon,
@@ -51,6 +52,7 @@ const WORKSPACE: NavItem[] = [
     icon: TrayIcon,
     match: (p) => p === "/admin" || p.startsWith("/admin/applications"),
   },
+  { href: "/admin/suggestions", label: "Suggestions", icon: ChatTeardropTextIcon },
   { href: "/admin/users", label: "Users & roles", icon: UsersThreeIcon, superadmin: true },
 ];
 
@@ -264,7 +266,9 @@ function Breadcrumb() {
   const pathname = usePathname();
   const crumbs: { label: string; href?: string }[] = pathname.startsWith("/admin/users")
     ? [{ label: "Users & roles" }]
-    : pathname.startsWith("/admin/applications/")
+    : pathname.startsWith("/admin/suggestions")
+      ? [{ label: "Suggestions" }]
+      : pathname.startsWith("/admin/applications/")
       ? [{ label: "Applications", href: "/admin" }, { label: "Application" }]
       : [{ label: "Applications" }];
   return (

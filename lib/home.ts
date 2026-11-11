@@ -92,5 +92,18 @@ export const FEEDBACK = {
       hint: "Only if you’d like us to follow up.",
     },
     submit: "Send suggestion",
+    /* What the visitor is told once it is stored. The button reads
+       `button` for a few seconds; the toast carries the rest. */
+    sent: {
+      button: "Suggestion sent",
+      title: "Suggestion sent",
+      description: "Thank you for helping shape the convention.",
+    },
+    /* Nothing but spaces passes the browser's own `required`. */
+    empty: "Write your suggestion before sending it.",
+    failed: {
+      title: "Could not send your suggestion",
+      description: "Please try again in a moment.",
+    },
   },
 } as const;

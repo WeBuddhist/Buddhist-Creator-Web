@@ -67,9 +67,9 @@ Most copy lives in typed data files in `lib/`, so it can be changed without touc
 
 Events are grouped by hand rather than by date, so move an entry to the right list once it passes.
 
-## Known gaps
+## Suggestion box
 
-The homepage suggestion box saves each suggestion to the `suggestions` table (`lib/suggestions.ts`, called from `submitFeedback` in `app/actions.ts`), but nothing shows them yet: read them with `select * from suggestions order by created_at desc`. The form also clears without telling the visitor it was sent.
+The homepage suggestion box saves each suggestion to the `suggestions` table (`lib/suggestions.ts`, called from `submitFeedback` in `app/actions.ts`), and admins read them at `/admin/suggestions`, newest first; a superadmin can remove one. The send button shows the save in progress and its outcome, and a toast confirms it.
 
 ## Registration and the admin dashboard
 
@@ -78,7 +78,9 @@ Applicants sign in through Auth0 (Google or Apple) and fill in the form at
 video, submit, and keep editing until the committee decides. Admins review at
 `/admin`: accept, reject or waitlist each application, with a note and a
 history of every change, then email the decision, one applicant at a time or
-everyone waiting in a tab. Superadmins also manage roles at `/admin/users`.
+everyone waiting in a tab. Admins read the suggestion box at
+`/admin/suggestions`. Superadmins can also remove a suggestion there, and
+manage roles at `/admin/users`.
 
 How it fits together:
 
