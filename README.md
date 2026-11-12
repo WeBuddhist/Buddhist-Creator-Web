@@ -97,6 +97,117 @@ How it fits together:
 | The form | `app/convention/2027/register/` |
 | The dashboard | `app/admin/` |
 
+### Data model
+
+Five tables, defined in `lib/db/schema.ts`. `suggestions` stands alone: a
+suggestion is never tied to a user.
+
+```mermaid
+erDiagram
+    users ||--o| applications : "applies with (user_id)"
+    users |o--o{ applications : "decides (decided_by)"
+    applications ||--o{ application_events : "has history (application_id)"
+    users |o--o{ application_events : "acts in (actor_id)"
+    applications ||--o{ application_notifications : "is mailed (application_id)"
+    users |o--o{ application_notifications : "sends (sent_by)"
+    users |o--o{ application_notifications : "settles (resolved_by)"
+
+    users {
+        uuid id PK
+        text auth0_sub UK "Auth0 sub"
+        text email UK "lower-cased, verified"
+        text name
+        text picture
+        user_role role "default member"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    applications {
+        uuid id PK
+        uuid user_id FK, UK "one application per person"
+        integer convention_year "default 2027"
+        application_status status "default draft"
+        text full_name
+        text organization
+        text country
+        text state
+        text[] content_topics
+        text content_topics_other
+        text[] target_audience
+        text target_audience_other
+        text[] audience_region
+        text audience_region_other
+        text[] audience_language
+        text audience_language_other
+        text[] platforms
+        text platforms_other
+        jsonb platform_links "profile link per platform"
+        text video_key "private S3 object"
+        integer video_size_bytes
+        text video_mime
+        timestamptz video_uploaded_at
+        text review_note
+        uuid decided_by FK
+        timestamptz decided_at
+        application_status notified_status "decision last emailed"
+        timestamptz notified_at
+        timestamptz submitted_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    application_events {
+        uuid id PK
+        uuid application_id FK
+        uuid actor_id FK
+        application_status from_status
+        application_status to_status
+        text note
+        timestamptz created_at
+    }
+
+    application_notifications {
+        uuid id PK
+        uuid application_id FK "one unsettled attempt at a time"
+        application_status status "the decision announced"
+        notification_kind kind "default decision"
+        notification_state state "default sending"
+        text recipient_email
+        text recipient_name
+        text template_version
+        text subject
+        text ses_message_id
+        text error_code
+        text error_message
+        uuid sent_by FK
+        uuid batch_id "groups one bulk run"
+        uuid resolved_by FK
+        timestamptz resolved_at
+        timestamptz created_at
+        timestamptz sent_at
+    }
+
+    suggestions {
+        uuid id PK
+        text body "1 to 2000 characters"
+        text email "only if a reply was asked for"
+        timestamptz created_at
+    }
+```
+
+Deleting a user deletes their application, and deleting an application
+deletes its events and notifications. The other links to `users`
+(`decided_by`, `actor_id`, `sent_by`, `resolved_by`) are set to null instead,
+so the history outlives the admin who made it.
+
+| Enum | Values |
+| --- | --- |
+| `user_role` | `member`, `admin`, `superadmin` |
+| `application_status` | `draft`, `submitted`, `accepted`, `rejected`, `waitlisted`, `withdrawn` |
+| `notification_state` | `sending`, `sent`, `failed`, `uncertain` |
+| `notification_kind` | `decision`, `resend` |
+
 ### Setting it up
 
 1. Copy `.env.example` to `.env.local` and fill it in.
