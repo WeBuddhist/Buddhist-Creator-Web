@@ -69,9 +69,8 @@ export function ConventionFlyer({ as: Heading = "h2", first }: ConventionFlyerPr
 
       {/* Full-bleed illustration, bottom-aligned so the ground meets whatever
           follows: the footer on the homepage, the welcome section on the
-          convention page. Flattened from nagaloka-footer.svg: the crayon
-          filters in the SVG are too expensive for browsers to re-render on
-          scroll. */}
+          convention page. Encoded from assets/nagaloka-footer.png, which
+          the social card also draws. */}
       <div className="mt-6 flex justify-center sm:mt-8 lg:mt-10">
         <Image
           src={nagalokaFooter}

@@ -15,9 +15,9 @@ export const contentType = OG_CONTENT_TYPE;
    platforms cache cards for weeks and a status goes stale.
 
    Rendered once at build time by next/og (Satori): no CSS variables, no
-   WebP and no <sup>, so the colours are literals, the illustration is a
-   PNG copy of public/nagaloka-footer.webp and the ordinals are raised by
-   hand. The title is Inter ExtraBold, the flyer's weight. */
+   WebP and no <sup>, so the colours are literals, the illustration is the
+   PNG that public/nagaloka-footer.webp is encoded from and the ordinals
+   are raised by hand. The title is Inter ExtraBold, the flyer's weight. */
 
 const CYAN = "#136986";
 const INK = "#171717";
@@ -30,8 +30,8 @@ const [interMedium, interExtraBold, lion, illustration] = await Promise.all([
   readFile(join(root, "assets/nagaloka-footer.png"), "base64"),
 ]);
 
-// 1600×546 source, drawn at the card's full width.
-const ART = { width: 1200, height: 410 };
+// 2172×724 source, drawn at the card's full width.
+const ART = { width: 1200, height: 400 };
 
 export default function Image() {
   return new ImageResponse(
@@ -51,14 +51,15 @@ export default function Image() {
         }}
       >
         {/* The illustration first, so the text paints over its sky if the
-            two ever meet. Bottom-anchored like the flyer's; what runs past
-            the card's bottom edge is the foot of the steps. */}
+            two ever meet. Placed so the halo clears the title; what runs
+            past the card's bottom edge is the front row below the
+            shoulders. */}
         <img
           alt=""
           src={`data:image/png;base64,${illustration}`}
           width={ART.width}
           height={ART.height}
-          style={{ position: "absolute", left: 0, top: 322 }}
+          style={{ position: "absolute", left: 0, top: 304 }}
         />
 
         <img
