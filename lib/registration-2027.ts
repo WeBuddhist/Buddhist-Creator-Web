@@ -160,7 +160,7 @@ export const FORM = {
   facts: [
     { icon: "venue", label: "Venue", value: "Nagaloka, Nagpur, India" },
     { icon: "dates", label: "Dates", value: "18 – 21 February 2027" },
-    { icon: "language", label: "Language", value: "English / Hindi" },
+    { icon: "language", label: "Language", value: "English / Hindi / Marathi" },
     { icon: "participants", label: "Participants", value: "Approximately 120 in person" },
     { icon: "fee", label: "Selection fee", value: "₹3,000, covering meals and accommodation for all 4 days" },
     { icon: "scholarships", label: "Scholarships", value: "Available for ordained Sangha" },
