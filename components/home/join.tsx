@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import { SectionHeading, card, cardInner } from "@/components/convention/section-heading";
-import { InView } from "@/components/home/in-view";
-import { JoinArt } from "@/components/home/join-art";
+import { SectionHeading, label } from "@/components/convention/section-heading";
 import { JOIN } from "@/lib/home";
 
-/* Router into the Get Involved page: one card per audience, each the whole
-   card a link to that audience's section. Same card as the challenge cards
-   there, so the destination looks like where the reader came from. The
-   text takes the spare height, so the squares line up along the row however
-   many lines each title runs to. */
+/* Router into the Get Involved page, set as an index: one ruled row per
+   audience, the whole row a link to that audience's section. Who it is for
+   leads in the small label, what they can do is the row's title, and the
+   arrow at the end fills when the pointer arrives. */
 export function Join() {
   return (
     <section aria-labelledby="join-title" className="bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 pt-16 pb-16 sm:px-6 lg:pt-24 lg:pb-24">
+      <div className="mx-auto w-full max-w-6xl px-5 pt-24 pb-24 sm:px-6 lg:pt-32 lg:pb-32">
         <SectionHeading
           id="join-title"
           eyebrow={JOIN.eyebrow}
@@ -22,32 +19,23 @@ export function Join() {
           description={JOIN.description}
         />
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-3 lg:mt-16 lg:gap-6">
+        <ul className="mt-12 border-t border-border lg:mt-16">
           {JOIN.audiences.map(({ id, eyebrow, title, href }) => (
-            <li key={id} className={card}>
+            <li key={id} className="border-b border-border">
               <Link
                 href={href}
-                className={cn(
-                  cardInner,
-                  "group/join art-host flex h-full flex-col overflow-hidden transition-[background-color] duration-150 ease-hover hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                )}
+                className="group/join grid items-center gap-x-8 gap-y-3 py-8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:grid-cols-[14rem_minmax(0,1fr)_auto] lg:py-10"
               >
-                <div className="flex-1 px-5 pt-5 pb-6">
-                  <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">
-                    {eyebrow}
-                  </p>
-                  <h3 className="mt-3 flex items-start gap-1.5 text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
-                    <span className="min-w-0">{title}</span>
-                    <ArrowRightIcon
-                      aria-hidden
-                      weight="bold"
-                      className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-150 ease-hover motion-safe:group-hover/join:translate-x-0.5"
-                    />
-                  </h3>
-                </div>
-                <InView className="art aspect-square bg-muted/60">
-                  <JoinArt id={id} />
-                </InView>
+                <p className={cn(label, "text-brand-cyan")}>{eyebrow}</p>
+                <h3 className="text-balance font-display text-3xl leading-[1.12] text-foreground transition-colors duration-150 ease-hover group-hover/join:text-brand-cyan lg:text-[2.5rem]">
+                  {title}
+                </h3>
+                <span
+                  aria-hidden
+                  className="flex size-12 shrink-0 items-center justify-center rounded-full border border-ink/25 text-foreground transition-[background-color,border-color,color] duration-150 ease-hover group-hover/join:border-brand-cyan group-hover/join:bg-brand-cyan group-hover/join:text-white max-md:hidden"
+                >
+                  <ArrowRightIcon weight="bold" className="size-5" />
+                </span>
               </Link>
             </li>
           ))}

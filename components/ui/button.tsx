@@ -37,12 +37,20 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
-        // The site's large rounded button. The icon side sits 2px tighter than
-        // the text side, because an icon's own whitespace makes equal padding
-        // look lopsided.
-        pill: "h-11 gap-1.5 rounded-full px-5 has-data-[icon=inline-end]:pe-4.5 has-data-[icon=inline-start]:ps-4.5",
+        // The public site's button: tall and fully rounded. The icon side
+        // sits 2px tighter than the text side, because an icon's own
+        // whitespace makes equal padding look lopsided.
+        pill: "h-12 gap-2 rounded-full px-6 text-[0.9375rem] font-medium has-data-[icon=inline-end]:pe-5 has-data-[icon=inline-start]:ps-5",
       },
     },
+    compoundVariants: [
+      // On the site the quiet button is an outline in the text's colour.
+      {
+        variant: "outline",
+        size: "pill",
+        className: "border-ink/25 bg-transparent text-ink hover:bg-ink/5 hover:text-ink",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",

@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { CheckIcon, CircleNotchIcon, PaperPlaneTiltIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { submitFeedback, type FeedbackState } from "@/app/actions";
+import { primaryButton } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,29 +13,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { FEEDBACK } from "@/lib/home";
 import { cn } from "@/lib/utils";
 
-/* Fields on the brand band itself, no card. Each is a well sunk into the
-   band (black at 20%) with a light edge (white at 60%, which measures 3.3:1
-   on the band, the contrast a field boundary needs). Typed text is white,
-   10:1 on the well; the placeholder is white at 70%, 5:1. Focus turns the
-   edge solid white, 6.2:1 on the band. A field that needs fixing takes the
-   same solid white edge, and says why in words underneath: the shared
-   destructive red is not legible on the band. */
+/* Fields on the form's white card: a hairline edge at 45% ink (3.3:1, the
+   contrast a field boundary needs) that turns brand cyan on focus. A field
+   that needs fixing takes the destructive red on its edge, and says why in
+   words underneath. */
 const well = cn(
-  "rounded-xl border-white/60 bg-black/20 text-white placeholder:text-white/70",
+  "rounded-xl border-input bg-card text-foreground placeholder:text-muted-foreground",
   "transition-[border-color,box-shadow] duration-150 ease-hover",
-  "focus-visible:border-white focus-visible:ring-3 focus-visible:ring-white/25",
-  "aria-invalid:border-white aria-invalid:ring-white/25",
+  "focus-visible:border-brand-cyan focus-visible:ring-3 focus-visible:ring-brand-cyan/20",
+  "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
 );
 
-/* The golden surface from the awards badge, as a button: a 14% lighter top
-   fading to brand golden, a 1px highlight along the top edge, a soft drop
-   and a 10% darker ring. No border, for the reason given at primaryButton
-   in components/convention/section-heading.tsx. The label is the same golden with 50% black, which measures
-   5.3:1 on the top of the gradient and 4.7:1 at the bottom. While a
-   suggestion is on its way the button stays focusable and only stops
-   answering the pointer. */
-const goldenButton =
-  "border-0 forced-colors:border bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-golden),white_14%)] to-brand-golden font-semibold text-[color-mix(in_oklch,var(--color-brand-golden),black_50%)] shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--color-brand-golden),white_30%),0_1.5px_2px_0_--alpha(var(--color-black)/12%),0_0_0_1px_color-mix(in_oklch,var(--color-brand-golden),black_10%)] transition-[filter,translate] hover:brightness-[1.04] focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white aria-disabled:cursor-default aria-disabled:hover:brightness-100 aria-disabled:active:translate-y-0";
+/* While a suggestion is on its way the button stays focusable and only
+   stops answering the pointer. */
+const sendButton = cn(
+  primaryButton,
+  "aria-disabled:cursor-default aria-disabled:hover:bg-brand-cyan aria-disabled:active:translate-y-0",
+);
 
 /* The button's two labels and three icons each share one grid cell, so the
    button keeps the width of its widest state and nothing beside it moves.
@@ -143,7 +138,7 @@ export function FeedbackForm({
       {/* Fields are grouped by space: 8px inside a field, 20px between
           fields. The lengths are the table's own limits. */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="feedback-suggestion" className="text-white">
+        <Label htmlFor="feedback-suggestion" className="text-foreground">
           {form.suggestion.label}
         </Label>
         <Textarea
@@ -160,7 +155,7 @@ export function FeedbackForm({
           className={cn(well, "min-h-32 resize-none px-3.5 py-3 leading-[1.5]")}
         />
         {result === "empty" && (
-          <p id="feedback-suggestion-error" className="flex items-center gap-1.5 text-sm text-white">
+          <p id="feedback-suggestion-error" className="flex items-center gap-1.5 text-sm font-medium text-destructive">
             <WarningCircleIcon className="size-4 shrink-0" weight="fill" aria-hidden />
             {form.empty}
           </p>
@@ -168,9 +163,9 @@ export function FeedbackForm({
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="feedback-email" className="text-white">
+        <Label htmlFor="feedback-email" className="text-foreground">
           {form.email.label}
-          <span className="font-normal text-white/80">({form.email.optional})</span>
+          <span className="font-normal text-muted-foreground">({form.email.optional})</span>
         </Label>
         <Input
           id="feedback-email"
@@ -180,15 +175,15 @@ export function FeedbackForm({
           maxLength={emailMaxLength}
           placeholder={form.email.placeholder}
           aria-describedby="feedback-email-hint"
-          className={cn(well, "h-11 px-3.5")}
+          className={cn(well, "h-12 px-3.5")}
         />
-        <p id="feedback-email-hint" className="text-sm text-white/80">
+        <p id="feedback-email-hint" className="text-sm text-muted-foreground">
           {form.email.hint}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3 pt-1">
-        <Button type="submit" size="pill" aria-disabled={pending || undefined} className={goldenButton}>
+        <Button type="submit" size="pill" aria-disabled={pending || undefined} className={sendButton}>
           <span className="grid">
             <span className={cn(labelLayer, sent && "opacity-0")} aria-hidden={sent || undefined}>
               {form.submit}
@@ -218,7 +213,7 @@ export function FeedbackForm({
         {/* The toast announces a failed save; this line is what is left
             when the toast has gone. */}
         {result === "failed" && (
-          <p className="flex items-center gap-1.5 text-sm text-white">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-destructive">
             <WarningCircleIcon className="size-4 shrink-0" weight="fill" aria-hidden />
             <span>
               {form.failed.title}. {form.failed.description}

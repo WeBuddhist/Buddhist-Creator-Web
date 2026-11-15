@@ -80,7 +80,7 @@ export const CREATOR = {
 export const PARTNER = {
   id: "partner",
   eyebrow: "As an institution or group",
-  title: "Support to the next convention",
+  title: "Support the next convention",
   description:
     "Monasteries, foundations and organisations already power the convention. Join them in bringing the Dharma to the digital age.",
   ways: [
@@ -101,7 +101,7 @@ export const PARTNER = {
     { name: "Tibetan Nuns Project", logo: collaboratorTibetanNunsProject, href: "https://tnp.org/" },
     { name: "The Corporate Body of the Buddha Educational Foundation", logo: collaboratorBuddhaEducationalFoundation, href: "https://www.budaedu.org/" },
   ],
-  action: { label: "Support the next convention", href: mailto("Partnership Inquiry") },
+  action: { label: "Email us about partnering", href: mailto("Partnership Inquiry") },
 } as const;
 
 export const SUPPORT = {

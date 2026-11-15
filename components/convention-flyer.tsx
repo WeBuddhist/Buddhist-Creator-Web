@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { tag } from "@/components/convention/section-heading";
 import { cn } from "@/lib/utils";
 import { CONVENTION_2027 } from "@/lib/convention-2027";
 import logo from "@/public/logo.jpg";
@@ -20,8 +21,8 @@ export function ConventionFlyer({ as: Heading = "h2", first }: ConventionFlyerPr
     >
       <div
         className={cn(
-          "mx-auto flex max-w-3xl flex-col items-center px-4 text-center sm:px-6",
-          first ? "pt-12 sm:pt-16 lg:pt-20" : "pt-24 sm:pt-28 lg:pt-36",
+          "mx-auto flex max-w-5xl flex-col items-center px-4 text-center sm:px-6",
+          first ? "pt-10 sm:pt-14 lg:pt-16" : "pt-24 lg:pt-32",
         )}
       >
         <Image
@@ -33,7 +34,7 @@ export function ConventionFlyer({ as: Heading = "h2", first }: ConventionFlyerPr
           className="size-20 mix-blend-multiply sm:size-24"
         />
 
-        <p className="mt-6 text-lg text-foreground sm:text-xl lg:text-2xl">
+        <p className="mt-6 text-lg font-medium text-foreground sm:text-xl">
           <time dateTime={CONVENTION_2027.dates.start}>
             18<sup className="text-[0.6em]">th</sup>
           </time>
@@ -43,28 +44,32 @@ export function ConventionFlyer({ as: Heading = "h2", first }: ConventionFlyerPr
           </time>
           <span
             aria-hidden
-            className="mx-3 inline-block h-[1.1em] w-px translate-y-[0.2em] bg-foreground/40"
+            className="mx-3 inline-block h-[1.1em] w-0.5 translate-y-[0.2em] bg-foreground/40"
           />
           <span>{CONVENTION_2027.location}</span>
         </p>
 
         <Heading
           id="convention-title"
-          className="mt-3 text-balance text-4xl font-extrabold uppercase leading-[1.1] tracking-[0.02em] text-brand-cyan sm:text-5xl lg:text-6xl"
+          className="mt-5 text-balance font-display text-[clamp(2.75rem,7.6vw,7rem)] leading-[1] tracking-[-0.03em] text-brand-cyan"
         >
           {CONVENTION_2027.title}
         </Heading>
 
-        {/* A status, not a control. The double border from the site's cards, in
-            pill form: a muted frame with a hairline ring, and inside it the
-            white surface with its own ring plus lift. */}
-        <p className="mt-5 inline-flex rounded-full border border-transparent bg-muted/40 p-1 shadow-ring">
-          <span className="inline-flex items-center gap-2 rounded-full border border-transparent bg-card px-3.5 py-1.5 text-sm font-medium text-foreground shadow-border">
-            <span aria-hidden className="size-2 rounded-full bg-brand-golden" />
-            {CONVENTION_2027.status}
-          </span>
-        </p>
+        {/* On the homepage the theme sits under the title in the serif's
+            italic; the convention's own page opens its next section with
+            it instead. */}
+        {!first && (
+          <p className="mt-6 font-display text-2xl italic leading-[1.3] text-muted-foreground sm:text-3xl">
+            {CONVENTION_2027.theme}
+          </p>
+        )}
 
+        {/* A status, not a control: a quiet label with a gold light. */}
+        <p className={cn(tag, "mt-7 gap-2 bg-card px-3.5 py-2 text-xs text-foreground")}>
+          <span aria-hidden className="size-2 rounded-full bg-saffron" />
+          {CONVENTION_2027.status}
+        </p>
       </div>
 
       {/* Full-bleed illustration, bottom-aligned so the ground meets whatever

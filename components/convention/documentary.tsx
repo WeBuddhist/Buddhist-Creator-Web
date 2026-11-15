@@ -51,7 +51,7 @@ export function Documentary() {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-sm font-medium text-foreground underline decoration-foreground/30 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+              className="inline-flex items-center gap-1.5 rounded-sm font-medium text-brand-cyan underline decoration-foreground/30 decoration-1 underline-offset-[5px] transition-[text-decoration-color] duration-150 ease-hover hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             >
               <YoutubeLogoIcon aria-hidden weight="bold" className="size-4" />
               Watch on YouTube

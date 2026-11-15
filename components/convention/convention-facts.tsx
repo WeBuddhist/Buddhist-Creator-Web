@@ -37,10 +37,10 @@ export function ConventionFacts() {
                 aria-hidden
                 className={cn(iconWell, "bg-brand-cyan/10 text-brand-cyan")}
               >
-                <FactIcon className="size-[1.125rem]" weight="duotone" />
+                <FactIcon className="size-[1.125rem]" />
               </span>
               <div className="flex min-w-0 flex-col">
-                <dt className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">{label}</dt>
+                <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-brand-cyan">{label}</dt>
                 <dd className="text-pretty text-foreground">{value}</dd>
               </div>
             </div>
@@ -53,7 +53,7 @@ export function ConventionFacts() {
           </span>
           <a
             href={`mailto:${FORM.contact}`}
-            className="w-fit break-all font-medium text-foreground underline underline-offset-4"
+            className="w-fit break-all font-medium text-foreground underline decoration-foreground/30 decoration-1 underline-offset-[5px]"
           >
             {FORM.contact}
           </a>

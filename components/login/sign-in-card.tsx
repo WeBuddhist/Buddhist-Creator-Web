@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AppleLogoIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
-import { card, cardInner } from "@/components/convention/section-heading";
+import { card, cardInner, label } from "@/components/convention/section-heading";
 import { authLoginUrl, CONNECTIONS } from "@/lib/auth0";
 import { SITE_NAME } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -49,10 +49,10 @@ export function SignInCard({ returnTo }: { returnTo: string }) {
         >
           <Image src={logoMark} alt="" width={80} height={80} className="size-12" />
         </Link>
-        <p className="text-xs font-medium uppercase tracking-[0.05em] text-brand-cyan">Sign in</p>
+        <p className={cn(label, "text-brand-cyan")}>Sign in</p>
         <h1
           id="login-title"
-          className="mt-3 text-balance text-2xl font-semibold leading-[1.15] tracking-[-0.02em] text-foreground sm:text-3xl"
+          className="mt-4 text-balance font-display text-4xl leading-[1.08] text-foreground"
         >
           Welcome to {SITE_NAME}
         </h1>

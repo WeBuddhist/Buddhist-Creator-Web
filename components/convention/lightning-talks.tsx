@@ -29,7 +29,7 @@ export function LightningTalks() {
                 <div className="flex items-baseline gap-3">
                   <h6
                     id={`${slug(name)}-${slug(label)}`}
-                    className="text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground"
+                    className="text-xs font-semibold uppercase tracking-[0.12em] text-brand-cyan"
                   >
                     {label}
                   </h6>
@@ -45,11 +45,11 @@ export function LightningTalks() {
                       key={creator}
                       className="grid gap-x-6 gap-y-1 border-b border-border py-3.5 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-baseline"
                     >
-                      <p className="font-semibold text-foreground">{creator}</p>
+                      <p className="font-medium text-foreground">{creator}</p>
                       <p className="text-pretty text-sm leading-[1.5] text-muted-foreground">
                         {topic}
                       </p>
-                      <p className="text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground sm:text-end">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-end">
                         {language}
                       </p>
                     </li>

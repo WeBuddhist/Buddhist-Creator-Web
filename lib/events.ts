@@ -38,8 +38,23 @@ export type EventEntry = {
 export const EVENTS_PAGE = {
   eyebrow: "Program",
   title: "Where creators gather",
+  /** The page's search description: every figure in one sentence. */
   description:
     "Our five creator campaigns have earned over 1.26 million views, 100,000+ likes and 7,600+ shares. From 15 April to 5 November 2026, more than 9 million people viewed our social media page and profile, and 7,000+ new followers joined us. Beyond these campaigns, we also collaborate with creators on their own videos.",
+  /** On the page the figures stand on their own, so the lede is short. */
+  lede: "Campaigns around the sacred days, the annual convention, and collaborations with creators on their own videos.",
+  stats: [
+    { value: "1.26M+", label: "Views across five campaigns" },
+    { value: "100K+", label: "Likes and 7,600+ shares" },
+    { value: "9M+", label: "Page and profile views" },
+    { value: "7,000+", label: "New followers" },
+  ],
+  statsNote: "Page and follower figures cover 15 April to 5 November 2026.",
+  groups: {
+    ongoing: { title: "Open now", description: "Running now. Join in from anywhere." },
+    upcoming: { title: "Coming up", description: "Dates are set for what comes next." },
+    past: { title: "Past programs", description: "What each one reached. Open one for the full story." },
+  },
 } as const;
 
 /* Figures below are placeholders until the real numbers are in. */
@@ -168,6 +183,10 @@ export const PAST_EVENTS: EventEntry[] = [
     title: "Bodhicharyavatara Challenge",
     location: "Online",
     gist: "The Bodhicharyavatara (A Guide to the Bodhisattva’s Way of Life) is available on our WeBuddhist app. To help more people discover it, we collaborated with four creators who talked about the text in four different languages, so the teaching could reach people in the language they are most comfortable with.",
+    image: {
+      src: bodhisattvaChallenge,
+      alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
+    },
     stats: [
       { value: "4", label: "Creators" },
       { value: "4", label: "Languages" },

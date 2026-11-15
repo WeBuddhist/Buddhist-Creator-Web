@@ -44,7 +44,7 @@ export default function RegisterPage() {
         </div>
       </section>
 
-      <section aria-label="Registration form" className="bg-muted/30">
+      <section aria-label="Registration form" className="bg-paper-deep/50 pb-7">
         <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
           <Suspense fallback={<FormFallback />}>
             <RegistrationLoader />

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
    go down with it: any failure falls back to the sign-in link. */
 
 const pill = cn(
-  "inline-flex h-9 select-none items-center gap-1.5 rounded-full px-3.5 text-sm font-medium",
+  "inline-flex h-10 select-none items-center gap-1.5 rounded-full px-3.5 text-sm font-medium",
   "text-(--header-fg-muted) transition-[color,background-color,transform] duration-150 ease-hover",
   "hover:bg-(--header-hover) hover:text-(--header-fg) active:scale-[0.97]",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--header-ring)",

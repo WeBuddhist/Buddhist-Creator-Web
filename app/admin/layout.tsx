@@ -56,7 +56,9 @@ function AdminFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-full flex-1 bg-background">
+    // data-admin switches the page back to the dashboard's own palette and
+    // typeface, see "Admin keeps the dashboard look" in globals.css.
+    <div data-admin className="flex min-h-full flex-1 bg-background">
       <AdminSidebar user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminTopbar user={user} exportCounts={exportCounts} />

@@ -114,7 +114,7 @@ function modeFor(status: FormStatus): Mode {
 
 const field = "h-11 px-3.5";
 const readOnlyField = "bg-muted/50";
-const sectionTitle = "text-xl font-semibold leading-[1.2] tracking-[-0.02em] text-foreground";
+const sectionTitle = "font-display text-2xl leading-[1.15] text-foreground";
 const errorText = "text-sm text-brand-maroon";
 const TOAST_ID = "application";
 
@@ -634,7 +634,7 @@ function Section({
 }) {
   return (
     <section className={card} aria-label={title}>
-      <div className="flex flex-col gap-5 rounded-xl border border-transparent bg-card px-5 py-6 shadow-border sm:px-6 sm:py-7">
+      <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card px-5 py-6 sm:px-6 sm:py-7">
         <div>
           <h2 className={sectionTitle}>
             {title}

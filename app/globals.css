@@ -5,9 +5,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* --font-body is the site's text face on :root and Inter under the admin
+     dashboard, see "Admin keeps the dashboard look" below. */
+  --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-body);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -47,6 +49,27 @@
 }
 
 @theme {
+  /*
+   * The public site's palette. Brand cyan (below) leads, as it does on
+   * every banner; sky-deep is its darkest shade, for the footer and for
+   * text on gold. Saffron is the banners' golden lettering, kept to
+   * accents: a button on cyan, an italic phrase, a small mark. Gold-soft is
+   * the same gold lightened until small text in it reads on cyan. The
+   * ground is a warm white (paper), with paper-deep one step down for
+   * quiet panels, and ink, a blue-black, for text.
+   * Measured: ink on paper 15.3:1, brand cyan on paper 5.8:1 and on
+   * paper-deep 5.3:1, white on brand cyan 6.2:1 (4.6:1 at 80%), gold-soft
+   * on brand cyan 4.7:1, saffron on brand cyan 3.3:1 (large text and marks
+   * only), ink on saffron 8.6:1, paper on sky-deep 11.2:1, saffron on
+   * sky-deep 6.3:1.
+   */
+  --color-paper: #faf7f1;
+  --color-paper-deep: #f1ece2;
+  --color-ink: #12222a;
+  --color-saffron: #f2b130;
+  --color-gold-soft: #ffdd94;
+  --color-sky-deep: #0c3b4e;
+
   --color-brand-cyan: #136986;
   --color-brand-light-cyan: #16a4c0;
   --color-brand-golden: #dead2d;
@@ -152,26 +175,31 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* The public site: warm white and blue-black ink. Muted text measures
+     5.7:1 on the paper, 6.1:1 on a card and 5.2:1 on paper-deep. The
+     primary action is brand cyan. The admin dashboard resets these to its
+     neutral greys further down. */
+  --font-body: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-brand-cyan);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-paper-deep);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-paper-deep);
+  --muted-foreground: #55646b;
+  --accent: var(--color-paper-deep);
+  --accent-foreground: var(--color-ink);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  /* Focus ring. 0.62 measures 3.6:1 on white and 3.3:1 on --muted, the
-     3:1 a focus indicator needs; 0.708 measured 2.6:1. */
-  --ring: oklch(0.62 0 0);
+  /* Hairlines. The edge of a form field needs 3:1, so --input is stronger. */
+  --border: color-mix(in srgb, var(--color-ink) 13%, transparent);
+  --input: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  /* Focus ring: brand cyan, 5.8:1 on the paper. */
+  --ring: var(--color-brand-cyan);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -189,79 +217,116 @@
 }
 
 /*
- * Site header tone. The header's text takes the colour that reads on the
- * section beneath it, and its frosted surface takes that section's colour, so
- * content scrolling under stays apart from the nav without a visible bar. The
- * defaults sit on :root so portaled menus and the mobile drawer keep them.
+ * Site header. A frosted bar that floats a little below the top edge and
+ * takes its tone from what it floats over, as the production header does.
+ * Over paper it is light: paper glass, ink text, the cyan call to action.
+ * Over a dark band (a photograph, a cyan sheet, a sky-deep band, the
+ * footer) the glass takes that band's colour and the text turns white;
+ * the call to action turns gold, as every button on a cyan sheet does.
+ * HeaderTone marks the band underneath as data-tone on the header and its
+ * colour as --header-bg. Before it runs, a page that opens on a dark band
+ * starts dark through :has(), so there is no light flash over a
+ * photograph.
  *
- * Sections set data-header-tone="brand" when they sit on a brand band. The
- * HeaderTone component watches them and writes data-tone on the header as
- * the user scrolls, with the band's colour as --header-bg. Before it runs, a
- * page whose first section is a band starts on the brand tone through :has(),
- * so there is no flash; nothing has scrolled under yet, so the surface can
- * stay clear until the band's colour is known.
+ * The defaults sit on :root so portaled menus and the mobile drawer keep
+ * the light tokens whatever the bar is over.
  *
- * White at 80% measures 4.6:1 on brand cyan; white measures 6.2:1.
+ * Measured on the dark tone: white on brand cyan 6.2:1 and at 80% 4.6:1;
+ * on sky-deep 11.2:1. The glass is the band's colour at 90%, so where a
+ * band shares the row with a photograph (the mission) white still holds
+ * 5:1 over the brightest part of the picture. Over a photograph the glass
+ * is the hero's ink at 70%, mixed to 63%: white holds 5:1 or more even
+ * over pure white behind it.
  */
 :root {
-  /* The sticky header's height. A section that wants to sit behind the
-     header pulls itself up by this much and pads its top by the same. */
-  --header-height: calc(4rem + env(safe-area-inset-top, 0px));
-  --header-bg: var(--background);
+  /* The sticky header's height: the 3.5rem bar plus the 0.75rem it floats
+     below the top edge, or, on a phone, where the bar sits flush with the
+     top, the bar alone. A section that wants to sit behind the header
+     pulls itself up by this much and pads its top by the same. */
+  --header-height: calc(3.5rem + env(safe-area-inset-top, 0px));
+  @media (width >= 40rem) {
+    --header-height: calc(4.25rem + env(safe-area-inset-top, 0px));
+  }
+  --header-bg: rgb(4 20 27 / 0.7);
+  --header-surface: color-mix(in srgb, var(--color-paper) 85%, transparent);
+  --header-solid: var(--color-paper);
+  --header-border: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  --header-fg: var(--color-ink);
+  --header-fg-muted: color-mix(in srgb, var(--color-ink) 78%, transparent);
+  --header-hover: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  --header-ring: var(--color-brand-cyan);
+  --header-cta: var(--color-brand-cyan);
+  --header-cta-hover: var(--color-sky-deep);
+  --header-cta-fg: #ffffff;
+  --header-logo-filter: none;
+}
+.site-header[data-tone="dark"],
+body:has(main > [data-header-tone="dark"]:first-child) .site-header:not([data-tone]) {
+  --header-surface: color-mix(in srgb, var(--header-bg) 90%, transparent);
+  --header-solid: var(--color-sky-deep);
+  --header-border: oklch(1 0 0 / 14%);
+  --header-fg: oklch(1 0 0);
+  --header-fg-muted: oklch(1 0 0 / 82%);
+  --header-hover: oklch(1 0 0 / 12%);
+  --header-ring: oklch(1 0 0);
+  --header-cta: var(--color-saffron);
+  --header-cta-hover: var(--color-gold-soft);
+  --header-cta-fg: var(--color-ink);
+  /* The mark is black line art on a transparent PNG: every opaque pixel
+     forced to white. */
+  --header-logo-filter: brightness(0) invert(1);
+}
+
+/*
+ * Admin keeps the dashboard look. The dashboard was drawn on white with
+ * neutral greys and Inter, and its tables are tuned to those; the public
+ * site's paper and ink would only make it harder to scan. Set on body so
+ * portaled menus and dialogs inside the dashboard follow.
+ */
+body:has([data-admin]) {
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  /* Focus ring. 0.62 measures 3.6:1 on white and 3.3:1 on --muted, the
+     3:1 a focus indicator needs; 0.708 measured 2.6:1. */
+  --ring: oklch(0.62 0 0);
   --header-fg: var(--foreground);
   --header-fg-muted: var(--muted-foreground);
   --header-hover: var(--muted);
   --header-ring: var(--ring);
 }
-.site-header[data-tone="brand"],
-body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-tone]) {
-  --header-bg: transparent;
-  --header-fg: oklch(1 0 0);
-  --header-fg-muted: oklch(1 0 0 / 80%);
-  --header-hover: oklch(1 0 0 / 12%);
-  --header-ring: oklch(1 0 0);
-}
-/* The frosted surface is a layer of its own: backdrop-filter on the header
-   itself would make it the containing block for anything fixed inside it.
-   On a phone it is a plain bar edge to edge, filling the 4rem nav row and
-   the safe area above it. From the tablet breakpoint (md, where the menu
-   becomes the nav links) it is a pill around the nav's own width (max-w-6xl,
-   as in site-header.tsx), leaving the sides clear so band patterns show
-   around it. */
-.site-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: color-mix(in srgb, var(--header-bg) 80%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(4px);
-  transition: background-color 150ms var(--ease-hover);
-}
-@media (min-width: 48rem) {
-  .site-header::before {
-    inset: env(safe-area-inset-top, 0px) 0.5rem 0;
-    max-width: var(--container-6xl);
-    margin-inline: auto;
-    border-radius: 9999px;
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .site-header::before {
-    background-color: var(--header-bg);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-/* The logo mark is black line art on a transparent PNG. On the brand tone
-   every opaque pixel is forced to white. */
-.site-logo {
-  transition: filter 150ms var(--ease-hover);
-}
-.site-header[data-tone="brand"] .site-logo,
-body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-tone]) .site-logo {
-  filter: brightness(0) invert(1);
+
+/*
+ * The site's two voices.
+ *
+ * font-display: Newsreader, a text serif with an optical-size axis, so the
+ * same file is sturdy in a card title and fine in a page title. Regular
+ * weight, set tight; its italic marks the words in a title that matter
+ * most. Each text-* size brings its own line-height, so call sites set
+ * leading after the size.
+ *
+ * Everything else is Instrument Sans (font-sans): navigation, labels,
+ * body copy, forms.
+ */
+@utility font-display {
+  font-family: var(--font-newsreader), ui-serif, Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 @layer base {
@@ -315,72 +380,22 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
 
 @layer components {
   /*
-   * Stats cards. Every animation starts paused at its hidden `from` frame and
-   * runs once the section reports itself visible, so the reveal happens in
-   * view rather than above the fold.
-   */
-  .stats [data-animate] {
-    animation-play-state: paused;
-  }
-  .stats[data-visible] [data-animate] {
-    animation-play-state: running;
-  }
-  .stat-card {
-    animation: stat-fade-in 300ms var(--ease-out) both;
-  }
-  .stat-line {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    animation: stat-draw 1200ms var(--ease-out) both;
-  }
-  .stat-fill {
-    animation: stat-fade-in 600ms var(--ease-out) both;
-  }
-  .stat-pop {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: stat-pop 300ms var(--ease-out) both;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .stat-card {
-      animation-name: stat-fade-in-up;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .stat-line {
-      stroke-dashoffset: 0;
-      animation-name: stat-fade-in;
-      animation-duration: 600ms;
-    }
-    .stat-pop {
-      animation-name: stat-fade-in;
-    }
-  }
-
-  /*
-   * Illustrations on the homepage's Find Your Place cards. Entrances reuse the
-   * stat-* classes above and wait for InView, and only when scripts can run:
+   * Scroll-triggered entrances. An InView wrapper carries `art` and reports
+   * data-visible once it scrolls into view; until then its [data-animate]
+   * children hold their hidden first frame. Only when scripts can run:
    * without them nothing would ever report in view, so the entrances simply
-   * play and the picture still appears. Pointer motion is JavaScript springs
-   * in components/hairline-motion.ts, and what the pointer chooses
-   * cross-fades on the drawer curve as a transition.
+   * play.
    */
   @media (scripting: enabled) {
     .art:not([data-visible]) [data-animate] {
       animation-play-state: paused;
     }
   }
-  /* The plate: a solid's fill, in the exact colour of the ground it sits on
-     (bg-muted/60 over the card), so it hides what is behind it and nothing
-     else. */
-  .art-plate {
-    fill: color-mix(in oklab, var(--muted) 60%, var(--card));
-  }
 
   /*
-   * Hero entrance on the convention page. Title, lede, stats and actions
-   * stagger 100ms apart via inline animation-delay. The hidden state lives in
-   * the `from` keyframe, so anything whose animation never runs stays visible.
+   * A staggered entrance: items fade up 100ms apart via inline
+   * animation-delay. The hidden state lives in the `from` keyframe, so
+   * anything whose animation never runs stays visible.
    */
   .reveal {
     animation: stat-fade-in 300ms var(--ease-out) both;
@@ -400,17 +415,6 @@ body:has(main > [data-header-tone="brand"]:first-child) .site-header:not([data-t
       opacity: 0;
       transform: translateY(12px);
       filter: blur(4px);
-    }
-  }
-  @keyframes stat-draw {
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-  @keyframes stat-pop {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
     }
   }
 }

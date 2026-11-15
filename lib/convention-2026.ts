@@ -35,7 +35,7 @@ export const CONVENTION = {
 
 export const DOCUMENTARY = {
   eyebrow: "The documentary",
-  title: "Relive the Gathering in Bodh Gaya",
+  title: "Relive the gathering in Bodh Gaya",
   description:
     "A twenty minute documentary following the 2026 cohort from the opening ceremony to the awards night, told by the creators who were there.",
 } as const;
@@ -47,14 +47,14 @@ export const HERO_STATS = [
 
 export const PROGRAM = {
   eyebrow: "The Program",
-  title: "Nine Days, Three Phases",
+  title: "Nine days, three phases",
   description:
     "In January 2026, over a hundred Buddhist creators from more than a dozen countries gathered in Bodh Gaya — the first global sangha of its kind.",
 } as const;
 
 export const COMMUNITY_DAYS = {
   opening: {
-    title: "The Opening Ceremony",
+    title: "The opening ceremony",
     body: "The stage came alive with a traditional scarf presentation offering, followed by the lighting of butter lamps in front of the Buddha statue. Mrs. Deepa Thakur led the assembly in chanting the Heart Sutra in Pali, grounding the gathering in the spiritual essence of the retreat.",
   },
   keynotes: [
@@ -91,7 +91,7 @@ export const COMMUNITY_DAYS = {
     body: "The panel examined authenticity, accessibility, and the digital divide — how creators maintain the integrity of Buddhist teachings while adapting them for digital formats and diverse, less-connected audiences.",
   },
   lightningTalks: {
-    title: "Lightning Talks",
+    title: "Lightning talks",
     subtitle: "27 creators, four rooms",
     body: "27 presenters rotated across four concurrent rooms named for sites in the Buddha’s life — each allotted 15 minutes (7 for their talk, 5 for Q&A, 2 to transition) so attendees could move freely between spaces based on their interests.",
     /* The two session slots every room ran. Each room's talks are listed in
@@ -275,13 +275,13 @@ export const COMMUNITY_DAYS = {
     ],
   },
   why: {
-    title: "The Why Behind the What",
+    title: "The why behind the what",
     speaker: "Ngawang Trinley",
     role: "Founder, OpenPecha Trust",
     body: "A session on why the convention exists, opening with a video message from Yongey Mingyur Rinpoche on conveying timeless Buddhist wisdom to the modern world, followed by a presentation on the path to reaching 100 million people by 2030.",
   },
   circles: {
-    title: "Community Circles",
+    title: "Community circles",
     subtitle: "Seven themes",
     themes: [
       {
@@ -378,7 +378,7 @@ export const MASTERCLASS = {
 
 export const AWARDS = {
   eyebrow: "Phase 3 · 6 February",
-  title: "Award Ceremony & Closing",
+  title: "Award ceremony and closing",
   description:
     "The final day gathered the week into one evening: a recap, five awards, certificates, a prayer meet at the Mahabodhi Temple, and a gala dinner.",
   presentedBy: "Mr. Milan Amin & Dr. Jaimin Shukla",
