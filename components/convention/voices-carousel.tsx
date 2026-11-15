@@ -116,7 +116,7 @@ export function Carousel({
         <StepButton disabled={atEnd} onClick={() => go(index + 1)} icon={ArrowRightIcon}>
           Next testimonial
         </StepButton>
-        <p aria-live="polite" className="ms-2 text-sm tabular-nums text-white/80">
+        <p aria-live="polite" className="ms-2 text-sm tabular-nums text-white/85">
           {index + 1} of {count}
         </p>
       </div>
@@ -143,9 +143,9 @@ function StepButton({
       aria-disabled={disabled || undefined}
       onClick={disabled ? undefined : onClick}
       className={cn(
-        "inline-flex size-11 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white",
+        "inline-flex size-12 items-center justify-center rounded-full border border-white/50 text-white",
         "transition-[background-color,opacity,scale] duration-150 ease-out",
-        "hover:not-aria-disabled:bg-white/20 active:not-aria-disabled:scale-[0.96]",
+        "hover:not-aria-disabled:border-white hover:not-aria-disabled:bg-white hover:not-aria-disabled:text-brand-cyan active:not-aria-disabled:scale-[0.96]",
         "aria-disabled:cursor-default aria-disabled:opacity-40",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
       )}

@@ -1,105 +1,125 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRightIcon,
-  ArrowUpRightIcon,
-  CalendarBlankIcon,
-  ImageIcon,
-  MapPinIcon,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowRightIcon, ArrowUpRightIcon, ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import { card, cardInner } from "@/components/convention/section-heading";
+import { card, cardInner, label } from "@/components/convention/section-heading";
 import type { EventEntry } from "@/lib/events";
 
-/* The labelled link at the bottom of a card. */
+/* A text link that leads somewhere: medium weight, in the colour of the
+   text around it, on a fine underline that firms up under the pointer. */
 export const ctaLink =
-  "group/link inline-flex items-center gap-1 rounded-sm text-sm font-medium text-brand-cyan underline decoration-brand-cyan/30 underline-offset-4 transition-[text-decoration-color] duration-150 ease-hover hover:decoration-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring";
+  "group/link inline-flex items-center gap-1.5 rounded-sm text-[0.9375rem] font-medium text-current underline decoration-current/35 decoration-1 underline-offset-[5px] transition-[text-decoration-color] duration-150 ease-hover hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current";
 
-/* One event. The media sits flush at the top of the inner surface, the text
-   below it on a shared left edge. When the event has somewhere to go, the
-   link is the labelled line at the bottom of the card, not the card. */
-export function EventCard({ event }: { event: EventEntry }) {
+/* How the card sits in its list. `grid` is a third of the row; `half`
+   shares the row with one other card, so its picture runs a little
+   wider than tall; `wide` is the only card in its list and, from lg,
+   puts the picture beside the text instead of over it. */
+type EventCardLayout = "grid" | "half" | "wide";
+
+/* One event, as a listing card: the picture, when and where on one quiet
+   line under it, the title in the serif, and the way in as a link at the
+   foot. When the event has nowhere to go yet there is no link. */
+export function EventCard({ event, layout = "grid" }: { event: EventEntry; layout?: EventCardLayout }) {
   const { title, date, location, description, href, external, cta, image, featured, stats } = event;
+  const wide = layout === "wide";
 
   return (
     <li className={card}>
-      <article className={cn(cardInner, "flex h-full flex-col overflow-hidden")}>
-        <div className="relative aspect-[3/2] min-h-0 shrink-0 overflow-hidden bg-muted">
+      <article
+        className={cn(
+          cardInner,
+          "flex h-full flex-col p-3",
+          wide && "lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center",
+        )}
+      >
+        <div
+          className={cn(
+            "relative aspect-[4/3] min-h-0 shrink-0 overflow-hidden rounded-xl bg-paper-deep",
+            layout === "half" && "lg:aspect-[16/10]",
+          )}
+        >
           {image ? (
             <Image
               src={image.src}
               alt={image.alt}
               placeholder="blur"
-              sizes="(min-width: 1024px) 22rem, (min-width: 640px) 50vw, 100vw"
+              sizes={
+                layout === "grid"
+                  ? "(min-width: 1024px) 22rem, (min-width: 640px) 50vw, 100vw"
+                  : "(min-width: 1024px) 36rem, 100vw"
+              }
               className="size-full object-cover"
             />
           ) : (
             <Placeholder />
           )}
           {featured && (
-            <span className="absolute top-3 start-3 inline-flex items-center rounded-full border border-transparent bg-background px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.05em] text-brand-cyan shadow-border">
+            <span className="absolute start-3 top-3 inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.1em] text-brand-cyan">
               Featured
             </span>
           )}
         </div>
 
-        <div className="flex flex-1 flex-col px-5 pt-5 pb-6">
-          <h3 className="text-balance text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
-            {title}
-          </h3>
-
-          <dl className="mt-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
+        <div className={cn("flex flex-1 flex-col px-3 pt-5 pb-3", wide && "lg:px-10 lg:py-8")}>
+          <dl className={cn(label, "flex flex-wrap gap-x-2 gap-y-1 text-[0.75rem] text-brand-cyan")}>
             {date && (
-              <div className="flex items-start gap-2">
+              <div>
                 <dt className="sr-only">Date</dt>
-                <CalendarBlankIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
                 <dd>
                   {/* datetime takes one date, so a range carries its start;
                       a label with no date behind it is plain text. */}
                   {date.start ? <time dateTime={date.start}>{date.label}</time> : date.label}
+                  <span aria-hidden className="ms-2 text-brand-cyan/50">
+                    ·
+                  </span>
                 </dd>
               </div>
             )}
-            <div className="flex items-start gap-2">
+            <div>
               <dt className="sr-only">Location</dt>
-              <MapPinIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
-              <dd className="text-pretty">{location}</dd>
+              <dd>{location}</dd>
             </div>
           </dl>
+          <h3
+            className={cn(
+              "mt-3 text-balance font-display text-[1.625rem] leading-[1.15] text-foreground",
+              wide && "lg:text-4xl lg:leading-[1.08]",
+            )}
+          >
+            {title}
+          </h3>
 
           {description && (
-            <p className="mt-4 text-pretty text-sm leading-[1.5] text-muted-foreground">
+            <p
+              className={cn(
+                "mt-3 text-pretty text-[0.9375rem] leading-[1.55] text-muted-foreground",
+                wide && "lg:mt-4 lg:max-w-[46ch] lg:text-lg lg:leading-[1.6]",
+              )}
+            >
               {description}
             </p>
           )}
 
           {stats && (
             <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
-              {stats.map(({ value, label }) => (
-                <div key={label} className="flex flex-col-reverse">
-                  <dt className="mt-1 text-xs text-muted-foreground">{label}</dt>
-                  <dd className="text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-brand-cyan">
-                    {value}
-                  </dd>
+              {stats.map(({ value, label: name }) => (
+                <div key={name} className="flex flex-col-reverse">
+                  <dt className="mt-1 text-xs text-muted-foreground">{name}</dt>
+                  <dd className="font-display text-2xl tabular-nums leading-none text-brand-cyan">{value}</dd>
                 </div>
               ))}
             </dl>
           )}
 
           {href && (
-            <p className="mt-auto pt-5">
+            <p className={cn("mt-auto pt-6 text-brand-cyan", wide && "lg:mt-0 lg:pt-8")}>
               {/* The link names the event so it reads out of context in a
                   list of the page's links. */}
               {external ? (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={ctaLink}
-                >
+                <a href={href} target="_blank" rel="noopener noreferrer" className={ctaLink}>
                   {cta ?? "View details"}
                   <span className="sr-only">: {title} (opens in new tab)</span>
-                  <ArrowUpRightIcon aria-hidden weight="bold" className="size-3.5" />
+                  <ArrowUpRightIcon aria-hidden weight="bold" className="size-4" />
                 </a>
               ) : (
                 <Link href={href} className={ctaLink}>
@@ -108,7 +128,7 @@ export function EventCard({ event }: { event: EventEntry }) {
                   <ArrowRightIcon
                     aria-hidden
                     weight="bold"
-                    className="size-3.5 transition-transform duration-150 ease-hover motion-safe:group-hover/link:translate-x-0.5"
+                    className="size-4 transition-transform duration-150 ease-hover motion-safe:group-hover/link:translate-x-0.5"
                   />
                 </Link>
               )}

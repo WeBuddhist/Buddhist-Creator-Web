@@ -35,10 +35,10 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
       className={cn(
-        "inline-flex h-9 cursor-pointer select-none items-center rounded-full border border-transparent bg-card px-3.5 text-sm font-medium text-foreground shadow-ring outline-none",
+        "inline-flex h-10 cursor-pointer select-none items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground",
         "transition-[color,background-color,transform] duration-150 ease-hover",
-        "hover:bg-muted active:scale-[0.97]",
-        "data-active:bg-brand-cyan data-active:text-white data-active:shadow-none data-active:hover:bg-brand-cyan",
+        "hover:bg-paper-deep active:scale-[0.97]",
+        "data-active:border-brand-cyan data-active:bg-brand-cyan data-active:text-white data-active:hover:bg-brand-cyan",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}

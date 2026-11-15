@@ -13,7 +13,7 @@ function isActive(pathname: string, href: string) {
 }
 
 const pill = cn(
-  "relative inline-flex h-9 select-none items-center gap-1 rounded-full px-3.5 text-sm font-medium",
+  "relative inline-flex h-10 select-none items-center gap-1 rounded-full px-3.5 text-sm font-medium",
   // Hover is seen tens of times a day: a near-imperceptible color change only.
   "text-(--header-fg-muted) transition-[color,background-color,transform] duration-150 ease-hover",
   "hover:bg-(--header-hover) hover:text-(--header-fg) data-popup-open:bg-(--header-hover) data-popup-open:text-(--header-fg)",
@@ -97,7 +97,7 @@ export function NavLinks() {
                             : undefined
                         }
                         className={cn(
-                          "flex flex-col gap-0.5 rounded-lg px-3 py-2.5 text-sm",
+                          "flex flex-col gap-0.5 rounded-xl px-3 py-2.5 text-sm",
                           "transition-[background-color] duration-150 ease-hover hover:bg-muted",
                           "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                         )}
@@ -142,8 +142,7 @@ export function NavLinks() {
             className={cn(
               "relative h-(--popup-height) w-(--popup-width) origin-(--transform-origin)",
               // Outer radius 12px = inner 8px + 4px padding (concentric with the links).
-              "rounded-xl border border-transparent bg-popover text-popover-foreground outline-none",
-              "shadow-[0_0_0_1px_--alpha(var(--color-black)/6%),0_1px_2px_-1px_--alpha(var(--color-black)/6%),0_8px_24px_-8px_--alpha(var(--color-black)/12%)]",
+              "rounded-2xl border border-border bg-popover text-popover-foreground outline-none shadow-[0_1px_2px_rgb(18_34_42/0.06),0_12px_32px_-12px_rgb(18_34_42/0.25)]",
               "transition-[opacity,scale,width,height] duration-200 ease-out",
               "data-starting-style:scale-95 data-starting-style:opacity-0",
               "data-ending-style:scale-95 data-ending-style:opacity-0 data-ending-style:duration-150",

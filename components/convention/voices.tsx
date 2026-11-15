@@ -1,36 +1,37 @@
 import Image, { type StaticImageData } from "next/image";
 import { QuotesIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import { WaveCorner } from "@/components/mission";
+import { label, panel } from "@/components/convention/section-heading";
 import { Carousel } from "@/components/convention/voices-carousel";
 import { COLLABORATORS, TESTIMONIALS, VOICES } from "@/lib/convention-2026";
 
 export function Voices() {
   return (
+    // The page's last sheet, in brand cyan, which the footer meets directly.
+    // White on brand cyan measures 6.2:1.
+    // `relative` matters: the carousel's off-screen slides hold
+    // visually-hidden text, which is absolutely positioned, and without a
+    // positioned ancestor here the sheet's clipping would not reach it and
+    // the page would scroll sideways.
     <section
       aria-labelledby="voices-title"
-      className="relative isolate overflow-hidden bg-brand-cyan"
-      data-header-tone="brand"
+      data-header-tone="dark"
+      className={cn(panel, "relative overflow-hidden bg-brand-cyan text-white")}
     >
-      <WaveCorner className="-top-16 -left-16" />
-      <WaveCorner className="-right-16 -bottom-16 -scale-100" />
-
-      <div className="relative mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+      <div className="mx-auto w-full max-w-6xl px-5 py-20 sm:px-6 lg:py-28">
         <Carousel
           label="Participant testimonials"
           count={TESTIMONIALS.length}
           intro={
             <>
-              <p className="text-xs font-medium uppercase tracking-[0.05em] text-white/80">
-                {VOICES.eyebrow}
-              </p>
+              <p className={cn(label, "text-gold-soft")}>{VOICES.eyebrow}</p>
               <h2
                 id="voices-title"
-                className="mt-4 text-balance text-3xl font-semibold leading-[1.15] tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+                className="mt-4 text-balance font-display text-4xl leading-[1.06] sm:text-5xl lg:text-6xl"
               >
                 {VOICES.title}
               </h2>
-              <p className="mt-5 max-w-[40ch] text-pretty text-lg leading-[1.6] text-white/80">
+              <p className="mt-5 max-w-[40ch] text-pretty text-lg leading-[1.6] text-white/85">
                 {VOICES.description}
               </p>
             </>
@@ -39,21 +40,16 @@ export function Voices() {
           {TESTIMONIALS.map(({ quote, name, role, affiliation, avatar }, i) => (
             <li key={name} aria-label={`${i + 1} of ${TESTIMONIALS.length}`}>
               <figure>
-                {/* Brand golden measures 2.98:1 on brand cyan; the 10% lift
-                    reaches 3.21:1. The mark is decorative either way. */}
-                <QuotesIcon
-                  aria-hidden
-                  weight="fill"
-                  className="size-8 -scale-x-100 text-[color-mix(in_oklch,var(--color-brand-golden),white_10%)]"
-                />
-                <blockquote className="mt-4 text-pretty text-xl leading-[1.4] text-white sm:text-2xl lg:text-[1.75rem]">
+                {/* Saffron, as on the banners. The mark is decorative. */}
+                <QuotesIcon aria-hidden weight="fill" className="size-9 -scale-x-100 text-saffron" />
+                <blockquote className="mt-5 text-pretty font-display text-2xl leading-[1.35] tracking-[-0.01em] sm:text-[1.75rem] lg:text-[2rem] lg:leading-[1.3]">
                   {quote}
                 </blockquote>
                 <figcaption className="mt-8 flex items-center gap-4">
-                  {/* The face cut-out on a small square of the pale cyan well.
+                  {/* The face cut-out on a small round of pale cyan.
                       The name sits beside it, so the image adds nothing a
                       screen reader needs. */}
-                  <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-linear-to-b from-[color-mix(in_oklch,var(--color-brand-cyan),white_94%)] to-[color-mix(in_oklch,var(--color-brand-cyan),white_86%)] sm:size-16">
+                  <div className="size-14 shrink-0 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-brand-cyan),white_80%)] sm:size-16">
                     <Image
                       src={avatar}
                       alt=""
@@ -63,12 +59,12 @@ export function Voices() {
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold leading-[1.3] tracking-[-0.01em] text-white">{name}</p>
-                    <p className="mt-0.5 text-pretty text-sm leading-[1.4] text-white/80">
+                    <p className="text-lg font-medium leading-[1.3]">{name}</p>
+                    <p className="mt-0.5 text-pretty text-sm leading-[1.4] text-white/85">
                       {role}
                       {affiliation && (
                         <>
-                          <span aria-hidden className="mx-1.5 text-white/50">
+                          <span aria-hidden className="mx-1.5 text-white/60">
                             ·
                           </span>
                           <span className="sr-only">, </span>
@@ -98,10 +94,7 @@ export function Collaborators() {
   return (
     <section aria-labelledby="collaborators-title" className="bg-background">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:gap-10 lg:py-10">
-        <h2
-          id="collaborators-title"
-          className="shrink-0 text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground"
-        >
+        <h2 id="collaborators-title" className={cn(label, "shrink-0 text-muted-foreground")}>
           Organisations behind the convention
         </h2>
 

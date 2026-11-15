@@ -44,7 +44,7 @@ export type ProgrammeItem = {
 };
 
 export const IN_STORE = {
-  title: "What We’ll Do Together",
+  title: "What we’ll do together",
   items: [
     {
       id: "journeys",

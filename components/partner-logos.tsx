@@ -10,7 +10,8 @@ export type PartnerLogo = {
 
 /* Logo wall shared by the Get Involved page and the homepage. Equal cells so
    square marks and wide wordmarks read as one set. Each logo is capped in
-   height and width and centred, in a muted frame with the card hairline.
+   height and width and centred on a white tile with a hairline; a tile that
+   links somewhere takes a cyan hairline under the pointer.
    Names stay in the DOM for screen readers and as the link's name. */
 export function PartnerLogos({
   partners,
@@ -28,7 +29,7 @@ export function PartnerLogos({
     >
       {partners.map(({ name, logo, href }) => {
         const cell =
-          "flex h-24 items-center justify-center rounded-xl border border-transparent bg-muted/40 px-6 shadow-ring";
+          "flex h-24 items-center justify-center rounded-2xl border border-border bg-card px-6";
         // A height cap suits wide wordmarks; a narrow crest under the same
         // cap shrinks to a sliver, so it gets more height.
         const narrow = logo.width / logo.height < 1.3;
@@ -56,7 +57,7 @@ export function PartnerLogos({
                 rel="noopener noreferrer"
                 className={cn(
                   cell,
-                  "transition-[background-color] duration-150 ease-hover hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "transition-[border-color] duration-150 ease-hover hover:border-brand-cyan/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 )}
               >
                 {mark}

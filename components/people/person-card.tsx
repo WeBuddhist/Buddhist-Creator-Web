@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { UserIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import { card, cardInner, photo } from "@/components/convention/section-heading";
+import { photo } from "@/components/convention/section-heading";
 import type { TeamMember } from "@/lib/people";
 
 type Portrait = TeamMember["image"];
 
-/* Card chrome: a square portrait flush at the top of the
-   inner surface, then the text on one left edge. */
+/* A portrait with the same soft corners as every photograph on the site,
+   and the name in the serif under it. No card around it: the picture is
+   the frame. */
 function PersonFrame({
   image,
   children,
@@ -16,22 +17,22 @@ function PersonFrame({
   children: React.ReactNode;
 }) {
   return (
-    <li className={card}>
-      <article className={cn(cardInner, "flex h-full flex-col overflow-hidden")}>
-        <div className="aspect-square bg-muted">
+    <li>
+      <article className="flex h-full flex-col">
+        <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-paper-deep">
           {image ? (
             <Image
               src={image.src}
               alt={image.alt}
               placeholder="blur"
-              sizes="(min-width: 1024px) 16rem, (min-width: 640px) 33vw, 50vw"
+              sizes="(min-width: 1024px) 23rem, (min-width: 640px) 33vw, 50vw"
               className={cn("size-full object-cover", photo)}
             />
           ) : (
             <Placeholder />
           )}
         </div>
-        <div className="flex flex-1 flex-col px-4 pt-4 pb-5">{children}</div>
+        <div className="flex flex-1 flex-col px-1 pt-4">{children}</div>
       </article>
     </li>
   );
@@ -41,7 +42,7 @@ export function TeamCard({ member }: { member: TeamMember }) {
   const { name, role, image } = member;
   return (
     <PersonFrame image={image}>
-      <h3 className="text-balance text-base font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
+      <h3 className="text-balance font-display text-2xl leading-[1.15] text-foreground">
         {name}
       </h3>
       {role && <p className="mt-1 text-sm text-muted-foreground">{role}</p>}

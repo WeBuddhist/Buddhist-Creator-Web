@@ -14,8 +14,8 @@ const iconButton = cn(
   "active:scale-[0.95]",
   "focus-visible:outline-2 focus-visible:outline-offset-2",
 );
-// The trigger lives in the header and follows its tone; the close button
-// sits in the white drawer and keeps the page tokens.
+// The trigger lives in the header and reads its tokens; the close button
+// sits in the drawer and keeps the page tokens.
 const triggerButton = cn(
   iconButton,
   "text-(--header-fg) hover:bg-(--header-hover) focus-visible:outline-(--header-ring)",
@@ -80,7 +80,7 @@ export function MobileNav() {
           >
             <Drawer.Content className="flex flex-1 flex-col">
               <div className="flex h-16 items-center justify-between pl-5 pr-3">
-                <Drawer.Title className="text-sm font-medium text-muted-foreground">
+                <Drawer.Title className="text-[0.8125rem] font-semibold uppercase tracking-[0.14em] text-brand-cyan">
                   {SITE_NAME}
                 </Drawer.Title>
                 <Drawer.Close className={closeButton} aria-label="Close menu">
@@ -110,7 +110,7 @@ export function MobileNav() {
                           // so here they are a plain group heading.
                           <span
                             id={`mobile-nav-group-${index}`}
-                            className="flex h-13 select-none items-center px-3 text-lg font-medium tracking-[-0.01em] text-foreground/80"
+                            className="flex h-14 select-none items-center px-3 font-display text-3xl leading-none text-muted-foreground"
                           >
                             {item.label}
                           </span>
@@ -119,13 +119,13 @@ export function MobileNav() {
                             href={item.href}
                             aria-current={active ? "page" : undefined}
                             className={cn(
-                              "flex h-13 select-none items-center justify-between rounded-xl px-3 text-lg font-medium tracking-[-0.01em]",
+                              "flex h-14 select-none items-center justify-between rounded-xl px-3 font-display text-3xl leading-none",
                               "transition-[background-color,transform] duration-150 ease-hover",
                               "active:scale-[0.98] active:bg-muted",
                               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                               // The current section sits on a soft pill, matching the
                               // header; aria-current carries it to assistive tech.
-                              active ? "bg-muted text-foreground" : "text-foreground/80",
+                              active ? "bg-muted text-foreground" : "text-foreground",
                             )}
                           >
                             {item.label}
@@ -146,7 +146,7 @@ export function MobileNav() {
                                 "transition-[background-color,transform] duration-150 ease-hover",
                                 "active:scale-[0.98] active:bg-muted",
                                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                                childActive ? "bg-muted text-foreground" : "text-muted-foreground",
+                                childActive ? "bg-muted text-foreground" : "text-foreground",
                               );
                               return (
                                 <li key={child.href}>

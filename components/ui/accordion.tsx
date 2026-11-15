@@ -38,7 +38,7 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group/trigger flex w-full flex-1 cursor-pointer items-start justify-between gap-4 rounded-sm py-4 text-left outline-none select-none",
+          "group/trigger flex w-full flex-1 cursor-pointer items-start justify-between gap-4 rounded-sm py-4 text-left select-none",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
           className,
         )}
@@ -48,7 +48,7 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
         <CaretDownIcon
           aria-hidden
           weight="bold"
-          className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out group-data-panel-open/trigger:rotate-180 motion-reduce:transition-none"
+          className="mt-1.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out group-data-panel-open/trigger:rotate-180 motion-reduce:transition-none"
         />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>

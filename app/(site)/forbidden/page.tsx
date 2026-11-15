@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function ForbiddenPage() {
   return (
     <main className="flex flex-1 flex-col bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+      <div className="mx-auto w-full max-w-6xl px-4 pt-16 pb-24 sm:px-6 lg:pt-24 lg:pb-32">
         <SectionHeading
           id="forbidden-title"
           eyebrow="Admin"
@@ -23,7 +23,7 @@ export default function ForbiddenPage() {
         <p className="mt-8">
           <Link href="/convention/2027/register" className={ctaLink}>
             Go to my application
-            <ArrowRightIcon aria-hidden weight="bold" className="size-3.5" />
+            <ArrowRightIcon aria-hidden weight="bold" className="size-4" />
           </Link>
         </p>
       </div>

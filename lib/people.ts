@@ -24,20 +24,20 @@ export type TeamMember = {
 
 export const PEOPLE_PAGE = {
   eyebrow: "People",
-  title: "The Sangha behind the Mission",
+  title: "The sangha behind the mission",
   description:
     "The team behind Buddhist Creators, and the creators who share the Dharma on their channels.",
 } as const;
 
 export const CREATORS_SECTION = {
   id: "creators",
-  title: "Our Creators",
+  title: "Our creators",
   description: "The creators who share the Dharma on their channels.",
 } as const;
 
 export const TEAM_SECTION = {
   id: "team",
-  title: "Our Team",
+  title: "Our team",
   description: "The small group running programs, campaigns and the convention.",
 } as const;
 

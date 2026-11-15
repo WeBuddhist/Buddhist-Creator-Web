@@ -4,7 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowRightIcon, ArrowUpRightIcon, CheckCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
-import { primaryButton } from "@/components/convention/section-heading";
+import { accentButton, primaryButton } from "@/components/convention/section-heading";
 import { getMyApplication } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/db/schema";
@@ -169,15 +169,14 @@ export function RegistrationActionView({
 }
 
 
-/* The same action at the foot of the page, on the brand band: one line and
+/* The same action at the foot of the page, on the cyan sheet: one line and
    one button, centred. A visitor is invited to apply; someone with an
    application is told where it stands and taken back to it, as in the card,
-   which carries the detail. The button is the white pill, so it reads as
-   the one control on the cyan, and its focus ring is white for the same
-   reason: the grey ring measures under 3:1 there. */
+   which carries the detail. The button is the gold one, with its white
+   focus ring: the cyan ring would be lost on the sheet. */
 
-const closingLine = "mt-6 max-w-xl text-pretty text-lg leading-[1.6] text-white/80";
-const closingButton = "focus-visible:ring-white/70";
+const closingLine = "mt-7 max-w-xl text-pretty text-xl leading-[1.55] text-white/85";
+const closingButton = accentButton;
 
 /** What the closing band says for each application status. */
 function closingCopy(status: ApplicationStatus | null) {
@@ -193,7 +192,7 @@ export function ClosingCallToAction({ status = null }: { status?: ApplicationSta
     // No line: the one the band has says registration is open.
     return (
       <div className="mt-8">
-        <Button size="pill" variant="outline" disabled>
+        <Button size="pill" disabled className={closingButton}>
           {REGISTRATION.label}
           <ArrowRightIcon data-icon="inline-end" weight="bold" />
         </Button>
@@ -207,7 +206,6 @@ export function ClosingCallToAction({ status = null }: { status?: ApplicationSta
       <div className="mt-8">
         <Button
           size="pill"
-          variant="outline"
           nativeButton={false}
           className={closingButton}
           render={<Link href={REGISTRATION.href} />}
