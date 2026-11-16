@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { useActionState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { CheckIcon, CircleNotchIcon, PaperPlaneTiltIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { submitFeedback, type FeedbackState } from "@/app/actions";
+import { postFeedback, submitFeedback, type FeedbackState } from "@/app/actions";
 import { primaryButton } from "@/components/convention/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,6 @@ const TOAST_ID = "suggestion";
    another. Long enough to be read, short enough that the box never looks
    closed after one suggestion. */
 const SENT_FOR_MS = 3000;
-const INITIAL: FeedbackState = { status: "idle" };
 
 /* The suggestion box's form. Sending shows on the button itself: the paper
    plane gives way to a spinner while the suggestion is saved, then to a
@@ -68,71 +67,62 @@ export function FeedbackForm({
   emailMaxLength: number;
 }) {
   const { form } = FEEDBACK;
-  const [state, formAction, pending] = useActionState(submitFeedback, INITIAL);
   const formRef = React.useRef<HTMLFormElement>(null);
   const suggestionRef = React.useRef<HTMLTextAreaElement>(null);
+  // The wait before a sent suggestion's tick gives way to the plane again.
+  const settle = React.useRef<number>(undefined);
+
+  /* Sending is a React Query mutation, and each result is acted on once,
+     in its callbacks. A request that fails outright is the same to the
+     visitor as a save that failed. */
+  const send = useMutation({
+    mutationFn: (data: FormData) => submitFeedback(data).catch((): FeedbackState => ({ status: "failed" })),
+    onSuccess: ({ status }) => {
+      if (status === "sent") {
+        formRef.current?.reset();
+        toast.success(form.sent.title, { id: TOAST_ID, description: form.sent.description, duration: 5000 });
+        settle.current = window.setTimeout(() => send.reset(), SENT_FOR_MS);
+      } else if (status === "empty") {
+        // Focus on the field is the announcement: it is read with its error.
+        toast.dismiss(TOAST_ID);
+        suggestionRef.current?.focus();
+      } else if (status === "failed") {
+        toast.error(form.failed.title, {
+          id: TOAST_ID,
+          description: form.failed.description,
+          duration: 8000,
+          closeButton: true,
+        });
+      }
+    },
+  });
 
   // A result is shown until it is cleared: by the visitor typing again,
   // which starts the next suggestion or mends this one, or, for a sent
   // one, by the few seconds running out.
-  const [cleared, setCleared] = React.useState<FeedbackState | null>(null);
-  const result = pending || cleared === state ? "idle" : state.status;
+  const pending = send.isPending;
+  const result = pending ? "idle" : (send.data?.status ?? "idle");
   const sent = result === "sent";
   const icon = pending ? "spinner" : sent ? "tick" : "plane";
-
-  React.useEffect(() => {
-    if (!sent) return;
-    const timer = window.setTimeout(() => setCleared(state), SENT_FOR_MS);
-    return () => window.clearTimeout(timer);
-  }, [sent, state]);
-
-  // Each result is handled once. One the page arrived with, from a post
-  // made before it hydrated, is shown by the button and the lines below
-  // and is not toasted.
-  const handled = React.useRef(state);
-  React.useEffect(() => {
-    if (handled.current === state) return;
-    handled.current = state;
-
-    if (state.status === "sent") {
-      formRef.current?.reset();
-      toast.success(FEEDBACK.form.sent.title, {
-        id: TOAST_ID,
-        description: FEEDBACK.form.sent.description,
-        duration: 5000,
-      });
-    } else if (state.status === "empty") {
-      // Focus on the field is the announcement: it is read with its error.
-      toast.dismiss(TOAST_ID);
-      suggestionRef.current?.focus();
-    } else if (state.status === "failed") {
-      toast.error(FEEDBACK.form.failed.title, {
-        id: TOAST_ID,
-        description: FEEDBACK.form.failed.description,
-        duration: 8000,
-        closeButton: true,
-      });
-    }
-  }, [state]);
-
-  /* Sent by hand rather than through the form's own action, which would
-     clear the fields whatever came back, a failed save included. Before
-     the page hydrates, and without JavaScript, `action` still posts it. */
-  function send(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (pending) return;
-    const data = new FormData(event.currentTarget);
-    React.startTransition(() => formAction(data));
-  }
+  const clear = () => {
+    window.clearTimeout(settle.current);
+    if (send.data) send.reset();
+  };
 
   return (
     <form
       ref={formRef}
-      action={formAction}
-      onSubmit={send}
-      onInput={() => {
-        if (cleared !== state) setCleared(state);
+      /* Sent by hand: the mutation keeps the fields when a save fails,
+         which the form's own action would clear. Before the page's scripts
+         have loaded, and without them, `action` still posts it. */
+      action={postFeedback}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (pending) return;
+        window.clearTimeout(settle.current);
+        send.mutate(new FormData(event.currentTarget));
       }}
+      onInput={clear}
       className="flex flex-col gap-5"
     >
       {/* Fields are grouped by space: 8px inside a field, 20px between

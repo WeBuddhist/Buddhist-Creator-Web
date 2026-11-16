@@ -1,6 +1,6 @@
 import "server-only";
 import type { Readable } from "node:stream";
-import { DeleteObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -72,6 +72,24 @@ export async function uploadStream(args: {
     leavePartsOnError: false,
   });
   await upload.done();
+  forgetSignedUrl(args.key);
+  return args.key;
+}
+
+/** Store bytes already in memory as `key`, in one request: the backend's
+    upload_bytes. For small things only (a card photo, compressed in the
+    browser to well under a megabyte); anything large goes through
+    `uploadStream`. */
+export async function uploadBytes(args: { key: string; body: Uint8Array; contentType: string }) {
+  await s3().send(
+    new PutObjectCommand({
+      Bucket: bucket(),
+      Key: args.key,
+      Body: args.body,
+      ContentType: args.contentType,
+      ExpectedBucketOwner: expectedBucketOwner(),
+    }),
+  );
   forgetSignedUrl(args.key);
   return args.key;
 }

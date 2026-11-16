@@ -33,6 +33,11 @@ export const CREATORS_SECTION = {
   id: "creators",
   title: "Our creators",
   description: "The creators who share the Dharma on their channels.",
+  /* The invitation to make a creator card (app/(site)/creator-card). */
+  card: {
+    action: "Create your creator card",
+    note: "Share the Dharma on your own channel? Tell us who you are and what you make. Our team reads every card.",
+  },
 } as const;
 
 export const TEAM_SECTION = {

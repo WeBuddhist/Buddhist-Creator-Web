@@ -1,5 +1,6 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql, type SQL } from "drizzle-orm";
 import {
+  bigint,
   check,
   index,
   integer,
@@ -11,6 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { CardSocials } from "@/lib/creator-card";
 import type { PlatformLinks } from "@/lib/registration-2027";
 
 /* Who may do what. `member` is everyone who has signed in; `admin` reviews
@@ -40,6 +42,12 @@ export const notificationState = pgEnum("notification_state", ["sending", "sent"
 /* `decision` tells an applicant a decision they have not been told;
    `resend` repeats the mail they already had, on an admin's say-so. */
 export const notificationKind = pgEnum("notification_kind", ["decision", "resend"]);
+
+/* A creator card is read by the team before it counts: pending → approved
+   | rejected. An admin may change a decision or take it back to pending.
+   Whenever the creator changes their card it goes back to pending, so
+   nothing on an approved card is ever unread. */
+export const creatorCardStatus = pgEnum("creator_card_status", ["pending", "approved", "rejected"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -218,11 +226,95 @@ export const suggestions = pgTable(
   ],
 );
 
+/* Creator cards: who a creator is, what they make and where to find it.
+   A signed-in creator fills one in (app/(site)/creator-card) and the team
+   reviews it (app/admin/creator-cards).
+
+   Only the name is required here. The team will also make cards for
+   creators it knows, from details it only partly has, and those have no
+   owner until the creator claims theirs: `userId` is null until then. What
+   a creator must fill in to send their own card is lib/creator-card.ts's
+   business. The limits repeat that file's CARD_NAME_MAX and
+   CARD_TAGLINE_MAX; drizzle-kit reads this file on its own, so they are
+   written out here. */
+export const creatorCards = pgTable(
+  "creator_cards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The creator the card belongs to. Null for a card nobody has claimed. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    status: creatorCardStatus("status").default("pending").notNull(),
+    /** Counts the versions of the card's content. A review names the
+        version it read, and is refused if the card has moved on. */
+    revision: integer("revision").default(1).notNull(),
+
+    displayName: text("display_name").notNull(),
+    // A name from lib/countries.ts.
+    country: text("country"),
+    // Option slugs from lib/creator-card.ts; "other" pairs with its text.
+    creatorType: text("creator_type"),
+    languages: text("languages").array(),
+    languagesOther: text("languages_other"),
+    contentTypes: text("content_types").array(),
+    contentTypesOther: text("content_types_other"),
+    /** One line about the creator's work, shown on the card. */
+    tagline: text("tagline"),
+    /** The S3 key of a photo the creator uploaded. Null means the card
+        shows the picture from its owner's sign-in account (users.picture),
+        as the backend's avatar_url does for a social login. */
+    photoKey: text("photo_key"),
+    /** The link for each place the creator publishes, keyed by its slug. */
+    socials: jsonb("socials").$type<CardSocials>().default({}).notNull(),
+    /* How many people follow the creator in each place a count is kept
+       for (COUNTED_SOCIALS in lib/creator-card.ts). The creator types
+       them in for now; null is a figure the card does not have. They are
+       columns rather than keys of `socials` so creators can be ranked in
+       SQL, on one place or on all of them. They are not part of what a
+       review reads: changing one moves neither `status` nor `revision`. */
+    youtubeFollowers: integer("youtube_followers"),
+    instagramFollowers: integer("instagram_followers"),
+    tiktokFollowers: integer("tiktok_followers"),
+    /** The counts added together, kept by the database so it cannot fall
+        out of step with them. A card with no count has 0. */
+    totalFollowers: bigint("total_followers", { mode: "number" })
+      .generatedAlwaysAs(
+        (): SQL =>
+          sql`coalesce(${creatorCards.youtubeFollowers}, 0)::bigint + coalesce(${creatorCards.instagramFollowers}, 0) + coalesce(${creatorCards.tiktokFollowers}, 0)`,
+      )
+      .notNull(),
+
+    // Review. The note is for the creator: they see it with a rejection.
+    reviewNote: text("review_note"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    /** When the creator last sent the card for review. */
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    // One card per person. Any number of cards may have no owner: a unique
+    // index does not compare nulls.
+    uniqueIndex("creator_cards_user_id_idx").on(table.userId),
+    index("creator_cards_status_idx").on(table.status, table.submittedAt),
+    check("creator_cards_display_name_check", sql`char_length(${table.displayName}) between 1 and 80`),
+    check("creator_cards_tagline_check", sql`char_length(${table.tagline}) <= 140`),
+    check(
+      "creator_cards_followers_check",
+      sql`${table.youtubeFollowers} >= 0 and ${table.instagramFollowers} >= 0 and ${table.tiktokFollowers} >= 0`,
+    ),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one }) => ({
   application: one(applications, {
     fields: [users.id],
     references: [applications.userId],
   }),
+}));
+
+export const creatorCardsRelations = relations(creatorCards, ({ one }) => ({
+  user: one(users, { fields: [creatorCards.userId], references: [users.id] }),
+  reviewer: one(users, { fields: [creatorCards.reviewedBy], references: [users.id] }),
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
@@ -257,3 +349,5 @@ export type ApplicationNotification = typeof applicationNotifications.$inferSele
 export type NotificationState = ApplicationNotification["state"];
 export type NotificationKind = ApplicationNotification["kind"];
 export type Suggestion = typeof suggestions.$inferSelect;
+export type CreatorCard = typeof creatorCards.$inferSelect;
+export type CreatorCardStatus = CreatorCard["status"];

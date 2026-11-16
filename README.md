@@ -63,6 +63,7 @@ Most copy lives in typed data files in `lib/`, so it can be changed without touc
 | `lib/convention-2026.ts` | Convention 2026 page |
 | `lib/convention-2027.ts` | Convention 2027 page, including the registration switch |
 | `lib/people.ts` | Team and creators |
+| `lib/creator-card.ts` | Creator card form: copy and option lists |
 | `lib/navigation.ts` | Site navigation, name, URL and default description |
 
 Events are grouped by hand rather than by date, so move an entry to the right list once it passes.
@@ -70,6 +71,47 @@ Events are grouped by hand rather than by date, so move an entry to the right li
 ## Suggestion box
 
 The homepage suggestion box saves each suggestion to the `suggestions` table (`lib/suggestions.ts`, called from `submitFeedback` in `app/actions.ts`), and admins read them at `/admin/suggestions`, newest first; a superadmin can remove one. The send button shows the save in progress and its outcome, and a toast confirms it.
+
+## Creator cards
+
+A creator card says who a creator is, what they make and where to find it:
+a photo, display name, country, whether they create as a monastic, lay
+practitioner, organization or teacher, the languages they publish in, the
+kinds of content they make, one line about their work, and their links.
+
+The photo is the picture from the creator's sign-in account unless they
+upload their own. An upload is cropped square, scaled to 512 pixels and
+compressed in the browser, sent with the form, checked on the server (one
+WebP or JPEG, at most 512 KB) and stored in the private S3 bucket under
+`creator-cards/<user id>/`, a new object for each upload; the card's
+`photo_key` names it and pages load it through a presigned URL. A new photo
+is a change to the card like any other, so it goes back for review, and the
+object it replaces is deleted.
+
+A signed-in creator fills theirs in at `/creator-card`, with the card drawn
+beside the form as they type, and submits it for review. The form then
+behaves as the registration form does: it is read-only behind an Edit card
+button, editing offers Save changes and Cancel, and the actions float at the
+foot of the screen. Admins and superadmins review at `/admin/creator-cards`:
+approve, or reject with a note the creator reads on their card page. A
+creator can edit their card at any time, and every change, even to an
+approved card, goes back to pending, so nothing is approved unread. A review names the version of the card it read
+and is refused if the creator has changed the card since.
+
+| Piece | Where |
+| --- | --- |
+| Option lists, copy, validation | `lib/creator-card.ts` |
+| Reads and writes, status rules | `lib/creator-cards.ts` |
+| The card itself | `components/creator-card/creator-card.tsx` |
+| Preparing an uploaded photo in the browser | `components/creator-card/photo.ts` |
+| The form | `app/(site)/creator-card/` |
+| Review | `app/admin/creator-cards/` |
+
+One table, `creator_cards`. Only `display_name` is required and `user_id`
+may be null: the team will also make cards for creators it knows from
+details it only partly has, and such a card has no owner until its creator
+claims it. Claiming is not built yet, and approved cards are not shown on
+the public site yet.
 
 ## Registration and the admin dashboard
 
@@ -89,18 +131,34 @@ How it fits together:
 | Auth0 client and sign-in gate | `lib/auth0.ts`, `proxy.ts` |
 | Who is calling, roles | `lib/auth.ts`, `lib/auth-roles.ts` |
 | Database schema and client | `lib/db/schema.ts`, `lib/db/index.ts`, migrations in `drizzle/` |
+| Client-side writes (React Query) | `components/query-provider.tsx`, `components/form/form-helpers.ts`, `lib/session-ended.ts` |
 | Form copy, option lists, validation | `lib/registration-2027.ts` |
 | Reads and writes, status transitions | `lib/applications.ts` |
-| S3 (private bucket, presigned playback) | `lib/s3.ts`, upload handler at `app/api/applications/video/route.ts` |
+| S3 (private bucket, presigned reads) | `lib/s3.ts`; intro videos through `app/api/applications/video/route.ts`, card photos through the card's save action |
 | Decision emails: who is owed one, sending, the send ledger | `lib/notifications.ts`, `lib/ses.ts` |
 | Wording of the three emails | `lib/emails/accepted.ts`, `rejected.ts`, `waitlisted.ts` |
 | The form | `app/convention/2027/register/` |
 | The dashboard | `app/admin/` |
 
+### How client code talks to the server
+
+Pages read their data in server components. Client components that write
+(every form here, the video upload, the bulk send) run their server action
+or request as a [React Query](https://tanstack.com/query) mutation
+(`useMutation`), which supplies the pending state, the result and the
+failure; what happens on a result is in the mutation's callbacks, not in an
+effect. Forms send themselves from `onSubmit` with their own `FormData`
+rather than through the form's `action`, because React resets a form after
+its action and that unticks checkboxes ticked since the page loaded.
+Mutations are tried once and at once, online or not. A request that fails
+outright is checked against `/auth/profile` to tell an ended session from a
+lost connection (`lib/session-ended.ts`).
+
 ### Data model
 
-Five tables, defined in `lib/db/schema.ts`. `suggestions` stands alone: a
-suggestion is never tied to a user.
+Six tables, defined in `lib/db/schema.ts`. The diagram shows the five
+behind registration; `creator_cards` is described under Creator cards
+above. `suggestions` stands alone: a suggestion is never tied to a user.
 
 ```mermaid
 erDiagram
@@ -207,6 +265,7 @@ so the history outlives the admin who made it.
 | `application_status` | `draft`, `submitted`, `accepted`, `rejected`, `waitlisted`, `withdrawn` |
 | `notification_state` | `sending`, `sent`, `failed`, `uncertain` |
 | `notification_kind` | `decision`, `resend` |
+| `creator_card_status` | `pending`, `approved`, `rejected` |
 
 ### Setting it up
 

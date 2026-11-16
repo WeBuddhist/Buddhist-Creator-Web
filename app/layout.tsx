@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Instrument_Sans, Inter, Newsreader } from "next/font/google";
 import { Toaster } from "sonner";
+import { QueryProvider } from "@/components/query-provider";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/navigation";
 import "./globals.css";
 
@@ -77,7 +78,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       {/* The header and footer belong to the (site) group's layout, so the
           sign-in page can stand alone on this shell. */}
       <body className="flex min-h-full flex-col">
-        {children}
+        {/* Client code that writes through a server action does it as a
+            React Query mutation; see components/query-provider.tsx. */}
+        <QueryProvider>{children}</QueryProvider>
         {/* One toaster for the whole site. Pages call toast() from client
             code; the register page lifts it above its floating action bar
             through --action-bar-height, see globals.css. */}

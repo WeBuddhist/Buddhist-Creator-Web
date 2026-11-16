@@ -1,8 +1,9 @@
 "use client";
 
-import { startTransition, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 import { Progress } from "@base-ui/react/progress";
 import { PaperPlaneTiltIcon, WarningIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -81,42 +82,38 @@ export function BulkSend({ scope, summary }: { scope: Decision[]; summary: BulkS
   const [stage, setStage] = useState<Stage>({ name: "loading" });
   const stop = useRef(false);
 
-
   // Nothing waiting: the strip goes, but the drawer stays mounted, so the
   // summary of a run that just emptied the list is still there to read.
   const empty = summary.total === 0 && summary.reviewCount === 0;
   const busy = stage.name === "running";
   const single = scope.length === 1 ? scope[0] : null;
 
-  function openDrawer() {
-    setStage({ name: "loading" });
-    setOpen(true);
-    startTransition(async () => {
-      try {
-        const preview = await previewBulkSendAction(scope);
-        setStage(preview.ok ? { name: "confirm", preview } : { name: "error", message: preview.message });
-      } catch {
-        setStage({ name: "error", message: "The list could not be loaded. Reload the page and try again." });
-      }
-    });
-  }
+  /* Three React Query mutations: the list of who will be written to, the
+     run itself, and the test email. The run is one mutation however many
+     chunks it takes; it reports its progress through `stage` as it goes. */
+  const preview = useMutation({
+    mutationFn: () => previewBulkSendAction(scope),
+    onSuccess: (result) =>
+      setStage(result.ok ? { name: "confirm", preview: result } : { name: "error", message: result.message }),
+    onError: () => setStage({ name: "error", message: "The list could not be loaded. Reload the page and try again." }),
+  });
 
-  function run(preview: Ready) {
-    const names = new Map<string, string>();
-    const queue = sendable(preview).flatMap((group) =>
-      group.recipients.map((recipient) => {
-        names.set(recipient.id, recipient.name ?? recipient.email);
-        return { id: recipient.id, status: recipient.status };
-      }),
-    );
-    const total = queue.length;
-    const tally: Tally = { sent: 0, skipped: 0, failed: 0, uncertain: 0 };
-    const problems: Problem[] = [];
-    let stopped: string | null = null;
-    stop.current = false;
-    setStage({ name: "running", total, tally: { ...tally }, stopping: false });
+  const run = useMutation({
+    mutationFn: async (ready: Ready) => {
+      const names = new Map<string, string>();
+      const queue = sendable(ready).flatMap((group) =>
+        group.recipients.map((recipient) => {
+          names.set(recipient.id, recipient.name ?? recipient.email);
+          return { id: recipient.id, status: recipient.status };
+        }),
+      );
+      const total = queue.length;
+      const tally: Tally = { sent: 0, skipped: 0, failed: 0, uncertain: 0 };
+      const problems: Problem[] = [];
+      let stopped: string | null = null;
+      stop.current = false;
+      setStage({ name: "running", total, tally: { ...tally }, stopping: false });
 
-    startTransition(async () => {
       // A chunk that reaches nobody means the server ran out of time
       // before the first send. Give up after a few of those in a row.
       let idle = 0;
@@ -127,7 +124,7 @@ export function BulkSend({ scope, summary }: { scope: Decision[]; summary: BulkS
         }
         let chunk;
         try {
-          chunk = await sendBulkChunkAction({ batchId: preview.batchId, items: queue.slice(0, CHUNK) });
+          chunk = await sendBulkChunkAction({ batchId: ready.batchId, items: queue.slice(0, CHUNK) });
         } catch {
           // A deploy mid-run retires this page's actions.
           stopped = "The connection to the server was lost. Reload the page to carry on; nobody is emailed twice.";
@@ -157,21 +154,24 @@ export function BulkSend({ scope, summary }: { scope: Decision[]; summary: BulkS
           break;
         }
       }
-      setStage({ name: "done", tally: { ...tally }, problems, stopped });
+      return { tally: { ...tally }, problems, stopped };
+    },
+    onSuccess: (outcome) => {
+      setStage({ name: "done", ...outcome });
       router.refresh();
-    });
-  }
+    },
+  });
 
-  function sendTest(decision: Decision) {
-    startTransition(async () => {
-      try {
-        const result = await sendTestEmailAction(decision);
-        if (result.ok) toast.success(result.message);
-        else toast.error(result.message);
-      } catch {
-        toast.error("The test could not be sent.");
-      }
-    });
+  const test = useMutation({
+    mutationFn: (decision: Decision) => sendTestEmailAction(decision),
+    onSuccess: (result) => (result.ok ? toast.success(result.message) : toast.error(result.message)),
+    onError: () => toast.error("The test could not be sent."),
+  });
+
+  function openDrawer() {
+    setStage({ name: "loading" });
+    setOpen(true);
+    preview.mutate();
   }
 
   return (
@@ -239,8 +239,8 @@ export function BulkSend({ scope, summary }: { scope: Decision[]; summary: BulkS
               preview={stage.name === "confirm" ? stage.preview : null}
               owed={summary.owed}
               onCancel={() => setOpen(false)}
-              onSend={() => stage.name === "confirm" && run(stage.preview)}
-              onTest={sendTest}
+              onSend={() => stage.name === "confirm" && run.mutate(stage.preview)}
+              onTest={test.mutate}
             />
           )}
 
@@ -493,6 +493,9 @@ export function Running({
   );
 }
 
+/** A ref that gives its element the focus when it arrives on the page. */
+const focusOnArrival = (node: HTMLElement | null) => node?.focus();
+
 export function Done({
   tally,
   problems,
@@ -504,9 +507,6 @@ export function Done({
   stopped: string | null;
   onClose: () => void;
 }) {
-  // The Stop button this view replaces took the focus with it.
-  const close = useRef<HTMLButtonElement>(null);
-  useEffect(() => close.current?.focus(), []);
   return (
     <>
       <DrawerHeader>
@@ -536,7 +536,8 @@ export function Done({
         )}
       </DrawerBody>
       <DrawerFooter>
-        <Button ref={close} type="button" variant="outline" size="lg" className="px-3" onClick={onClose}>
+        {/* The Stop button this view replaces took the focus with it. */}
+        <Button ref={focusOnArrival} type="button" variant="outline" size="lg" className="px-3" onClick={onClose}>
           Close
         </Button>
       </DrawerFooter>

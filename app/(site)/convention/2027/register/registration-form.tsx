@@ -1,11 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useActionState, useTransition } from "react";
-import { Combobox } from "@base-ui/react/combobox";
+import { useMutation } from "@tanstack/react-query";
 import {
   ArrowCounterClockwiseIcon,
-  CaretDownIcon,
   CheckCircleIcon,
   FloppyDiskIcon,
   PaperPlaneTiltIcon,
@@ -13,11 +11,14 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { card, primaryButton } from "@/components/convention/section-heading";
+import { PlaceField, RequiredMark, TextField, errorText, field } from "@/components/form/fields";
+import { goToBanner, goToField, publishBarHeight } from "@/components/form/form-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COUNTRIES, isCountry, isStateOf, statesOf, suggestCountries, suggestStates } from "@/lib/countries";
 import { formatDateTime } from "@/lib/format";
+import { loginUrl } from "@/lib/login-url";
 import {
   AUDIENCE_LANGUAGES,
   AUDIENCE_REGIONS,
@@ -31,8 +32,15 @@ import {
   type PlatformValue,
   platformLinkTarget,
 } from "@/lib/registration-2027";
+import { UNREACHABLE, sessionEnded, settled } from "@/lib/session-ended";
 import { cn } from "@/lib/utils";
-import { reopenApplicationAction, saveApplicationAction, withdrawApplicationAction, type FormState } from "./actions";
+import {
+  reopenApplicationAction,
+  saveApplicationAction,
+  withdrawApplicationAction,
+  type FormState,
+  type StatusResult,
+} from "./actions";
 import { VideoUpload, type UploadedVideo } from "./video-upload";
 
 /* What the applicant's browser is told about where the application
@@ -112,18 +120,47 @@ function modeFor(status: FormStatus): Mode {
   return "locked";
 }
 
-const field = "h-11 px-3.5";
-const readOnlyField = "bg-muted/50";
 const sectionTitle = "font-display text-2xl leading-[1.15] text-foreground";
-const errorText = "text-sm text-brand-maroon";
 const TOAST_ID = "application";
+/* Reopening has a toast of its own. It is most often asked for from the
+   "withdrawn" toast's Undo, which is on its way out when the answer comes
+   back; a toast with that same id would leave with it, unseen. */
+const REOPEN_TOAST_ID = "application-reopened";
+const UNSAVED: FormState = { ok: false };
+
+/* Each answer that can be refused, in the order of the form, with the
+   element to go to for it. A list of checkboxes is reached through its
+   first box. */
+const CHOICES = ["contentTopics", "targetAudience", "audienceRegion", "audienceLanguage", "platforms"] as const;
+const PROBLEM_FIELDS: readonly (readonly [keyof FieldErrors, string])[] = [
+  ["fullName", "#fullName"],
+  ["organization", "#organization"],
+  ["country", "#country"],
+  ["state", "#state"],
+  ...CHOICES.flatMap(
+    (name) =>
+      [
+        [name, `input[name="${name}"]`],
+        [`${name}Other`, `input[name="${name}Other"]`],
+      ] as const,
+  ),
+  ...PLATFORMS.map(({ value }) => [`platformLinks.${value}`, `#platformLinks-${value}`] as const),
+  ["video", "#intro-video"],
+];
 
 /* The whole application on one page: personal details, the content
    creation journey and the intro video.
-   Inputs are controlled so the browser's form reset after an action keeps
-   what was typed. The submit buttons share one action: the pressed one
-   says whether this is a draft or a submission. The actions live in a bar
-   that stays at the bottom of the viewport while the form scrolls. */
+
+   Saving, withdrawing and reopening are React Query mutations around
+   their server actions: each gives the form its pending state and its
+   result, and their callbacks are where a result is acted on. The two
+   submit buttons share the save: the pressed one says whether this is a
+   draft or a submission. The form sends itself from onSubmit rather than
+   through `action`, because React resets a form after its action, and a
+   reset puts every checkbox back to how it was when the page loaded: a
+   box ticked in this visit would untick itself after "Save draft" and be
+   missing from the next save. The actions live in a bar that stays at the
+   bottom of the viewport while the form scrolls. */
 export function RegistrationForm({
   user,
   application,
@@ -131,15 +168,73 @@ export function RegistrationForm({
   user: { email: string; name: string | null };
   application: FormApplication;
 }) {
-  const [state, formAction, saving] = useActionState<FormState, FormData>(saveApplicationAction, { ok: false });
-  const [changingStatus, startStatusChange] = useTransition();
-  const pending = saving || changingStatus;
   const [values, setValues] = React.useState<Values>(() => toValues(application));
   const [video, setVideo] = React.useState<UploadedVideo | null>(application.video);
   const [editing, setEditing] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
   const bannerRef = React.useRef<HTMLDivElement>(null);
-  const barRef = React.useRef<HTMLDivElement>(null);
+
+  // Each result is announced once, here: a toast at the bottom, and focus
+  // moved to where the result is, the banner on success or the first
+  // answer that needs fixing on failure.
+  const save = useMutation({
+    mutationFn: async (data: FormData): Promise<FormState> => {
+      try {
+        return await saveApplicationAction(data);
+      } catch (error) {
+        // A session that ended while the form was open is turned away
+        // before the action runs, and arrives here as a failed request.
+        if (await sessionEnded()) return { ok: false, signedOut: true };
+        throw error;
+      }
+    },
+    onSuccess: (result) => {
+      if (result.signedOut) {
+        // Signing in again in another tab keeps what is on this page.
+        toast.error("You have been signed out", {
+          id: TOAST_ID,
+          description: "Sign in again, then come back to this tab and save. Your answers are still here.",
+          duration: Infinity,
+          closeButton: true,
+          action: {
+            label: "Sign in",
+            onClick: () => window.open(loginUrl(window.location.pathname), "_blank", "noopener"),
+          },
+        });
+        return;
+      }
+      if (result.ok) {
+        if (result.intent === "submit") {
+          // A submission that went through closes edit mode.
+          setEditing(false);
+          toast.success(result.firstSubmission ? "Application submitted" : "Changes saved", {
+            id: TOAST_ID,
+            description: result.firstSubmission
+              ? `We will write to ${user.email}.`
+              : "Your application stays submitted with the new answers.",
+          });
+          goToBanner(bannerRef.current);
+        } else {
+          toast.success("Draft saved", { id: TOAST_ID, description: "Come back any time to finish it." });
+        }
+        return;
+      }
+      const errors = result.errors ?? {};
+      const problem = errors.form?.[0];
+      toast.error(problem ? "Could not save" : "A few answers need attention", {
+        id: TOAST_ID,
+        description: problem ?? "Fix the highlighted answers, then try again.",
+        duration: 8000,
+        closeButton: true,
+      });
+      goToField(formRef.current, PROBLEM_FIELDS.find(([key]) => errors[key])?.[1]);
+    },
+    // The request itself failing, a dropped connection most likely.
+    onError: () =>
+      toast.error("Could not save", { id: TOAST_ID, description: UNREACHABLE, duration: 8000, closeButton: true }),
+  });
+  const state = save.data ?? UNSAVED;
+  const saving = save.isPending;
 
   // A fresh upload calls router.refresh(), and the server comes back with a
   // playback URL: take the server's version whenever its key changes or it
@@ -150,15 +245,6 @@ export function RegistrationForm({
     if (application.video?.key !== video?.key || (application.video?.url && !video?.url)) {
       setVideo(application.video);
     }
-  }
-
-  // A submission that went through closes edit mode. Done during render,
-  // like the video above, so the read-only view and the result arrive in
-  // the same frame.
-  const [seenState, setSeenState] = React.useState(state);
-  if (state !== seenState) {
-    setSeenState(state);
-    if (state.ok && state.intent === "submit") setEditing(false);
   }
 
   const status = application.status;
@@ -173,62 +259,6 @@ export function RegistrationForm({
     [values.country],
   );
 
-  // Each action result is announced once: a toast at the bottom, and focus
-  // moved to where the result is, the banner on success or the first
-  // answer that needs fixing on failure.
-  const handled = React.useRef(state);
-  React.useEffect(() => {
-    if (handled.current === state) return;
-    handled.current = state;
-    if (!state.intent) return;
-    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? "auto"
-      : "smooth";
-
-    if (state.ok) {
-      if (state.intent === "submit") {
-        toast.success(state.firstSubmission ? "Application submitted" : "Changes saved", {
-          id: TOAST_ID,
-          description: state.firstSubmission
-            ? `We will write to ${user.email}.`
-            : "Your application stays submitted with the new answers.",
-        });
-        bannerRef.current?.scrollIntoView({ behavior, block: "start" });
-        bannerRef.current?.focus({ preventScroll: true });
-      } else {
-        toast.success("Draft saved", { id: TOAST_ID, description: "Come back any time to finish it." });
-      }
-      return;
-    }
-
-    const problem = state.errors?.form?.[0];
-    toast.error(problem ? "Could not save" : "A few answers need attention", {
-      id: TOAST_ID,
-      description: problem ?? "Fix the highlighted answers, then try again.",
-      duration: 8000,
-      closeButton: true,
-    });
-    const invalid = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
-    const target = invalid?.matches("fieldset") ? invalid.querySelector<HTMLElement>("input") : invalid;
-    invalid?.scrollIntoView({ behavior, block: "center" });
-    target?.focus({ preventScroll: true });
-  }, [state, user.email]);
-
-  // The toaster lifts itself above the bar by this much, see globals.css.
-  React.useEffect(() => {
-    const bar = barRef.current;
-    const root = document.documentElement.style;
-    if (!bar) return;
-    const observer = new ResizeObserver(() => {
-      root.setProperty("--action-bar-height", `${Math.ceil(bar.offsetHeight)}px`);
-    });
-    observer.observe(bar);
-    return () => {
-      observer.disconnect();
-      root.removeProperty("--action-bar-height");
-    };
-  }, [mode]);
-
   // Both handlers stop the click's default action. React re-renders the
   // bar synchronously inside the click, and without the keys below the
   // browser would then run the default action on the node that replaced
@@ -241,31 +271,34 @@ export function RegistrationForm({
     event.preventDefault();
     setValues(toValues(application));
     setEditing(false);
+    // Puts away the messages of a save that was refused.
+    save.reset();
   };
 
   // Withdrawing is reversible, so it acts at once and offers undo rather
   // than asking first. The server revalidates the page, so the banner and
   // the bar follow the new status on their own.
-  const reopen = () =>
-    startStatusChange(async () => {
-      const result = await reopenApplicationAction();
+  const reopen = useMutation({
+    mutationFn: () => settled(reopenApplicationAction().then(withMessage)),
+    onSuccess: (result) => {
       if (!result.ok) {
-        toast.error("Could not reopen the application", { id: TOAST_ID, description: result.error });
+        toast.error("Could not reopen the application", { id: REOPEN_TOAST_ID, description: result.message });
         return;
       }
       toast.success("Application reopened", {
-        id: TOAST_ID,
+        id: REOPEN_TOAST_ID,
         description:
           result.status === "submitted"
             ? "It is back with the selection committee, as submitted."
             : "It is back as a draft. Submit it once it is complete.",
       });
-    });
-  const withdraw = () =>
-    startStatusChange(async () => {
-      const result = await withdrawApplicationAction();
+    },
+  });
+  const withdraw = useMutation({
+    mutationFn: () => settled(withdrawApplicationAction().then(withMessage)),
+    onSuccess: (result) => {
       if (!result.ok) {
-        toast.error("Could not withdraw the application", { id: TOAST_ID, description: result.error });
+        toast.error("Could not withdraw the application", { id: TOAST_ID, description: result.message });
         return;
       }
       setEditing(false);
@@ -273,14 +306,27 @@ export function RegistrationForm({
         id: TOAST_ID,
         description: "It will not be considered unless you reopen it.",
         duration: 10000,
-        action: { label: "Undo", onClick: reopen },
+        action: { label: "Undo", onClick: () => reopen.mutate() },
       });
-    });
+    },
+  });
+  const changingStatus = reopen.isPending || withdraw.isPending;
+  const pending = saving || changingStatus;
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editable || pending) return;
+    const data = new FormData(event.currentTarget);
+    // The button that was pressed says whether this is a draft or a submission.
+    const pressed = (event.nativeEvent as SubmitEvent).submitter;
+    if (pressed instanceof HTMLButtonElement && pressed.name) data.set(pressed.name, pressed.value);
+    save.mutate(data);
+  };
 
   return (
     <form
       ref={formRef}
-      action={formAction}
+      onSubmit={submit}
       className="flex flex-col gap-6"
       aria-describedby={mode === "locked" ? undefined : "form-status"}
     >
@@ -443,7 +489,13 @@ export function RegistrationForm({
 
       {/* Video */}
       <Section title={FORM.sections.video.title} description={FORM.sections.video.description} required>
-        <VideoUpload video={video} onChange={setVideo} disabled={!editable} error={errors.video?.[0]} />
+        {/* "Upload your intro video" has been answered once there is one. */}
+        <VideoUpload
+          video={video}
+          onChange={setVideo}
+          disabled={!editable}
+          error={video ? undefined : errors.video?.[0]}
+        />
       </Section>
 
       {errors.form && (
@@ -454,7 +506,7 @@ export function RegistrationForm({
 
       {mode !== "locked" && (
         <div
-          ref={barRef}
+          ref={publishBarHeight}
           data-action-bar
           className={cn(card, "sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30")}
         >
@@ -468,7 +520,7 @@ export function RegistrationForm({
                 type="button"
                 size="pill"
                 disabled={pending}
-                onClick={reopen}
+                onClick={() => reopen.mutate()}
                 className={cn(primaryButton, "w-full sm:w-auto")}
               >
                 <ArrowCounterClockwiseIcon data-icon="inline-start" weight="bold" />
@@ -520,7 +572,7 @@ export function RegistrationForm({
                   size="pill"
                   variant="ghost"
                   disabled={pending}
-                  onClick={withdraw}
+                  onClick={() => withdraw.mutate()}
                   className="text-muted-foreground"
                 >
                   Withdraw
@@ -566,6 +618,12 @@ export function RegistrationForm({
 }
 
 /* ---------------------------------------------------------------------- */
+
+/** A status change's result with its refusal under `message`, the name
+    `settled` gives a request that failed outright. */
+function withMessage(result: StatusResult) {
+  return result.ok ? result : { ok: false as const, message: result.error };
+}
 
 /* The one place the application's state is spelled out. It is a live
    region, so when a submission lands the new text is announced, and it
@@ -647,202 +705,6 @@ function Section({
         {children}
       </div>
     </section>
-  );
-}
-
-function RequiredMark() {
-  return (
-    <span className="ml-1 text-brand-maroon" aria-hidden>
-      *
-    </span>
-  );
-}
-
-function TextField({
-  id,
-  label,
-  hint,
-  required,
-  error,
-  value,
-  onChange,
-  className,
-  readOnly,
-  ...rest
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  required?: boolean;
-  error?: string;
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-} & Omit<React.ComponentProps<"input">, "id" | "value" | "onChange" | "className">) {
-  const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
-  return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && (
-          <>
-            <RequiredMark />
-            <span className="sr-only">(required)</span>
-          </>
-        )}
-      </Label>
-      <Input
-        id={id}
-        name={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={!!error}
-        aria-describedby={describedBy}
-        readOnly={readOnly}
-        className={cn(field, readOnly && readOnlyField)}
-        {...rest}
-      />
-      {hint && (
-        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p id={`${id}-error`} className={errorText}>
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* A country or a state: a field that only takes a name from its list.
-   Typing narrows the list, best match first ("ind" → India, Indonesia),
-   and Enter or a click takes one; clicking the empty field shows it all.
-   Text that was typed but not picked is not an answer: on leaving, the
-   field goes back to the last choice. The chosen name is submitted by the
-   hidden input Base UI renders for `name`.
-
-   The matching is ours (lib/countries.ts), so the list is whatever
-   `suggest` returns for what is typed: everything while the field still
-   shows the current choice. The popup borrows the account menu's surface
-   so the site's popups read as one family.
-
-   Read-only, it is a plain field like its neighbours: a list that opens
-   and then refuses every choice would only mislead. */
-function PlaceField({
-  id,
-  label,
-  required,
-  error,
-  value,
-  onChange,
-  options,
-  suggest,
-  noun,
-  placeholder,
-  disabled,
-  readOnly,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  error?: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: readonly string[];
-  suggest: (query: string) => string[];
-  /** What the list holds, for the "nothing found" line: "country". */
-  noun: string;
-  placeholder?: string;
-  disabled?: boolean;
-  readOnly?: boolean;
-}) {
-  const [query, setQuery] = React.useState(value);
-  const matches = React.useMemo(
-    () => (query === value ? [...options] : suggest(query)),
-    [query, value, options, suggest],
-  );
-  if (readOnly) {
-    return <TextField id={id} label={label} required={required} value={value} onChange={() => {}} readOnly />;
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={id}>
-        {label}
-        {required && (
-          <>
-            <RequiredMark />
-            <span className="sr-only">(required)</span>
-          </>
-        )}
-      </Label>
-      <Combobox.Root
-        name={id}
-        items={options}
-        filteredItems={matches}
-        value={value || null}
-        onValueChange={(next: string | null) => onChange(next ?? "")}
-        onInputValueChange={setQuery}
-        disabled={disabled}
-        autoHighlight
-      >
-        <div className="relative">
-          <Combobox.Input
-            id={id}
-            // The browser's own address suggestions would open over ours.
-            autoComplete="off"
-            placeholder={placeholder}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-error` : undefined}
-            render={<Input className={cn(field, "pr-10")} />}
-          />
-          <CaretDownIcon
-            className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
-            weight="bold"
-            aria-hidden
-          />
-        </div>
-        <Combobox.Portal>
-          <Combobox.Positioner sideOffset={6} collisionPadding={16} className="z-50">
-            <Combobox.Popup
-              className={cn(
-                "w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) p-1.5",
-                // Outer radius 12px = the items' 8px + 4px of padding.
-                "rounded-xl border border-transparent bg-popover text-popover-foreground",
-                "shadow-[0_0_0_1px_--alpha(var(--color-black)/6%),0_1px_2px_-1px_--alpha(var(--color-black)/6%),0_8px_24px_-8px_--alpha(var(--color-black)/12%)]",
-                "transition-[opacity,scale] duration-200 ease-out",
-                "data-starting-style:scale-95 data-starting-style:opacity-0",
-                "data-ending-style:scale-95 data-ending-style:opacity-0 data-ending-style:duration-150",
-                "motion-reduce:data-starting-style:scale-100 motion-reduce:data-ending-style:scale-100",
-              )}
-            >
-              <Combobox.Empty>
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  No {noun} matches “{query.trim()}”.
-                </p>
-              </Combobox.Empty>
-              <Combobox.List className="max-h-[min(18rem,var(--available-height))] overflow-y-auto overscroll-contain">
-                {(option: string) => (
-                  <Combobox.Item
-                    key={option}
-                    value={option}
-                    className="flex cursor-default items-center rounded-lg px-3 py-2 text-sm text-foreground select-none data-highlighted:bg-muted data-selected:font-medium"
-                  >
-                    {option}
-                  </Combobox.Item>
-                )}
-              </Combobox.List>
-            </Combobox.Popup>
-          </Combobox.Positioner>
-        </Combobox.Portal>
-      </Combobox.Root>
-      {error && (
-        <p id={`${id}-error`} className={errorText}>
-          {error}
-        </p>
-      )}
-    </div>
   );
 }
 

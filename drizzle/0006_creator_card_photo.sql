@@ -1,0 +1,1 @@
+ALTER TABLE "creator_cards" ADD COLUMN "photo_key" text;

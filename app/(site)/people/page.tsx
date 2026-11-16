@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { Button } from "@/components/ui/button";
 import { TeamCard } from "@/components/people/person-card";
 import { CreatorDirectory } from "@/components/people/creator-directory";
 import { PageIntro } from "@/components/page-intro";
+import { CARD_PATH } from "@/lib/creator-card";
 import {
   CREATORS,
   CREATORS_SECTION,
@@ -58,6 +62,17 @@ export default function PeoplePage() {
             {CREATORS_SECTION.title}
           </h2>
           <p className={sectionLede}>{CREATORS_SECTION.description}</p>
+          {/* The way in for a creator. The page behind it asks for a
+              sign-in first and comes back. */}
+          <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <Button size="pill" nativeButton={false} render={<Link href={CARD_PATH} />}>
+              {CREATORS_SECTION.card.action}
+              <ArrowRightIcon data-icon="inline-end" weight="bold" />
+            </Button>
+            <p className="max-w-[40ch] text-pretty text-sm leading-[1.5] text-muted-foreground">
+              {CREATORS_SECTION.card.note}
+            </p>
+          </div>
           <CreatorDirectory creators={CREATORS} />
         </div>
       </section>

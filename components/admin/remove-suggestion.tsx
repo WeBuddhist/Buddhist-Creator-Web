@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { TrashIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { removeSuggestionAction, type RemoveState } from "@/app/admin/suggestions/actions";
 import { Button } from "@/components/ui/button";
+import { settled } from "@/lib/session-ended";
 import {
   Dialog,
   DialogBody,
@@ -22,7 +24,9 @@ import {
    Once it is gone so is its row, and this button with it. Focus then goes
    to the bin on the next suggestion, or the one before, so a run of them
    can be cleared from the keyboard; with none left on the page it goes to
-   the list itself (`listId`) rather than to nowhere. */
+   the list itself (`listId`) rather than to nowhere.
+
+   Removing is a React Query mutation around the server action. */
 export function RemoveSuggestion({
   suggestionId,
   body,
@@ -41,24 +45,23 @@ export function RemoveSuggestion({
   const trigger = useRef<HTMLButtonElement>(null);
   // Set once the suggestion is gone: where focus goes as the dialog closes.
   const focusAfter = useRef<(() => HTMLElement | null) | null>(null);
-  const [state, action, pending] = useActionState<RemoveState, FormData>(
-    async (previous, formData) => {
+  const remove = useMutation({
+    mutationFn: (data: FormData): Promise<RemoveState> => settled(removeSuggestionAction(data)),
+    onMutate: () => {
       // Looked up while this row is still in the list.
       const row = trigger.current?.closest("li");
-      const neighbour = (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector<HTMLElement>("button");
-      const result = await removeSuggestionAction(previous, formData);
-      if (result.ok) {
-        focusAfter.current = () => (neighbour?.isConnected ? neighbour : document.getElementById(listId));
-        setOpen(false);
-        toast.success("Suggestion removed");
-      }
-      return result;
+      return (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector<HTMLElement>("button") ?? null;
     },
-    { ok: false },
-  );
+    onSuccess: (result, _data, neighbour) => {
+      if (!result.ok) return;
+      focusAfter.current = () => (neighbour?.isConnected ? neighbour : document.getElementById(listId));
+      setOpen(false);
+      toast.success("Suggestion removed");
+    },
+  });
+  const pending = remove.isPending;
   // A failure is shown until the dialog is next opened.
-  const [seen, setSeen] = useState(state);
-  const error = !pending && state !== seen ? state.message : undefined;
+  const error = !pending && remove.data && !remove.data.ok ? remove.data.message : undefined;
 
   return (
     <>
@@ -72,7 +75,7 @@ export function RemoveSuggestion({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
-          setSeen(state);
+          remove.reset();
           setOpen(true);
         }}
       >
@@ -85,9 +88,9 @@ export function RemoveSuggestion({
         >
           {/* A second press while it is being removed does nothing. */}
           <form
-            action={action}
             onSubmit={(event) => {
-              if (pending) event.preventDefault();
+              event.preventDefault();
+              if (!pending) remove.mutate(new FormData(event.currentTarget));
             }}
             className="flex min-h-0 flex-col"
           >

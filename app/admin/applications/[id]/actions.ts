@@ -21,7 +21,7 @@ const schema = z.object({
   note: z.string().trim().max(4000).optional(),
 });
 
-export async function setStatusAction(_prev: DecisionState, formData: FormData): Promise<DecisionState> {
+export async function setStatusAction(formData: FormData): Promise<DecisionState> {
   let actor;
   try {
     actor = await assertRole("admin");
@@ -80,7 +80,7 @@ const sendSchema = z.object({
 });
 
 /** Email this applicant the decision they have not been told. */
-export async function sendDecisionEmailAction(_prev: EmailState, formData: FormData): Promise<EmailState> {
+export async function sendDecisionEmailAction(formData: FormData): Promise<EmailState> {
   let actor;
   try {
     actor = await assertRole("admin");
@@ -106,7 +106,7 @@ const resendSchema = sendSchema.extend({
 });
 
 /** Email this applicant, again, the decision they were already told. */
-export async function resendDecisionEmailAction(_prev: EmailState, formData: FormData): Promise<EmailState> {
+export async function resendDecisionEmailAction(formData: FormData): Promise<EmailState> {
   let actor;
   try {
     actor = await assertRole("admin");
@@ -137,7 +137,7 @@ const resolveSchema = z.object({
 });
 
 /** Settle a send whose outcome nobody knows. */
-export async function resolveNotificationAction(_prev: EmailState, formData: FormData): Promise<EmailState> {
+export async function resolveNotificationAction(formData: FormData): Promise<EmailState> {
   let actor;
   try {
     actor = await assertRole("admin");
