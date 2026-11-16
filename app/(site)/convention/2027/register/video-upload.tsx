@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { CheckCircleIcon, TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import {
   VIDEO_MAX_SECONDS,
   VIDEO_TYPES,
 } from "@/lib/registration-2027";
-import { cn } from "@/lib/utils";
 
 export type UploadedVideo = {
   key: string;
@@ -81,65 +81,67 @@ function send(file: File, onProgress: (fraction: number) => void) {
   });
 }
 
+/* A refusal, by its code in MESSAGES or in words of its own. */
+class UploadProblem extends Error {}
+
+const messageFor = (error: Error | null) =>
+  error ? (MESSAGES[error.message] ?? (error instanceof UploadProblem ? error.message : MESSAGES.S3_UPLOAD_FAILED)) : null;
+
+/* Uploading and removing are React Query mutations: each is where its
+   "busy" and its failure come from. The upload also reports how far along
+   it is, which the mutation has no place for, so that one figure is state
+   of its own. */
 export function VideoUpload({ video, disabled, error, onChange }: Props) {
   const router = useRouter();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [progress, setProgress] = React.useState<number | null>(null);
-  const [message, setMessage] = React.useState<string | null>(null);
-  const [removing, setRemoving] = React.useState(false);
-  const busy = progress !== null || removing;
 
-  async function handleFile(file: File | undefined) {
-    if (!file) return;
-    setMessage(null);
-    if (!VIDEO_TYPES[file.type]) {
-      setMessage(MESSAGES.UNSUPPORTED_MEDIA_TYPE);
-      return;
-    }
-    if (file.size > VIDEO_MAX_BYTES) {
-      setMessage(MESSAGES.MEDIA_TOO_LARGE);
-      return;
-    }
-    const duration = await readDuration(file);
-    if (duration !== null && duration > VIDEO_MAX_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS) {
-      setMessage(`Your video is ${Math.round(duration)} seconds long. Please keep it under ${VIDEO_MAX_SECONDS / 60} minutes.`);
-      return;
-    }
-    setProgress(0);
-    try {
-      const uploaded = await send(file, setProgress);
+  const upload = useMutation({
+    // The file is checked before any bytes move: its type, its size, and
+    // its length, which the browser reads from the clip itself.
+    mutationFn: async (file: File) => {
+      if (!VIDEO_TYPES[file.type]) throw new UploadProblem("UNSUPPORTED_MEDIA_TYPE");
+      if (file.size > VIDEO_MAX_BYTES) throw new UploadProblem("MEDIA_TOO_LARGE");
+      const duration = await readDuration(file);
+      if (duration !== null && duration > VIDEO_MAX_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS) {
+        throw new UploadProblem(
+          `Your video is ${Math.round(duration)} seconds long. Please keep it under ${VIDEO_MAX_SECONDS / 60} minutes.`,
+        );
+      }
+      setProgress(0);
+      return send(file, setProgress);
+    },
+    onSuccess: (uploaded) => {
       onChange(uploaded);
       // The server page re-renders with a playback URL for the new object.
       router.refresh();
-    } catch (err) {
-      const code = err instanceof Error ? err.message : "S3_UPLOAD_FAILED";
-      setMessage(MESSAGES[code] ?? MESSAGES.S3_UPLOAD_FAILED);
-    } finally {
+    },
+    onSettled: () => {
       setProgress(null);
+      // Cleared so choosing the same file again still fires a change.
       if (inputRef.current) inputRef.current.value = "";
-    }
-  }
+    },
+  });
 
-  async function remove() {
-    if (!window.confirm("Remove your intro video? You can upload another one afterwards.")) return;
-    setRemoving(true);
-    setMessage(null);
-    try {
-      const response = await fetch(ENDPOINT, { method: "DELETE" });
+  const remove = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(ENDPOINT, { method: "DELETE" }).catch(() => {
+        throw new UploadProblem("NETWORK");
+      });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? "S3_UPLOAD_FAILED");
+        throw new UploadProblem(body.error ?? "S3_UPLOAD_FAILED");
       }
+    },
+    onSuccess: () => {
       onChange(null);
       router.refresh();
-    } catch (err) {
-      const code = err instanceof Error ? err.message : "S3_UPLOAD_FAILED";
-      setMessage(MESSAGES[code] ?? MESSAGES.S3_UPLOAD_FAILED);
-    } finally {
-      setRemoving(false);
-    }
-  }
+    },
+  });
 
+  const busy = upload.isPending || remove.isPending;
+  // The newer of the two failures; starting either puts the other's away.
+  const message = messageFor(upload.error ?? remove.error);
   const shown = message ?? error;
 
   return (
@@ -172,7 +174,12 @@ export function VideoUpload({ video, disabled, error, onChange }: Props) {
             className="sr-only"
             id="intro-video"
             disabled={busy}
-            onChange={(event) => handleFile(event.target.files?.[0])}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              remove.reset();
+              upload.mutate(file);
+            }}
           />
           <Button
             type="button"
@@ -185,7 +192,17 @@ export function VideoUpload({ video, disabled, error, onChange }: Props) {
             {video ? "Replace video" : "Choose video"}
           </Button>
           {video && (
-            <Button type="button" size="pill" variant="ghost" disabled={busy} onClick={remove}>
+            <Button
+              type="button"
+              size="pill"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                if (!window.confirm("Remove your intro video? You can upload another one afterwards.")) return;
+                upload.reset();
+                remove.mutate();
+              }}
+            >
               <TrashIcon data-icon="inline-start" weight="bold" />
               Remove
             </Button>
@@ -211,7 +228,7 @@ export function VideoUpload({ video, disabled, error, onChange }: Props) {
       )}
 
       {shown && (
-        <p className={cn("text-sm", message ? "text-brand-maroon" : "text-brand-maroon")} role="alert">
+        <p className="text-sm text-brand-maroon" role="alert">
           {shown}
         </p>
       )}

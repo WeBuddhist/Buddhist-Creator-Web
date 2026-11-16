@@ -14,15 +14,30 @@ export class PhotoProblem extends Error {
   }
 }
 
-const UNREADABLE = "We could not read that picture. Try a JPG or PNG.";
+export const UNREADABLE = "We could not read that picture. Try a JPG or PNG.";
+
+/** A picture ready for the card: the bytes to upload, and an address the
+    page can show them from before they are stored. The address is a data
+    URL, which holds the picture itself (it is small by now), so there is
+    nothing to release when the page is done with it. */
+export type PreparedPhoto = { blob: Blob; url: string };
 
 function encode(canvas: HTMLCanvasElement, type: string, quality: number) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
+function dataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new PhotoProblem(UNREADABLE));
+    reader.readAsDataURL(blob);
+  });
+}
+
 /** The picture as the card will store it. Throws PhotoProblem, with words
     for the creator, when the file is not a picture this browser can read. */
-export async function squarePhoto(file: File): Promise<Blob> {
+export async function squarePhoto(file: File): Promise<PreparedPhoto> {
   if (!file.type.startsWith("image/")) throw new PhotoProblem("Choose a picture: a JPG, PNG or WebP file.");
   if (file.size > CARD_PHOTO_SOURCE_MAX_BYTES) {
     throw new PhotoProblem(`That picture is too large. Choose one under ${CARD_PHOTO_SOURCE_MAX_BYTES / (1024 * 1024)} MB.`);
@@ -62,7 +77,7 @@ export async function squarePhoto(file: File): Promise<Blob> {
     if (blob?.type !== "image/webp") blob = await encode(canvas, "image/jpeg", 0.85);
     if (!blob || blob.type !== "image/jpeg" && blob.type !== "image/webp") throw new PhotoProblem(UNREADABLE);
     if (blob.size > CARD_PHOTO_MAX_BYTES) throw new PhotoProblem("That picture is too detailed to store. Try another one.");
-    return blob;
+    return { blob, url: await dataUrl(blob) };
   } finally {
     bitmap.close();
   }

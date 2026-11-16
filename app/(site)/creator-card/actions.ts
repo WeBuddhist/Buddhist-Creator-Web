@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { loginUrl } from "@/lib/auth0";
 import {
   CARD_PATH,
   CARD_PHOTO_MAX_BYTES,
@@ -18,16 +16,16 @@ import { cardPhotoKey, submitMyCard, type PhotoChange, type SubmitOutcome } from
 import { forLog } from "@/lib/log-error";
 import { deleteObjectQuietly, uploadBytes } from "@/lib/s3";
 
-export type CardFormState = {
-  ok: boolean;
-  /** What a save that went through did. */
-  outcome?: SubmitOutcome;
-  errors?: CardFieldErrors;
-  /** The card as stored, so the form shows links the way they were kept. */
-  saved?: CardValues;
-};
+/** What came of a save. A good one says what it did and hands back the
+    card as stored, so the form shows links the way they were kept; a
+    refused one says why, field by field. `signedOut` is a session that
+    ended while the form was open: the form asks the creator to sign in
+    again and keeps what they typed. */
+export type CardSaveResult =
+  | { ok: true; outcome: SubmitOutcome; saved: CardValues }
+  | { ok: false; errors: CardFieldErrors; signedOut?: true };
 
-const NOT_SAVED: CardFormState = {
+const NOT_SAVED: CardSaveResult = {
   ok: false,
   errors: { form: ["We could not save your card. Please try again in a moment."] },
 };
@@ -54,19 +52,19 @@ async function readPhoto(
 }
 
 /* The creator's one action: save the card and send it for review. The
+   form calls it as a React Query mutation, with its own FormData. The
    session is re-read here; nothing from the browser says whose card this
-   is. The form reads the outcome through useActionState, so a failed
-   write is reported rather than thrown: a card that was not kept must not
-   look sent. It is logged without the query's values, which are the
-   creator's own words.
+   is. A failed write is reported rather than thrown, so the form can say
+   what happened: a card that was not kept must not look sent. It is
+   logged without the query's values, which are the creator's own words.
 
    A new photo goes to S3 first and the card is pointed at it second, so
    the card never names an object that is not there. Whichever object ends
    up unused, the new one after a failed save or the old one after a good
    save, is deleted. */
-export async function submitCardAction(_previous: CardFormState, formData: FormData): Promise<CardFormState> {
+export async function submitCardAction(formData: FormData): Promise<CardSaveResult> {
   const user = await getCurrentUser();
-  if (!user) redirect(loginUrl(CARD_PATH));
+  if (!user) return { ok: false, errors: {}, signedOut: true };
 
   const parsed = cardSchema.safeParse(cardFormValues(formData));
   const photo = await readPhoto(formData);

@@ -33,39 +33,37 @@ export function Carousel({
   const [index, setIndex] = React.useState(0);
   const [height, setHeight] = React.useState<number>();
 
-  React.useEffect(() => {
-    const track = trackRef.current;
+  /* Which slide is in view, and how tall it is. The track is as tall as
+     that slide, not the tallest of the seven, so the band's height follows
+     the quote on screen. Slides sit at the top of the track and anything
+     past the current height is clipped; the height change itself
+     transitions in CSS.
+
+     Both are read from the track whenever it scrolls or it or a slide
+     changes size. The watching hangs on the track's own ref, which starts
+     it when the track arrives and ends it in its cleanup. */
+  const watch = React.useCallback((track: HTMLUListElement | null) => {
+    trackRef.current = track;
     if (!track) return;
     const update = () => {
       const width = track.clientWidth;
-      if (width > 0) setIndex(Math.round(track.scrollLeft / width));
+      if (width <= 0) return;
+      const current = Math.round(track.scrollLeft / width);
+      setIndex(current);
+      const slide = track.children[current] as HTMLElement | undefined;
+      if (slide) setHeight(slide.offsetHeight);
     };
     update();
     track.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(track);
+    for (const slide of track.children) observer.observe(slide);
     return () => {
       track.removeEventListener("scroll", update);
       observer.disconnect();
+      trackRef.current = null;
     };
   }, []);
-
-  /* The track is as tall as the slide in view, not the tallest of the
-     seven, so the band's height follows the quote on screen. Slides sit
-     at the top of the track and anything past the current height is
-     clipped; the height change itself transitions in CSS. */
-  React.useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    const measure = () => {
-      const slide = track.children[index] as HTMLElement | undefined;
-      if (slide) setHeight(slide.offsetHeight);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    for (const slide of track.children) observer.observe(slide);
-    return () => observer.disconnect();
-  }, [index]);
 
   /* scrollTo takes the track's CSS scroll-behavior: smooth, or instant
      when the reader prefers reduced motion. */
@@ -94,7 +92,7 @@ export function Carousel({
       <div className="lg:col-start-1 lg:row-start-1">{intro}</div>
 
       <ul
-        ref={trackRef}
+        ref={watch}
         tabIndex={0}
         style={{ height }}
         className={cn(

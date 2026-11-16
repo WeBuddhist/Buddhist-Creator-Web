@@ -7,7 +7,8 @@ import { CARD_PATH } from "@/lib/creator-card";
 import { CARD_STATUSES, CardChanged, CardNotFound, reviewCard } from "@/lib/creator-cards";
 import type { CreatorCardStatus } from "@/lib/db/schema";
 
-export type ReviewState = { ok: boolean; message?: string; at?: string };
+/** What came of a review: when it was saved, or why it was not. */
+export type ReviewResult = { ok: true; at: string } | { ok: false; message: string };
 
 const schema = z.object({
   cardId: z.uuid(),
@@ -20,9 +21,10 @@ const schema = z.object({
     .transform((value) => value.replaceAll("\0", "").trim() || null),
 });
 
-/* Admins and superadmins review. The role is checked here again: the page
-   that rendered the form is not a guard. */
-export async function reviewCardAction(_previous: ReviewState, formData: FormData): Promise<ReviewState> {
+/* Admins and superadmins review. The form calls this as a React Query
+   mutation, with its own FormData. The role is checked here again: the
+   page that rendered the form is not a guard. */
+export async function reviewCardAction(formData: FormData): Promise<ReviewResult> {
   let actor;
   try {
     actor = await assertRole("admin");

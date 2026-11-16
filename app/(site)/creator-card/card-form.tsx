@@ -1,41 +1,30 @@
 "use client";
 
 import * as React from "react";
-import { startTransition, useActionState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
-  ArrowCounterClockwiseIcon,
-  CameraIcon,
   CheckCircleIcon,
-  CheckIcon,
   ClockIcon,
-  FacebookLogoIcon,
-  GlobeSimpleIcon,
-  InstagramLogoIcon,
+  FloppyDiskIcon,
   PaperPlaneTiltIcon,
-  TiktokLogoIcon,
+  PencilSimpleIcon,
   WarningCircleIcon,
-  XLogoIcon,
-  YoutubeLogoIcon,
-  type Icon,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { card as cardFrame, label as eyebrow, primaryButton } from "@/components/convention/section-heading";
-import { CardPhoto } from "@/components/creator-card/card-photo";
 import { CreatorCard } from "@/components/creator-card/creator-card";
-import { PhotoProblem, squarePhoto } from "@/components/creator-card/photo";
-import { PlaceField, RequiredMark, TextField, errorText, field } from "@/components/form/fields";
+import type { PreparedPhoto } from "@/components/creator-card/photo";
+import { PlaceField, TextField, errorText } from "@/components/form/fields";
+import { goToBanner, goToField, publishBarHeight, swapBarButtons } from "@/components/form/form-helpers";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { COUNTRIES, isCountry, suggestCountries } from "@/lib/countries";
 import {
   CARD_CONTENT_TYPES,
   CARD_FORM,
   CARD_LANGUAGES,
   CARD_NAME_MAX,
+  CARD_PATH,
   CARD_SOCIALS,
-  CARD_TAGLINE_MAX,
   CREATOR_TYPES,
   type CardContent,
   type CardFieldErrors,
@@ -43,9 +32,11 @@ import {
 } from "@/lib/creator-card";
 import type { CreatorCardStatus } from "@/lib/db/schema";
 import { formatDate } from "@/lib/format";
-import type { Option } from "@/lib/registration-2027";
+import { loginUrl } from "@/lib/login-url";
+import { sessionEnded } from "@/lib/session-ended";
 import { cn } from "@/lib/utils";
-import { submitCardAction, type CardFormState } from "./actions";
+import { submitCardAction, type CardSaveResult } from "./actions";
+import { ChipGroup, LinkField, PhotoField, Section, TaglineField } from "./card-fields";
 
 /** The creator's card as the page hands it over: what it says and where it
     stands. The reviewer's note comes only with a rejection. `photoUrl` is
@@ -89,34 +80,96 @@ function toValues(card: CardContent | null, accountName: string | null): Values 
   };
 }
 
-const SOCIAL_ICON: Record<CardSocial, Icon> = {
-  youtube: YoutubeLogoIcon,
-  instagram: InstagramLogoIcon,
-  facebook: FacebookLogoIcon,
-  tiktok: TiktokLogoIcon,
-  x: XLogoIcon,
-  website: GlobeSimpleIcon,
-};
-
-const sectionTitle = "font-display text-2xl leading-[1.15] text-foreground";
-const TOAST_ID = "creator-card";
-const INITIAL: CardFormState = { ok: false };
-
-type PendingPhoto = { kind: "untouched" } | { kind: "chosen"; blob: Blob; url: string } | { kind: "removed" };
+/* What this visit has done about the photo and not yet sent: nothing, a
+   newly chosen picture (ready to upload, shown from its own data), or a
+   return to the account's picture. */
+type PendingPhoto = { kind: "untouched" } | ({ kind: "chosen" } & PreparedPhoto) | { kind: "removed" };
 const UNTOUCHED: PendingPhoto = { kind: "untouched" };
 const NONE: ReadonlySet<string> = new Set();
 
-/* The creator card form, with the card itself beside it filling in as the
-   creator types. There is one action: send the card for review. Every
-   later change is sent the same way, so the button is all there is to
-   learn; the banner on top says where the card stands and what pressing
-   the button will do.
+type SaveOutcome = Extract<CardSaveResult, { ok: true }>["outcome"];
 
-   Inputs are controlled, so the card can be drawn from them. The form
-   sends itself from onSubmit rather than through `action`: React resets a
-   form after its action, and a reset puts every checkbox and radio back to
-   how it was when the page loaded, whatever the state says. A chip ticked
-   in this visit would then look chosen and be missing from the next save. */
+const TOAST_ID = "creator-card";
+
+/* Each answer that can be refused, in the order of the form, with the
+   element to go to for it. A group of chips or links is reached through
+   its first input. */
+const PROBLEM_FIELDS: readonly (readonly [keyof CardFieldErrors, string])[] = [
+  ["photo", "[data-photo-button]"],
+  ["displayName", "#displayName"],
+  ["country", "#country"],
+  ["creatorType", 'input[name="creatorType"]'],
+  ["languages", 'input[name="languages"]'],
+  ["languagesOther", "#languagesOther"],
+  ["contentTypes", 'input[name="contentTypes"]'],
+  ["contentTypesOther", "#contentTypesOther"],
+  ["tagline", "#tagline"],
+  ...CARD_SOCIALS.map(({ value }) => [`socials.${value}`, `#socials-${value}`] as const),
+  ["socials", `#socials-${CARD_SOCIALS[0].value}`],
+];
+
+/** Says a save was refused, and takes the creator to the first answer to fix. */
+function showProblems(form: HTMLFormElement | null, errors: CardFieldErrors) {
+  const problem = errors.form?.[0];
+  toast.error(problem ? "Could not save" : "A few answers need attention", {
+    id: TOAST_ID,
+    description: problem ?? "Fix the highlighted answers, then try again.",
+    duration: 8000,
+    closeButton: true,
+  });
+  goToField(form, PROBLEM_FIELDS.find(([key]) => errors[key])?.[1]);
+}
+
+/** Says the sign-in has ended, and offers the way back that keeps what is
+    on the page: signing in again in another tab, then saving from this one. */
+function showSignedOut() {
+  toast.error("You have been signed out", {
+    id: TOAST_ID,
+    description: "Sign in again, then come back to this tab and save. Your changes are still here.",
+    duration: Infinity,
+    closeButton: true,
+    action: { label: "Sign in", onClick: () => window.open(loginUrl(CARD_PATH), "_blank", "noopener") },
+  });
+}
+
+/** Says what a save did, and takes the creator to the banner that now
+    describes the card. `from` is where the card stood when it was sent. */
+function showSaved(outcome: SaveOutcome, from: CreatorCardStatus | null, banner: HTMLElement | null) {
+  if (outcome === "unchanged") {
+    toast("No changes to save", { id: TOAST_ID, description: "Your card is as it was." });
+    return;
+  }
+  // A rejected card that was sent again is a resubmission, changed or not.
+  const [title, description] =
+    outcome === "created"
+      ? ["Card submitted for review", "Our team will read it. Come back to this page to see where it stands."]
+      : from === "rejected"
+        ? ["Card resubmitted for review", "Our team will read it again."]
+        : ["Changes saved", "The changed card has gone to our team for review."];
+  toast.success(title, { id: TOAST_ID, description });
+  goToBanner(banner);
+}
+
+/* The creator card form, with the card itself beside it filling in as the
+   creator types. It behaves as the registration form does
+   (app/(site)/convention/2027/register/registration-form.tsx):
+   - no card yet: every field is open, and the one action is to submit it
+     for review;
+   - a card that has been submitted: read-only behind an Edit button, in
+     whichever state the review has left it;
+   - editing: the fields open again, with Save changes and Cancel. Saving
+     sends the changed card back for review and closes the fields.
+   The actions live in a bar that stays at the bottom of the viewport while
+   the form scrolls, and the banner on top says where the card stands.
+
+   Saving is a React Query mutation around the server action. It gives the
+   form its pending state and the result, and its callbacks are where the
+   result is acted on, so nothing here watches for one in an effect. The
+   form sends itself from onSubmit rather than through `action`: React
+   resets a form after its action, and a reset puts every checkbox and
+   radio back to how it was when the page loaded, whatever the state says.
+   A chip ticked in this visit would then look chosen and be missing from
+   the next save. */
 export function CardForm({
   card,
   accountName,
@@ -127,128 +180,140 @@ export function CardForm({
   /** The picture from the sign-in account: the card's photo by default. */
   accountPicture: string | null;
 }) {
-  const [state, formAction, pending] = useActionState<CardFormState, FormData>(submitCardAction, INITIAL);
   const [values, setValues] = React.useState<Values>(() => toValues(card, accountName));
-  // What this visit has done about the photo and not yet sent: nothing, a
-  // newly chosen picture (ready to upload, shown from memory), or a return
-  // to the account's picture.
+  // The card as last stored, which Cancel goes back to.
+  const [stored, setStored] = React.useState(values);
   const [photo, setPhoto] = React.useState<PendingPhoto>(UNTOUCHED);
+  // A card exists once it has been submitted, in an earlier visit or this one.
+  const [submittedNow, setSubmittedNow] = React.useState(false);
+  const [editing, setEditing] = React.useState(false);
+  // Counts the cancelled edits, to start the country field over each time.
+  const [cancelled, setCancelled] = React.useState(0);
+  // The messages the creator has since answered: changing an answer takes
+  // its message away, rather than leaving it up until the next save.
+  const [answered, setAnswered] = React.useState<ReadonlySet<string>>(NONE);
   const formRef = React.useRef<HTMLFormElement>(null);
   const bannerRef = React.useRef<HTMLDivElement>(null);
 
-  // A save that went through hands back the card as stored: the fields
-  // take it, so a link shows with the "https://" it was kept with. Done
-  // during render, so the fields and the result arrive in the same frame.
-  const [seenState, setSeenState] = React.useState(state);
-  // The messages the creator has since answered: changing an answer takes
-  // its message away, rather than leaving it up until the next send.
-  const [answered, setAnswered] = React.useState<ReadonlySet<string>>(NONE);
-  if (state !== seenState) {
-    setSeenState(state);
-    setAnswered(NONE);
-    if (state.ok && state.saved) {
-      setValues(toValues(state.saved, null));
-      // The photo is stored now; the page's own copy of the card has it.
+  const exists = card !== null || submittedNow;
+  const editable = !exists || editing;
+  // A card submitted in this visit is pending until the page's own copy
+  // of it arrives to say so.
+  const status: CreatorCardStatus | null = card?.status ?? (exists ? "pending" : null);
+
+  const save = useMutation({
+    mutationFn: async ({ data }: { data: FormData; from: CreatorCardStatus | null }): Promise<CardSaveResult> => {
+      try {
+        return await submitCardAction(data);
+      } catch (error) {
+        // A session that ended while the form was open is turned away
+        // before the action runs, and arrives here as a failed request.
+        if (await sessionEnded()) return { ok: false, errors: {}, signedOut: true };
+        throw error;
+      }
+    },
+    onMutate: () => setAnswered(NONE),
+    onSuccess: (result, { from }) => {
+      if (!result.ok) {
+        if (result.signedOut) showSignedOut();
+        else showProblems(formRef.current, result.errors);
+        return;
+      }
+      // The fields take the card as stored, so a link shows with the
+      // "https://" it was kept with, and close until Edit is pressed.
+      const kept = toValues(result.saved, null);
+      setValues(kept);
+      setStored(kept);
       setPhoto(UNTOUCHED);
-    }
-  }
+      setSubmittedNow(true);
+      setEditing(false);
+      showSaved(result.outcome, from, bannerRef.current);
+    },
+    // The action never throws for a refused save, and a signed-out session
+    // is caught above; this is the request itself failing, a dropped
+    // connection most likely.
+    onError: () =>
+      toast.error("Could not save", {
+        id: TOAST_ID,
+        description: "We could not reach the site. Check your connection and try again.",
+        duration: 8000,
+        closeButton: true,
+      }),
+  });
 
-  // A chosen picture is shown from memory; let go of it when it is
-  // replaced, sent, or the page is left.
-  const chosenUrl = photo.kind === "chosen" ? photo.url : null;
-  React.useEffect(() => {
-    if (!chosenUrl) return;
-    return () => URL.revokeObjectURL(chosenUrl);
-  }, [chosenUrl]);
-
-  const uploadedUrl = card?.photoUrl ?? null;
-  const photoUrl = photo.kind === "chosen" ? photo.url : photo.kind === "removed" ? accountPicture : (uploadedUrl ?? accountPicture);
-  /** Whether the card shows, or is about to show, the creator's own upload. */
-  const ownPhoto = photo.kind === "chosen" || (photo.kind === "untouched" && !!uploadedUrl);
-
-  const errors: CardFieldErrors = Object.fromEntries(
-    Object.entries(state.errors ?? {}).filter(([key]) => !answered.has(key)),
-  );
+  const refused = save.data && !save.data.ok ? save.data.errors : null;
+  const errors: CardFieldErrors =
+    editable && refused
+      ? Object.fromEntries(Object.entries(refused).filter(([key]) => !answered.has(key)))
+      : {};
+  const answer = (...keys: string[]) => {
+    if (refused) setAnswered((previous) => new Set([...previous, ...keys]));
+  };
   /** Sets one answer and clears its message, and any that hang on it. */
   const set = <K extends keyof Values>(key: K, value: Values[K], ...alsoAnswers: string[]) => {
     setValues((previous) => ({ ...previous, [key]: value }));
-    if (state.errors) setAnswered((previous) => new Set([...previous, key, ...alsoAnswers]));
+    answer(key, ...alsoAnswers);
   };
 
-  // Each result is announced once: a toast, and focus moved to where the
-  // result is, the banner on success or the first answer to fix.
-  const handled = React.useRef(state);
-  React.useEffect(() => {
-    if (handled.current === state) return;
-    handled.current = state;
-    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? "auto"
-      : "smooth";
-
-    if (state.ok) {
-      if (state.outcome === "unchanged") {
-        toast("Nothing to send", { id: TOAST_ID, description: "Your card is already saved exactly like this." });
-        return;
-      }
-      toast.success(state.outcome === "created" ? "Card sent for review" : "Changes sent for review", {
-        id: TOAST_ID,
-        description: "Our team will read it. Come back to this page to see where it stands.",
-      });
-      bannerRef.current?.scrollIntoView({ behavior, block: "start" });
-      bannerRef.current?.focus({ preventScroll: true });
-      return;
-    }
-
-    const problem = state.errors?.form?.[0];
-    toast.error(problem ? "Could not save" : "A few answers need attention", {
-      id: TOAST_ID,
-      description: problem ?? "Fix the highlighted answers, then send it again.",
-      duration: 8000,
-      closeButton: true,
-    });
-    const invalid = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
-    const target = invalid?.matches("fieldset") ? invalid.querySelector<HTMLElement>("input") : invalid;
-    invalid?.scrollIntoView({ behavior, block: "center" });
-    target?.focus({ preventScroll: true });
-  }, [state]);
-
-  const status = card?.status ?? null;
+  const uploadedUrl = card?.photoUrl ?? null;
+  const photoUrl =
+    photo.kind === "chosen" ? photo.url : photo.kind === "removed" ? accountPicture : (uploadedUrl ?? accountPicture);
   const preview: CardContent = { ...values, photoUrl };
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editable || save.isPending) return;
+    const data = new FormData(event.currentTarget);
+    if (photo.kind === "chosen") {
+      data.set("photoAction", "replace");
+      data.set("photo", photo.blob, "photo");
+    } else if (photo.kind === "removed") {
+      data.set("photoAction", "remove");
+    }
+    save.mutate({ data, from: status });
+  };
+
+  const startEditing = (event: React.MouseEvent<HTMLElement>) => swapBarButtons(event, () => setEditing(true));
+  const cancelEditing = (event: React.MouseEvent<HTMLElement>) =>
+    swapBarButtons(event, () => {
+      setValues(stored);
+      setPhoto(UNTOUCHED);
+      setCancelled((count) => count + 1);
+      setEditing(false);
+      // Puts away the messages of a save that was refused.
+      save.reset();
+    });
 
   return (
     <form
       ref={formRef}
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (pending) return;
-        const data = new FormData(event.currentTarget);
-        if (photo.kind === "chosen") {
-          data.set("photoAction", "replace");
-          data.set("photo", photo.blob, "photo");
-        } else if (photo.kind === "removed") {
-          data.set("photoAction", "remove");
-        }
-        startTransition(() => formAction(data));
-      }}
+      onSubmit={submit}
+      aria-describedby="card-form-status"
       className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start lg:gap-x-10"
     >
       <div className="flex min-w-0 flex-col gap-6">
-        <StatusBanner ref={bannerRef} card={card} />
+        <StatusBanner
+          ref={bannerRef}
+          status={status}
+          submittedAt={card?.submittedAt ?? null}
+          reviewNote={card?.reviewNote ?? null}
+        />
 
         <Section title="About you">
           <PhotoField
             url={photoUrl}
-            ownPhoto={ownPhoto}
+            ownPhoto={photo.kind === "chosen" || (photo.kind === "untouched" && !!uploadedUrl)}
             hasAccountPicture={!!accountPicture}
+            readOnly={!editable}
             error={errors.photo?.[0]}
-            onChoose={(blob) => {
-              setPhoto({ kind: "chosen", blob, url: URL.createObjectURL(blob) });
-              if (state.errors) setAnswered((previous) => new Set([...previous, "photo"]));
+            onChoose={(chosen) => {
+              setPhoto({ kind: "chosen", ...chosen });
+              answer("photo");
             }}
             onReset={() => {
               // Nothing uploaded to take back: this only drops the choice.
               setPhoto(uploadedUrl ? { kind: "removed" } : UNTOUCHED);
-              if (state.errors) setAnswered((previous) => new Set([...previous, "photo"]));
+              answer("photo");
             }}
           />
           <TextField
@@ -261,8 +326,11 @@ export function CardForm({
             error={errors.displayName?.[0]}
             maxLength={CARD_NAME_MAX}
             autoComplete="name"
+            readOnly={!editable}
           />
           <PlaceField
+            // A cancelled edit starts the field over with the stored country.
+            key={cancelled}
             id="country"
             label="Country"
             required
@@ -272,6 +340,7 @@ export function CardForm({
             value={values.country}
             onChange={(v) => set("country", v)}
             error={errors.country?.[0]}
+            readOnly={!editable}
           />
           <ChipGroup
             type="radio"
@@ -282,6 +351,7 @@ export function CardForm({
             selected={values.creatorType ? [values.creatorType] : []}
             onChange={(v) => set("creatorType", v[0] ?? "")}
             error={errors.creatorType?.[0]}
+            disabled={!editable}
           />
         </Section>
 
@@ -299,6 +369,7 @@ export function CardForm({
             onOtherChange={(v) => set("languagesOther", v)}
             otherLabel="Which other language?"
             error={errors.languages?.[0] ?? errors.languagesOther?.[0]}
+            disabled={!editable}
           />
           <ChipGroup
             type="checkbox"
@@ -313,13 +384,21 @@ export function CardForm({
             onOtherChange={(v) => set("contentTypesOther", v)}
             otherLabel="What other content?"
             error={errors.contentTypes?.[0] ?? errors.contentTypesOther?.[0]}
+            disabled={!editable}
           />
-          <TaglineField value={values.tagline} onChange={(v) => set("tagline", v)} error={errors.tagline?.[0]} />
+          <TaglineField
+            value={values.tagline}
+            onChange={(v) => set("tagline", v)}
+            error={errors.tagline?.[0]}
+            readOnly={!editable}
+          />
         </Section>
 
         <Section
           title="Where to find you"
-          description="Add the link for each place you publish. One is enough; add as many as you use."
+          description={
+            editable ? "Add the link for each place you publish. One is enough; add as many as you use." : undefined
+          }
           required
         >
           {/* The links are one answer in several parts: the group carries
@@ -330,10 +409,13 @@ export function CardForm({
             aria-describedby={errors.socials ? "socials-error" : undefined}
             className="grid gap-x-5 gap-y-4 sm:grid-cols-2"
           >
-            {CARD_SOCIALS.map((social) => (
+            {/* Read-only, only the links the card has: an empty box with a
+                sample address in it would read as one of them. */}
+            {CARD_SOCIALS.filter((social) => editable || values.socials[social.value]).map((social) => (
               <LinkField
                 key={social.value}
                 social={social}
+                readOnly={!editable}
                 value={values.socials[social.value]}
                 onChange={(v) => set("socials", { ...values.socials, [social.value]: v }, `socials.${social.value}`)}
                 error={errors[`socials.${social.value}`]?.[0]}
@@ -352,88 +434,217 @@ export function CardForm({
             {errors.form[0]}
           </p>
         )}
-      </div>
 
-      {/* The card, as it will read. Beside the form on a wide screen, where
-          it stays in view; on a phone it comes after the questions, just
-          above the button that sends it. */}
-      <aside aria-labelledby="card-preview-title" className="lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:row-span-2">
-        <h2 id="card-preview-title" className={cn(eyebrow, "text-muted-foreground")}>
-          Your card
-        </h2>
-        <CreatorCard card={preview} preview className="mt-3 shadow-[0_1px_2px_rgb(18_34_42/0.04),0_12px_32px_-16px_rgb(18_34_42/0.18)]" />
-        <p className="mt-3 text-sm leading-[1.5] text-muted-foreground">It fills in as you answer.</p>
-      </aside>
+        {/* On a phone the card comes after the questions, just above the
+            bar that sends it. */}
+        <CardPreview id="card-preview-below" card={preview} editable={editable} className="lg:hidden" />
 
-      <div className={cn(cardFrame, "min-w-0")}>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-card px-5 py-4 sm:px-6">
-          <Button
-            type="submit"
-            size="pill"
-            // Focusable while it works, so the reader's place is not lost;
-            // onSubmit ignores a second press.
-            aria-disabled={pending}
-            className={cn(primaryButton, "w-full sm:w-auto", pending && "cursor-default opacity-70")}
-          >
-            {pending ? "Sending…" : submitLabel(status)}
-            <PaperPlaneTiltIcon data-icon="inline-end" weight="bold" />
-          </Button>
-          <p className="min-w-0 flex-1 basis-56 text-sm leading-[1.5] text-muted-foreground">
-            {status === "approved"
-              ? "Changes to an approved card are read by our team again before they count."
-              : "Our team reads every card before it is approved."}
-          </p>
+        {/* The actions, floating at the foot of the viewport for as long
+            as the form is on screen. On a phone the main button takes the
+            full row and the status the next; from sm up it is one row with
+            the status at the trailing end. */}
+        <div
+          ref={publishBarHeight}
+          data-action-bar
+          className={cn(cardFrame, "sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30")}
+        >
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent bg-card px-4 py-3 shadow-float sm:flex-nowrap">
+            {editable ? (
+              <React.Fragment key="editing">
+                <Button
+                  type="submit"
+                  size="pill"
+                  disabled={save.isPending}
+                  className={cn(primaryButton, "w-full sm:w-auto")}
+                >
+                  {!exists ? "Submit for review" : status === "rejected" ? "Resubmit for review" : "Save changes"}
+                  {exists && status !== "rejected" ? (
+                    <FloppyDiskIcon data-icon="inline-end" weight="bold" />
+                  ) : (
+                    <PaperPlaneTiltIcon data-icon="inline-end" weight="bold" />
+                  )}
+                </Button>
+                {exists && (
+                  <Button
+                    type="button"
+                    size="pill"
+                    variant="outline"
+                    disabled={save.isPending}
+                    onClick={cancelEditing}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </React.Fragment>
+            ) : (
+              <Button
+                key="reading"
+                type="button"
+                size="pill"
+                variant="outline"
+                onClick={startEditing}
+                className="w-full sm:w-auto"
+              >
+                <PencilSimpleIcon data-icon="inline-start" weight="bold" />
+                Edit card
+              </Button>
+            )}
+            {/* Always mounted, so screen readers announce changes to it. */}
+            <p
+              id="card-form-status"
+              role="status"
+              aria-live="polite"
+              className="ms-auto flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm"
+            >
+              <BarStatus
+                pending={save.isPending}
+                exists={exists}
+                editable={editable}
+                status={status}
+                submittedAt={card?.submittedAt ?? null}
+              />
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Beside the form on a wide screen, where the card stays in view. */}
+      <CardPreview
+        id="card-preview-beside"
+        card={preview}
+        editable={editable}
+        className="hidden lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:block"
+      />
     </form>
   );
 }
 
-function submitLabel(status: CreatorCardStatus | null) {
-  if (status === "pending") return "Save changes";
-  if (status === "approved") return "Send changes for review";
-  if (status === "rejected") return "Send for review again";
-  return "Submit for review";
+/* ---------------------------------------------------------------------- */
+
+/* The card as it reads, drawn from the form's own values. While the fields
+   are open it is a preview: what is missing shows as a prompt and the
+   links are not live, since what is typed is not a checked address yet.
+   Read-only, it is the stored card, links and all. It is rendered twice,
+   once for each layout, and the one not in use is not displayed. */
+function CardPreview({
+  id,
+  card,
+  editable,
+  className,
+}: {
+  id: string;
+  card: CardContent;
+  editable: boolean;
+  className?: string;
+}) {
+  return (
+    <aside aria-labelledby={id} className={className}>
+      <h2 id={id} className={cn(eyebrow, "text-muted-foreground")}>
+        Your card
+      </h2>
+      <CreatorCard
+        card={card}
+        preview={editable}
+        className="mt-3 shadow-[0_1px_2px_rgb(18_34_42/0.04),0_12px_32px_-16px_rgb(18_34_42/0.18)]"
+      />
+      {editable && <p className="mt-3 text-sm leading-[1.5] text-muted-foreground">It fills in as you answer.</p>}
+    </aside>
+  );
 }
 
-/* ---------------------------------------------------------------------- */
+/* The line at the end of the action bar: what is happening, or where the
+   card stands. On a phone the resting lines that only repeat the banner
+   are read but not shown, so the buttons keep the room. */
+function BarStatus({
+  pending,
+  exists,
+  editable,
+  status,
+  submittedAt,
+}: {
+  pending: boolean;
+  exists: boolean;
+  editable: boolean;
+  status: CreatorCardStatus | null;
+  submittedAt: string | null;
+}) {
+  if (pending) return exists ? "Saving…" : "Submitting…";
+  if (!exists) return <span className="max-sm:sr-only">Not submitted yet</span>;
+  if (editable) return <span className="max-sm:sr-only">Changes go to our team for review</span>;
+  if (status === "approved") {
+    return (
+      <>
+        <CheckCircleIcon className="size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />
+        Approved
+      </>
+    );
+  }
+  if (status === "rejected") {
+    return (
+      <>
+        <WarningCircleIcon className="size-4 shrink-0 text-brand-maroon" weight="fill" aria-hidden />
+        Not approved
+      </>
+    );
+  }
+  return (
+    <>
+      <ClockIcon className="size-4 shrink-0 text-brand-cyan" weight="bold" aria-hidden />
+      <span>
+        In review
+        {submittedAt && <span className="max-sm:sr-only">, submitted {formatDate(submittedAt)}</span>}
+      </span>
+    </>
+  );
+}
 
 /* The one place the card's standing is spelled out. It takes focus when a
    save lands, so the reader arrives on the new state. */
-function StatusBanner({ ref, card }: { ref: React.Ref<HTMLDivElement>; card: FormCard | null }) {
-  const sent = card?.submittedAt ? ` on ${formatDate(card.submittedAt)}` : "";
+function StatusBanner({
+  ref,
+  status,
+  submittedAt,
+  reviewNote,
+}: {
+  ref: React.Ref<HTMLDivElement>;
+  status: CreatorCardStatus | null;
+  submittedAt: string | null;
+  reviewNote: string | null;
+}) {
+  const sent = submittedAt ? ` on ${formatDate(submittedAt)}` : "";
   let tone = "border-border bg-card text-muted-foreground";
   let icon: React.ReactNode = null;
   let text: React.ReactNode;
 
-  if (!card) {
+  if (!status) {
     text =
-      "Fill in your card and submit it for review. Nothing is saved until you submit, and you can change your card afterwards.";
-  } else if (card.status === "pending") {
+      "Fill in your card and submit it for review. Nothing is saved until you submit, and you can edit your card afterwards.";
+  } else if (status === "pending") {
     tone = "border-brand-cyan/30 bg-brand-cyan/5 text-foreground";
     icon = <ClockIcon className="mt-0.5 size-4 shrink-0 text-brand-cyan" weight="bold" aria-hidden />;
-    text = `Your card was sent for review${sent}. Our team is reading it. You can still change it; saving sends the new version.`;
-  } else if (card.status === "approved") {
+    text = `Your card was submitted for review${sent}. Our team is reading it. To change anything, choose Edit card below.`;
+  } else if (status === "approved") {
     tone = "border-brand-forest/30 bg-brand-forest/5 text-foreground";
     icon = <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-brand-forest" weight="fill" aria-hidden />;
-    text = "Your card is approved. If you change it, the new version goes back to our team for review.";
+    text =
+      "Your card is approved. To change anything, choose Edit card below; a changed card goes back to our team for review.";
   } else {
     tone = "border-brand-maroon/30 bg-brand-maroon/5 text-foreground";
     icon = <WarningCircleIcon className="mt-0.5 size-4 shrink-0 text-brand-maroon" weight="fill" aria-hidden />;
     text = (
       <>
         Your card was not approved yet.{" "}
-        {card.reviewNote ? (
+        {reviewNote ? (
           <>
             A note from our team:
             <span className="mt-2 block whitespace-pre-line wrap-anywhere border-s-2 border-brand-maroon/40 ps-3">
-              {card.reviewNote}
+              {reviewNote}
             </span>
-            <span className="mt-2 block">Make the changes and send it again.</span>
+            <span className="mt-2 block">Choose Edit card below, make the changes and resubmit.</span>
           </>
         ) : (
           <>
-            Change what needs changing and send it again, or write to{" "}
+            Choose Edit card below, change what needs changing and resubmit, or write to{" "}
             <a
               href={`mailto:${CARD_FORM.contact}`}
               className="font-medium underline decoration-current/35 underline-offset-4 hover:decoration-current"
@@ -459,350 +670,6 @@ function StatusBanner({ ref, card }: { ref: React.Ref<HTMLDivElement>; card: For
     >
       {icon}
       <div className="min-w-0">{text}</div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  description,
-  required,
-  children,
-}: {
-  title: string;
-  description?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={cardFrame} aria-label={title}>
-      <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card px-5 py-6 sm:px-6 sm:py-7">
-        <div>
-          <h2 className={sectionTitle}>
-            {title}
-            {required && (
-              <>
-                <RequiredMark />
-                <span className="sr-only">(required)</span>
-              </>
-            )}
-          </h2>
-          {description && (
-            <p className="mt-2 max-w-[62ch] text-pretty text-sm leading-[1.5] text-muted-foreground">{description}</p>
-          )}
-        </div>
-        {children}
-      </div>
-    </section>
-  );
-}
-
-/* The card's photo. It starts as the picture from the sign-in account, and
-   the creator may put their own in its place: the file is cropped square
-   and compressed here in the browser, shown at once on the card beside the
-   form, and uploaded when the card is sent. Going back to the account's
-   picture is one press.
-
-   The file input is not part of what the form posts (it has no name): the
-   prepared picture is added to the form's data on submit instead. */
-function PhotoField({
-  url,
-  ownPhoto,
-  hasAccountPicture,
-  error,
-  onChoose,
-  onReset,
-}: {
-  url: string | null;
-  ownPhoto: boolean;
-  hasAccountPicture: boolean;
-  error?: string;
-  onChoose: (photo: Blob) => void;
-  onReset: () => void;
-}) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [working, setWorking] = React.useState(false);
-  // A picture this browser could not read: said here, since nothing was sent.
-  const [problem, setProblem] = React.useState<string | null>(null);
-  const message = problem ?? error;
-
-  const choose = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    // Cleared so choosing the same file again still fires a change.
-    event.target.value = "";
-    if (!file) return;
-    setWorking(true);
-    setProblem(null);
-    try {
-      onChoose(await squarePhoto(file));
-    } catch (caught) {
-      setProblem(caught instanceof PhotoProblem ? caught.message : "We could not read that picture. Try a JPG or PNG.");
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  return (
-    <div role="group" aria-labelledby="photo-label" className="flex flex-col gap-3">
-      <p id="photo-label" className="text-sm font-medium leading-none">
-        Photo
-      </p>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-4">
-        <CardPhoto src={url} />
-        <div className="flex min-w-0 flex-1 basis-56 flex-col items-start gap-2.5">
-          <div className="flex flex-wrap gap-2">
-            {/* The browser's file picker, opened by the button beside it. */}
-            <input ref={inputRef} type="file" accept="image/*" onChange={choose} hidden />
-            <Button
-              type="button"
-              variant="outline"
-              size="pill"
-              disabled={working}
-              aria-describedby={message ? "photo-hint photo-error" : "photo-hint"}
-              onClick={() => inputRef.current?.click()}
-              className="h-10 px-4 text-sm has-data-[icon=inline-start]:ps-3.5"
-            >
-              <CameraIcon data-icon="inline-start" weight="bold" />
-              {working ? "Preparing…" : url ? "Change photo" : "Add a photo"}
-            </Button>
-            {ownPhoto && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="pill"
-                onClick={() => {
-                  setProblem(null);
-                  onReset();
-                }}
-                className="h-10 px-4 text-sm text-muted-foreground has-data-[icon=inline-start]:ps-3.5"
-              >
-                <ArrowCounterClockwiseIcon data-icon="inline-start" weight="bold" />
-                {hasAccountPicture ? "Use my account picture" : "Remove photo"}
-              </Button>
-            )}
-          </div>
-          <p id="photo-hint" className="text-sm leading-[1.5] text-muted-foreground">
-            {hasAccountPicture
-              ? "Your card uses the picture from your sign-in account unless you choose another."
-              : "Your sign-in account has no picture. Add one for your card if you like."}{" "}
-            A square photo of you or your logo works best.
-          </p>
-        </div>
-      </div>
-      {message && (
-        <p id="photo-error" role="alert" className={errorText}>
-          {message}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* A question answered by picking from a short list, drawn as chips: one of
-   them (radio) or any number (checkbox). The native inputs carry the state
-   and the keyboard behaviour, hidden under their labels; a chosen chip
-   fills with brand cyan and gains a tick, so the choice does not rest on
-   colour alone. "Other" opens a text field under the chips. */
-function ChipGroup({
-  type,
-  name,
-  legend,
-  hint,
-  required,
-  options,
-  selected,
-  onChange,
-  other,
-  onOtherChange,
-  otherLabel,
-  error,
-}: {
-  type: "radio" | "checkbox";
-  name: string;
-  legend: string;
-  hint?: string;
-  required?: boolean;
-  options: readonly Option[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-  other?: string;
-  onOtherChange?: (value: string) => void;
-  otherLabel?: string;
-  error?: string;
-}) {
-  const errorId = `${name}-error`;
-  const hintId = `${name}-hint`;
-  const otherId = `${name}Other`;
-  const toggle = (value: string, checked: boolean) => {
-    if (type === "radio") onChange([value]);
-    else onChange(checked ? [...selected, value] : selected.filter((v) => v !== value));
-  };
-  return (
-    <fieldset
-      className="flex min-w-0 flex-col gap-3"
-      aria-required={required || undefined}
-      aria-invalid={!!error || undefined}
-      aria-describedby={[hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined}
-    >
-      {/* A legend sits outside the fieldset's flex flow, so the gap above
-          never reaches it: the space below it is its own margin. */}
-      <legend className={cn("text-sm font-medium leading-[1.3]", hint ? "mb-2" : "mb-3")}>
-        {legend}
-        {required && (
-          <>
-            <RequiredMark />
-            <span className="sr-only">(required)</span>
-          </>
-        )}
-      </legend>
-      {hint && (
-        <p id={hintId} className="text-sm text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const checked = selected.includes(option.value);
-          return (
-            <label
-              key={option.value}
-              className={cn(
-                // Radius 1.25rem: a full pill on one line, still a soft
-                // corner when a long label wraps to two on a phone.
-                "inline-flex min-h-10 max-w-full cursor-pointer select-none items-center gap-1.5 rounded-[1.25rem] border px-3.5 py-2 text-sm leading-[1.3] font-medium",
-                "transition-[background-color,border-color,color] duration-150 ease-hover",
-                "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring",
-                checked
-                  ? "border-brand-cyan bg-brand-cyan text-white"
-                  : "border-input bg-card text-foreground hover:border-ink/40",
-              )}
-            >
-              <input
-                type={type}
-                name={name}
-                value={option.value}
-                checked={checked}
-                onChange={(event) => toggle(option.value, event.target.checked)}
-                className="sr-only"
-              />
-              {checked && <CheckIcon aria-hidden weight="bold" className="size-3.5 shrink-0" />}
-              {option.label}
-            </label>
-          );
-        })}
-      </div>
-      {onOtherChange && selected.includes("other") && (
-        <div className="flex max-w-md flex-col gap-2">
-          <Label htmlFor={otherId}>{otherLabel ?? "Please specify"}</Label>
-          <Input
-            id={otherId}
-            name={otherId}
-            value={other ?? ""}
-            onChange={(event) => onOtherChange(event.target.value)}
-            maxLength={120}
-            className={field}
-          />
-        </div>
-      )}
-      {error && (
-        <p id={errorId} className={errorText}>
-          {error}
-        </p>
-      )}
-    </fieldset>
-  );
-}
-
-/* The one line about the creator's work. It is one line on the card, but
-   up to 140 characters will not fit one line of a phone, so the box grows
-   to show all of it. Enter does nothing here: there is no second line to
-   start, and the server folds any pasted line break into a space. */
-function TaglineField({
-  value,
-  onChange,
-  error,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor="tagline">
-        One line about your work
-        <RequiredMark />
-        <span className="sr-only">(required)</span>
-      </Label>
-      <Textarea
-        id="tagline"
-        name="tagline"
-        rows={1}
-        value={value}
-        onChange={(event) => onChange(event.target.value.replace(/[\r\n]+/g, " "))}
-        onKeyDown={(event) => {
-          // Not while an input method is composing: there Enter picks the word.
-          if (event.key === "Enter" && !event.nativeEvent.isComposing) event.preventDefault();
-        }}
-        maxLength={CARD_TAGLINE_MAX}
-        aria-invalid={!!error}
-        aria-describedby={error ? "tagline-hint tagline-error" : "tagline-hint"}
-        placeholder="Short Dharma talks in Hindi for people new to practice"
-        className="min-h-11 resize-none px-3.5 py-2.5 leading-[1.5]"
-      />
-      <p id="tagline-hint" className="text-sm text-muted-foreground">
-        Shown on your card. <span className="tabular-nums">{value.length}</span> of {CARD_TAGLINE_MAX} characters.
-      </p>
-      {error && (
-        <p id="tagline-error" className={errorText}>
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* The link to one place the creator publishes. A plain text field, not
-   type="url": the server adds a missing "https://", and the browser's own
-   URL check would refuse "instagram.com/name" before the form was sent. */
-function LinkField({
-  social,
-  value,
-  onChange,
-  error,
-}: {
-  social: (typeof CARD_SOCIALS)[number];
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-}) {
-  const id = `socials-${social.value}`;
-  const SocialIcon = SOCIAL_ICON[social.value];
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <Label htmlFor={id}>
-        <SocialIcon aria-hidden className="size-4 text-muted-foreground" />
-        {social.label}
-      </Label>
-      <Input
-        id={id}
-        name={`socials.${social.value}`}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        inputMode="url"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        autoComplete="off"
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-error` : undefined}
-        placeholder={social.placeholder}
-        className={field}
-      />
-      {error && (
-        <p id={`${id}-error`} className={errorText}>
-          {error}
-        </p>
-      )}
     </div>
   );
 }

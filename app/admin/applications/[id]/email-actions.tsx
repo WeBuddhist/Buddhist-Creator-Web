@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { PaperPlaneTiltIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DECISION_EMAIL, type Decision } from "@/lib/decisions";
+import { settled } from "@/lib/session-ended";
 import { cn } from "@/lib/utils";
 import {
   resendDecisionEmailAction,
@@ -26,7 +28,17 @@ import {
    - the decision they have not been told, with the button that sends it;
    - the email they already have, with a quiet way to send it again.
    Sending again asks first: it is the one path that writes to someone
-   twice, so it is never one click. */
+   twice, so it is never one click.
+
+   The three are one React Query mutation: each form names its own action
+   in `intent`, and the mutation is where "Working…" and the result line
+   come from. */
+
+const ACTIONS = {
+  send: sendDecisionEmailAction,
+  resend: resendDecisionEmailAction,
+  resolve: resolveNotificationAction,
+};
 
 export type EmailActionsProps = {
   applicationId: string;
@@ -50,20 +62,24 @@ const quietLink =
 
 export function EmailActions({ applicationId, decision, owed, notifiedAt, recipient, review, sending, canSend }: EmailActionsProps) {
   const [confirming, setConfirming] = useState(false);
-  const [state, action, pending] = useActionState<EmailState, FormData>(
-    async (previous, formData) => {
-      const intent = formData.get("intent");
-      const result =
-        intent === "resend"
-          ? await resendDecisionEmailAction(previous, formData)
-          : intent === "resolve"
-            ? await resolveNotificationAction(previous, formData)
-            : await sendDecisionEmailAction(previous, formData);
-      setConfirming(false);
-      return result;
+  const email = useMutation({
+    mutationFn: (data: FormData): Promise<EmailState> => {
+      const intent = data.get("intent");
+      return settled(ACTIONS[intent === "resend" || intent === "resolve" ? intent : "send"](data));
     },
-    { ok: false },
-  );
+    // Sent or refused, the question has been answered.
+    onSettled: () => setConfirming(false),
+  });
+  const pending = email.isPending;
+  const state: EmailState = email.data ?? { ok: false };
+  const action = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    // "Mark as sent" and "Not sent" are told apart by the button pressed.
+    const pressed = (event.nativeEvent as SubmitEvent).submitter;
+    if (pressed instanceof HTMLButtonElement && pressed.name) data.set(pressed.name, pressed.value);
+    email.mutate(data);
+  };
 
   const message = pending ? "Working…" : state.message;
   const status = message && (
@@ -74,7 +90,7 @@ export function EmailActions({ applicationId, decision, owed, notifiedAt, recipi
 
   if (review) {
     return (
-      <form action={action} className="flex flex-col gap-3">
+      <form onSubmit={action} className="flex flex-col gap-3">
         <input type="hidden" name="intent" value="resolve" />
         <input type="hidden" name="notificationId" value={review.id} />
         <div className="flex flex-wrap gap-2">
@@ -94,7 +110,7 @@ export function EmailActions({ applicationId, decision, owed, notifiedAt, recipi
 
   if (owed) {
     return (
-      <form action={action} className="flex flex-col gap-3">
+      <form onSubmit={action} className="flex flex-col gap-3">
         <input type="hidden" name="intent" value="send" />
         <input type="hidden" name="applicationId" value={applicationId} />
         <input type="hidden" name="expectedStatus" value={decision} />
@@ -121,7 +137,7 @@ export function EmailActions({ applicationId, decision, owed, notifiedAt, recipi
       {status}
       <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)} disablePointerDismissal={pending}>
         <DialogContent className="max-w-md">
-          <form action={action}>
+          <form onSubmit={action}>
             <input type="hidden" name="intent" value="resend" />
             <input type="hidden" name="applicationId" value={applicationId} />
             <input type="hidden" name="expectedStatus" value={decision} />

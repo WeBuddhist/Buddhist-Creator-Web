@@ -18,14 +18,6 @@ export function CardPhoto({ src: given, className }: { src: string | null | unde
   const src = cardPhotoSrc(given);
   // The src that failed, so a new src gets its own chance.
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
-  const ref = React.useRef<HTMLImageElement>(null);
-
-  // A picture can fail before React is listening: the server's markup
-  // starts loading it at once. Such an img is complete with no size.
-  React.useEffect(() => {
-    const img = ref.current;
-    if (img && src && img.complete && img.naturalWidth === 0) setFailedSrc(src);
-  }, [src]);
 
   const frame = cn("size-20 shrink-0 overflow-hidden rounded-full bg-paper-deep", className);
   if (!src || failedSrc === src) {
@@ -38,7 +30,12 @@ export function CardPhoto({ src: given, className }: { src: string | null | unde
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      ref={ref}
+      // A picture can fail before React is listening: the server's markup
+      // starts loading it at once. Such an img is complete with no size,
+      // which is checked as soon as React has hold of the element.
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth === 0) setFailedSrc(src);
+      }}
       src={src}
       // Decorative: the name is printed right under it.
       alt=""

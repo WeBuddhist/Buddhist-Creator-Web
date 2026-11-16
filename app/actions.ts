@@ -8,14 +8,14 @@ import { saveSuggestion } from "@/lib/suggestions";
 export type FeedbackState = { status: "idle" | "sent" | "empty" | "failed" };
 
 /* Suggestion box on the homepage. The form posts `suggestion` (required)
-   and `email` (optional), and is stored without JavaScript too, because
-   it is a server action. Each one becomes a row in `suggestions`.
+   and `email` (optional). Each one becomes a row in `suggestions`.
 
-   The form reads the outcome through useActionState, so a failed write is
-   reported rather than thrown: a suggestion that was not kept must not
-   look sent. It is logged without the query, whose parameters are the
-   visitor's words and email and do not belong in the host's logs. */
-export async function submitFeedback(_previous: FeedbackState, formData: FormData): Promise<FeedbackState> {
+   The form calls this as a React Query mutation and reads the outcome, so
+   a failed write is reported rather than thrown: a suggestion that was
+   not kept must not look sent. It is logged without the query, whose
+   parameters are the visitor's words and email and do not belong in the
+   host's logs. */
+export async function submitFeedback(formData: FormData): Promise<FeedbackState> {
   try {
     const saved = await saveSuggestion(formData.get("suggestion"), formData.get("email"));
     return { status: saved ? "sent" : "empty" };
@@ -23,4 +23,11 @@ export async function submitFeedback(_previous: FeedbackState, formData: FormDat
     console.error("[suggestions] could not save", forLog(error));
     return { status: "failed" };
   }
+}
+
+/* The same save as the form's own `action`, for a post made before the
+   page's scripts have loaded, or without them: the suggestion is stored
+   and the page comes back with the form empty. */
+export async function postFeedback(formData: FormData): Promise<void> {
+  await submitFeedback(formData);
 }

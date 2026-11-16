@@ -11,7 +11,7 @@ const schema = z.object({ suggestionId: z.uuid() });
 
 /* Superadmins only: admins read the suggestion box, they do not empty it.
    One that somebody else has already removed counts as removed. */
-export async function removeSuggestionAction(_previous: RemoveState, formData: FormData): Promise<RemoveState> {
+export async function removeSuggestionAction(formData: FormData): Promise<RemoveState> {
   try {
     await assertRole("superadmin");
   } catch (error) {

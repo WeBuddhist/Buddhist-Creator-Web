@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { CircleIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ApplicationStatus } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
+import { settled } from "@/lib/session-ended";
 import { cn } from "@/lib/utils";
 import { setStatusAction, type DecisionState } from "./actions";
 
@@ -37,8 +38,9 @@ const DECISIONS: { status: ApplicationStatus; label: string; selected: string; q
 
 /* The decision form, filling the Decision card. One form, three
    submitters: the clicked button's value is the new status, and the note
-   goes along with whichever is pressed. The footer carries what was
-   decided and, beside it, the way back. */
+   goes along with whichever is pressed. Saving is a React Query mutation
+   around the server action. The footer carries what was decided and,
+   beside it, the way back. */
 export function StatusActions({
   applicationId,
   status,
@@ -54,7 +56,11 @@ export function StatusActions({
   /** A line on what saving does and does not do about the email. */
   told: string;
 }) {
-  const [state, action, pending] = useActionState<DecisionState, FormData>(setStatusAction, { ok: false });
+  const decide = useMutation({
+    mutationFn: (data: FormData): Promise<DecisionState> => settled(setStatusAction(data)),
+  });
+  const pending = decide.isPending;
+  const state: DecisionState = decide.data ?? { ok: false };
   const reviewable = status !== "draft" && status !== "withdrawn";
 
   if (!reviewable) {
@@ -68,7 +74,16 @@ export function StatusActions({
   const message = pending ? "Saving…" : state.ok && state.at ? `Saved at ${formatDateTime(state.at)}.` : state.message;
 
   return (
-    <form action={action}>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        // The button that was pressed says which decision this is.
+        const pressed = (event.nativeEvent as SubmitEvent).submitter;
+        if (pressed instanceof HTMLButtonElement) data.set(pressed.name, pressed.value);
+        decide.mutate(data);
+      }}
+    >
       <input type="hidden" name="applicationId" value={applicationId} />
       <div className="flex flex-col gap-4 px-5 py-4">
         <div className="flex flex-col gap-2">

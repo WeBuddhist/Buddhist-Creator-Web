@@ -89,11 +89,13 @@ is a change to the card like any other, so it goes back for review, and the
 object it replaces is deleted.
 
 A signed-in creator fills theirs in at `/creator-card`, with the card drawn
-beside the form as they type, and submits it for review. Admins and
-superadmins review at `/admin/creator-cards`: approve, or reject with a note
-the creator reads on their card page. A creator can change their card at any
-time, and every change, even to an approved card, goes back to pending, so
-nothing is approved unread. A review names the version of the card it read
+beside the form as they type, and submits it for review. The form then
+behaves as the registration form does: it is read-only behind an Edit card
+button, editing offers Save changes and Cancel, and the actions float at the
+foot of the screen. Admins and superadmins review at `/admin/creator-cards`:
+approve, or reject with a note the creator reads on their card page. A
+creator can edit their card at any time, and every change, even to an
+approved card, goes back to pending, so nothing is approved unread. A review names the version of the card it read
 and is refused if the creator has changed the card since.
 
 | Piece | Where |
@@ -129,6 +131,7 @@ How it fits together:
 | Auth0 client and sign-in gate | `lib/auth0.ts`, `proxy.ts` |
 | Who is calling, roles | `lib/auth.ts`, `lib/auth-roles.ts` |
 | Database schema and client | `lib/db/schema.ts`, `lib/db/index.ts`, migrations in `drizzle/` |
+| Client-side writes (React Query) | `components/query-provider.tsx`, `components/form/form-helpers.ts`, `lib/session-ended.ts` |
 | Form copy, option lists, validation | `lib/registration-2027.ts` |
 | Reads and writes, status transitions | `lib/applications.ts` |
 | S3 (private bucket, presigned reads) | `lib/s3.ts`; intro videos through `app/api/applications/video/route.ts`, card photos through the card's save action |
@@ -136,6 +139,20 @@ How it fits together:
 | Wording of the three emails | `lib/emails/accepted.ts`, `rejected.ts`, `waitlisted.ts` |
 | The form | `app/convention/2027/register/` |
 | The dashboard | `app/admin/` |
+
+### How client code talks to the server
+
+Pages read their data in server components. Client components that write
+(every form here, the video upload, the bulk send) run their server action
+or request as a [React Query](https://tanstack.com/query) mutation
+(`useMutation`), which supplies the pending state, the result and the
+failure; what happens on a result is in the mutation's callbacks, not in an
+effect. Forms send themselves from `onSubmit` with their own `FormData`
+rather than through the form's `action`, because React resets a form after
+its action and that unticks checkboxes ticked since the page loaded.
+Mutations are tried once and at once, online or not. A request that fails
+outright is checked against `/auth/profile` to tell an ended session from a
+lost connection (`lib/session-ended.ts`).
 
 ### Data model
 

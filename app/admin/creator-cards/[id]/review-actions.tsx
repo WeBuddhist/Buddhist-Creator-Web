@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { CircleIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import type { CreatorCardStatus } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { reviewCardAction, type ReviewState } from "./actions";
+import { settled } from "@/lib/session-ended";
+import { reviewCardAction } from "./actions";
 
 /* The same recipe as an application's decision buttons
    (app/admin/applications/[id]/status-actions.tsx): one raised button per
@@ -26,12 +28,13 @@ const DECISIONS: { status: CreatorCardStatus; label: string; selected: string; q
 
 /* The review form, filling the Review card. One form, two submitters: the
    pressed button's value is the new status, and the note goes with it.
+   Saving is a React Query mutation around the server action, which is
+   where "Saving…" and the result line come from.
+
    The form names the version of the card it was rendered with, so a
    decision never lands on content the reviewer has not seen: if the card
    has moved on, the action refuses, the page shows the new version, and
-   this form stays as it is, message and note included. The note is
-   controlled for that reason, since React resets a form after its action
-   and would otherwise take a refused note with it. */
+   this form stays as it is, message and note included. */
 export function ReviewActions({
   cardId,
   revision,
@@ -46,12 +49,29 @@ export function ReviewActions({
   /** "Approved … by …" for a reviewed card, or null. */
   reviewed: string | null;
 }) {
-  const [state, action, pending] = useActionState<ReviewState, FormData>(reviewCardAction, { ok: false });
   const [note, setNote] = useState(reviewNote ?? "");
-  const message = pending ? "Saving…" : state.ok && state.at ? `Saved at ${formatDateTime(state.at)}.` : state.message;
+  const review = useMutation({ mutationFn: (data: FormData) => settled(reviewCardAction(data)) });
+  const pending = review.isPending;
+  const saved = review.data?.ok ?? false;
+  const message = pending
+    ? "Saving…"
+    : review.data
+      ? review.data.ok
+        ? `Saved at ${formatDateTime(review.data.at)}.`
+        : review.data.message
+      : null;
 
   return (
-    <form action={action}>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        // The button that was pressed says which decision this is.
+        const pressed = (event.nativeEvent as SubmitEvent).submitter;
+        if (pressed instanceof HTMLButtonElement) data.set(pressed.name, pressed.value);
+        review.mutate(data);
+      }}
+    >
       <input type="hidden" name="cardId" value={cardId} />
       <input type="hidden" name="revision" value={revision} />
       <div className="flex flex-col gap-4 px-5 py-4">
@@ -96,7 +116,7 @@ export function ReviewActions({
           })}
         </div>
         {message && (
-          <p role="status" aria-live="polite" className={cn("text-xs", state.ok || pending ? "text-brand-forest" : "text-brand-maroon")}>
+          <p role="status" aria-live="polite" className={cn("text-xs", saved || pending ? "text-brand-forest" : "text-brand-maroon")}>
             {message}
           </p>
         )}

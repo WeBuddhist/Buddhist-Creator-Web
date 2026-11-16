@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   ApplicationLocked,
   InvalidTransition,
@@ -12,7 +11,6 @@ import {
   withdrawMyApplication,
 } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
-import { loginUrl } from "@/lib/auth0";
 import type { ApplicationStatus } from "@/lib/db/schema";
 import {
   FORM,
@@ -33,6 +31,9 @@ export type FormState = {
   savedAt?: string;
   /** True when this submission moved the application out of draft. */
   firstSubmission?: boolean;
+  /** The session ended while the form was open: nothing was saved, and the
+      form asks the applicant to sign in again. */
+  signedOut?: true;
 };
 
 /* The applicant hears about a decision by email, so a locked application
@@ -40,13 +41,16 @@ export type FormState = {
 const LOCKED_MESSAGE = `Your application can no longer be changed. If something needs updating, write to ${FORM.contact}.`;
 const LOCKED: FieldErrors = { form: [LOCKED_MESSAGE] };
 
+const SIGNED_OUT_MESSAGE = "You have been signed out. Sign in again in another tab, then try again.";
+
 /* One action for both buttons: the submitter's `intent` says whether this
    is a draft save (anything goes) or a submission (everything required,
-   video attached). The session is re-read here; nothing from the client
-   says who is saving. */
-export async function saveApplicationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+   video attached). The form calls it as a React Query mutation, with its
+   own FormData. The session is re-read here; nothing from the client says
+   who is saving. */
+export async function saveApplicationAction(formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
-  if (!user) redirect(loginUrl(PATH));
+  if (!user) return { ok: false, signedOut: true };
 
   const intent = formData.get("intent") === "submit" ? "submit" : "draft";
   const raw = formValues(formData);
@@ -109,7 +113,7 @@ export type StatusResult = { ok: true; status: ApplicationStatus } | { ok: false
 
 export async function withdrawApplicationAction(): Promise<StatusResult> {
   const user = await getCurrentUser();
-  if (!user) redirect(loginUrl(PATH));
+  if (!user) return { ok: false, error: SIGNED_OUT_MESSAGE };
   try {
     const saved = await withdrawMyApplication(user.id);
     revalidatePath(PATH);
@@ -122,7 +126,7 @@ export async function withdrawApplicationAction(): Promise<StatusResult> {
 
 export async function reopenApplicationAction(): Promise<StatusResult> {
   const user = await getCurrentUser();
-  if (!user) redirect(loginUrl(PATH));
+  if (!user) return { ok: false, error: SIGNED_OUT_MESSAGE };
   try {
     const saved = await reopenMyApplication(user.id);
     revalidatePath(PATH);
