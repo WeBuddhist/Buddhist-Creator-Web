@@ -11,7 +11,12 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { card as cardFrame, label as eyebrow, primaryButton } from "@/components/convention/section-heading";
+import {
+  framedCard,
+  framedCardInner,
+  label as eyebrow,
+  primaryButton,
+} from "@/components/convention/section-heading";
 import { CreatorCard } from "@/components/creator-card/creator-card";
 import type { PreparedPhoto } from "@/components/creator-card/photo";
 import { PlaceField, TextField, errorText } from "@/components/form/fields";
@@ -525,9 +530,16 @@ export function CardForm({
         <div
           ref={publishBarHeight}
           data-action-bar
-          className={cn(cardFrame, "sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30")}
+          className={cn(framedCard, "sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30")}
         >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3 sm:flex-nowrap">
+          {/* The form's double border, with the lift of something that
+              floats over the page in place of the surface's resting one. */}
+          <div
+            className={cn(
+              framedCardInner,
+              "flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 shadow-float sm:flex-nowrap",
+            )}
+          >
             {editable ? (
               <React.Fragment key="editing">
                 <Button

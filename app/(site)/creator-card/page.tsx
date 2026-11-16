@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { card, cardInner, label } from "@/components/convention/section-heading";
+import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { requireUser } from "@/lib/auth";
 import { CARD_FORM, CARD_PATH } from "@/lib/creator-card";
 import { cardFollowers, getMyCard } from "@/lib/creator-cards";
@@ -85,8 +85,8 @@ async function fromRow(row: CreatorCard): Promise<FormCard> {
 
 function FormFallback() {
   return (
-    <div className={cn(card, "max-w-3xl")} aria-busy="true" aria-live="polite">
-      <div className={cn(cardInner, "px-5 py-6 text-sm text-muted-foreground sm:px-6")}>Loading your card…</div>
+    <div className={cn(framedCard, "max-w-3xl")} aria-busy="true" aria-live="polite">
+      <div className={cn(framedCardInner, "px-5 py-6 text-sm text-muted-foreground sm:px-6")}>Loading your card…</div>
     </div>
   );
 }

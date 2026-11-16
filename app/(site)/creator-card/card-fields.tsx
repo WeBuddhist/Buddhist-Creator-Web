@@ -14,7 +14,7 @@ import {
   YoutubeLogoIcon,
   type Icon,
 } from "@phosphor-icons/react";
-import { card as cardFrame } from "@/components/convention/section-heading";
+import { framedCard, framedCardInner } from "@/components/convention/section-heading";
 import { CardPhoto } from "@/components/creator-card/card-photo";
 import { PhotoProblem, UNREADABLE, squarePhoto, type PreparedPhoto } from "@/components/creator-card/photo";
 import { RequiredMark, errorText, field, readOnlyField } from "@/components/form/fields";
@@ -42,7 +42,7 @@ const SOCIAL_ICON: Record<CardSocial, Icon> = {
 
 const sectionTitle = "font-display text-2xl leading-[1.15] text-foreground";
 
-/** One white card of the form, under its title. */
+/** One card of the form, under its title, in the double border. */
 export function Section({
   title,
   description,
@@ -55,8 +55,8 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cardFrame} aria-label={title}>
-      <div className="flex flex-col gap-6 rounded-2xl border border-border bg-card px-5 py-6 sm:px-6 sm:py-7">
+    <section className={framedCard} aria-label={title}>
+      <div className={cn(framedCardInner, "flex flex-col gap-6 px-5 py-6 sm:px-6 sm:py-7")}>
         <div>
           <h2 className={sectionTitle}>
             {title}

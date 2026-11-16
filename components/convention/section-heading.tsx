@@ -79,6 +79,14 @@ export const panel = "";
 export const card = "rounded-2xl";
 export const cardInner = "rounded-2xl border border-border bg-card";
 
+/* The double border, which the creator card and its form wear: a muted
+   frame with a hairline ring, and inside it the white surface with its own
+   ring and a little lift. Two rings read as a double border. Outer radius
+   16px = inner 12px + 4px of padding (concentric). The transparent borders
+   are what forced-colors mode paints in place of the shadows. */
+export const framedCard = "rounded-2xl border border-transparent bg-muted/40 p-1 shadow-ring";
+export const framedCardInner = "rounded-xl border border-transparent bg-card shadow-border";
+
 /* A small quiet label for dates, places and states. */
 export const tag =
   "inline-flex items-center rounded-full border border-border px-2.5 py-1 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.1em] text-muted-foreground";
