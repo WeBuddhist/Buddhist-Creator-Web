@@ -36,6 +36,20 @@
       "when": 1794377106248,
       "tag": "0004_suggestions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794808023601,
+      "tag": "0005_creator_cards",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794809861832,
+      "tag": "0006_creator_card_photo",
+      "breakpoints": true
     }
   ]
 }

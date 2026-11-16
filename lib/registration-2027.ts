@@ -194,7 +194,7 @@ const optionalText = trimmed.max(500).optional().or(z.literal("")).transform((v)
 /* A link as people paste it: "instagram.com/name" is as good as the full
    address, so a missing scheme is added rather than refused. A bare handle
    or a name is not a link. */
-function isWebLink(value: string) {
+export function isWebLink(value: string) {
   if (/\s/.test(value) || !URL.canParse(value)) return false;
   const { protocol, hostname } = new URL(value);
   return (protocol === "https:" || protocol === "http:") && /^[^.]+(\.[^.]+)+$/.test(hostname);

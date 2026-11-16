@@ -27,6 +27,7 @@ const iconPill = cn(
 );
 
 const REGISTER = "/convention/2027/register";
+const CREATOR_CARD = "/creator-card";
 
 export async function UserMenu() {
   // Wait for the real request before reading the session: checking the
@@ -63,6 +64,7 @@ export async function UserMenu() {
       email={user.email}
       picture={user.picture}
       applicationHref={REGISTER}
+      creatorCardHref={CREATOR_CARD}
       adminHref={hasRole(user, "admin") ? "/admin" : undefined}
     />
   );

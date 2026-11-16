@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuth0, isAuth0Configured, LOGIN_PATH, loginUrl, safeReturnTo } from "@/lib/auth0";
 
 /* The Auth0 SDK's middleware serves /auth/* and keeps the session cookie
-   rolling. On top of that, two areas need a session before they render:
-   the registration form and the admin dashboard. Everyone else passes.
+   rolling. On top of that, three areas need a session before they render:
+   the registration form, the creator card form and the admin dashboard.
+   Everyone else passes.
 
    Sign-in happens on our own /login page. Someone without a session is
    sent there with where they were going; someone who already has one is
@@ -12,7 +13,11 @@ import { getAuth0, isAuth0Configured, LOGIN_PATH, loginUrl, safeReturnTo } from 
    Roles are not checked here: the proxy only knows the Auth0 session, not
    the users table. Pages and actions check roles themselves (lib/auth.ts). */
 
-const REQUIRES_SESSION = [/^\/convention\/2027\/register(?:\/|$)/, /^\/admin(?:\/|$)/];
+const REQUIRES_SESSION = [
+  /^\/convention\/2027\/register(?:\/|$)/,
+  /^\/creator-card(?:\/|$)/,
+  /^\/admin(?:\/|$)/,
+];
 
 let warned = false;
 

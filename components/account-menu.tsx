@@ -3,12 +3,19 @@
 import * as React from "react";
 import NextLink from "next/link";
 import { Menu } from "@base-ui/react/menu";
-import { CaretUpDownIcon, FileTextIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
+import {
+  CaretUpDownIcon,
+  FileTextIcon,
+  IdentificationCardIcon,
+  ShieldCheckIcon,
+  SignOutIcon,
+  UserCircleIcon,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 /* The signed-in corner of the header: the reader's photo, from whichever
    identity provider they signed in with, opens a small menu with their
-   name, their application and sign out. The name lives in the trigger's
+   name, their application, their creator card and sign out. The name lives in the trigger's
    accessible label, never beside the photo. The popup borrows the
    Convention dropdown's surface and motion from nav-links.tsx so the two
    menus read as one family.
@@ -70,6 +77,7 @@ export function AccountMenu({
   email,
   picture,
   applicationHref,
+  creatorCardHref,
   adminHref,
   appearance = "avatar",
   role,
@@ -78,6 +86,7 @@ export function AccountMenu({
   email: string;
   picture: string | null;
   applicationHref: string;
+  creatorCardHref: string;
   /** Set for admins only; adds the dashboard link above sign out. */
   adminHref?: string;
   /** "avatar" is the header's round photo; "card" the sidebar row. */
@@ -153,6 +162,10 @@ export function AccountMenu({
               <Menu.LinkItem closeOnClick render={<NextLink href={applicationHref} />} className={item}>
                 <FileTextIcon className="size-4 text-muted-foreground" weight="bold" aria-hidden />
                 Registration
+              </Menu.LinkItem>
+              <Menu.LinkItem closeOnClick render={<NextLink href={creatorCardHref} />} className={item}>
+                <IdentificationCardIcon className="size-4 text-muted-foreground" weight="bold" aria-hidden />
+                Creator card
               </Menu.LinkItem>
               <Menu.Separator className="mx-1.5 mb-1.5 h-px bg-border" />
 

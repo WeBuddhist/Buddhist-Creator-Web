@@ -11,6 +11,7 @@ import {
   ChatTeardropTextIcon,
   ClipboardTextIcon,
   HouseIcon,
+  IdentificationCardIcon,
   ListIcon,
   TrayIcon,
   UsersThreeIcon,
@@ -33,6 +34,7 @@ import logoMark from "@/public/logo-mark.png";
    checked, and it draws placeholders for the parts that need one. */
 
 const REGISTER = "/convention/2027/register";
+const CREATOR_CARD = "/creator-card";
 
 type NavItem = {
   href: string;
@@ -52,6 +54,7 @@ const WORKSPACE: NavItem[] = [
     icon: TrayIcon,
     match: (p) => p === "/admin" || p.startsWith("/admin/applications"),
   },
+  { href: "/admin/creator-cards", label: "Creator cards", icon: IdentificationCardIcon },
   { href: "/admin/suggestions", label: "Suggestions", icon: ChatTeardropTextIcon },
   { href: "/admin/users", label: "Users & roles", icon: UsersThreeIcon, superadmin: true },
 ];
@@ -59,6 +62,7 @@ const WORKSPACE: NavItem[] = [
 const SITE: NavItem[] = [
   { href: "/", label: "Website", icon: HouseIcon, external: true },
   { href: REGISTER, label: "Registration page", icon: ClipboardTextIcon, external: true },
+  { href: CREATOR_CARD, label: "Creator card page", icon: IdentificationCardIcon, external: true },
 ];
 
 /* A nav row. The current one sits on a soft fill with dark ink and icon;
@@ -162,6 +166,7 @@ function SidebarContent({ user, trailing }: { user: CurrentUser | null; trailing
             picture={user.picture}
             role={user.role}
             applicationHref={REGISTER}
+            creatorCardHref={CREATOR_CARD}
           />
         ) : (
           <div aria-hidden="true" className="flex items-center gap-3 p-2">
@@ -268,6 +273,10 @@ function Breadcrumb() {
     ? [{ label: "Users & roles" }]
     : pathname.startsWith("/admin/suggestions")
       ? [{ label: "Suggestions" }]
+      : pathname.startsWith("/admin/creator-cards/")
+      ? [{ label: "Creator cards", href: "/admin/creator-cards" }, { label: "Creator card" }]
+      : pathname.startsWith("/admin/creator-cards")
+      ? [{ label: "Creator cards" }]
       : pathname.startsWith("/admin/applications/")
       ? [{ label: "Applications", href: "/admin" }, { label: "Application" }]
       : [{ label: "Applications" }];
