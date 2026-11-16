@@ -31,11 +31,14 @@ const SOCIAL_ICON: Record<CardSocial, Icon> = {
 };
 
 const rowLabel = "text-xs font-medium text-muted-foreground";
-const linkChip = "inline-flex size-10 items-center justify-center rounded-full border border-border text-foreground";
+const linkChip =
+  "inline-flex size-9 items-center justify-center rounded-full border border-border text-foreground";
 
 /* The creator card: who the creator is, what they make, and where to find
-   it. One white card on a hairline, the creator's photo, the name in the
-   serif, brand cyan for the line that says what kind of creator this is.
+   it. One white card on a hairline and no shadow, the creator's photo large
+   across the top, inset so its corners follow the card's, then the name in
+   the serif and brand cyan for the line that says what kind of creator
+   this is.
 
    Anything the card does not have is left out, so a card the team made
    from a name and a country is still a whole card. With `preview`, as
@@ -57,107 +60,137 @@ export function CreatorCard({
   const name = card.displayName.trim();
   const type = creatorTypeLabel(card.creatorType);
   const tagline = card.tagline?.trim();
-  const languages = cardLabels(CARD_LANGUAGES, card.languages, card.languagesOther);
-  const content = cardLabels(CARD_CONTENT_TYPES, card.contentTypes, card.contentTypesOther);
+  const languages = cardLabels(
+    CARD_LANGUAGES,
+    card.languages,
+    card.languagesOther,
+  );
+  const content = cardLabels(
+    CARD_CONTENT_TYPES,
+    card.contentTypes,
+    card.contentTypesOther,
+  );
   const links = cardLinks(card.socials);
-  const blank = (text: string) => (preview ? <span className="text-muted-foreground/70">{text}</span> : null);
+  const blank = (text: string) =>
+    preview ? <span className="text-muted-foreground/70">{text}</span> : null;
 
   return (
-    <article className={cn("flex flex-col rounded-2xl border border-border bg-card p-6 text-foreground", className)}>
-      <CardPhoto src={card.photoUrl} className="mb-5" />
-      {(type || preview) && (
-        <p className={cn(label, type ? "text-brand-cyan" : "text-muted-foreground/70")}>{type ?? "I create as"}</p>
+    <article
+      className={cn(
+        "flex flex-col rounded-2xl border border-border bg-card p-1.5 text-foreground",
+        className,
       )}
-      <h3 className="mt-3 text-balance wrap-anywhere font-display text-[1.75rem] leading-[1.12]">
-        {name || blank("Your name")}
-      </h3>
-      {(card.country || preview) && (
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MapPinIcon aria-hidden weight="bold" className="size-4 shrink-0" />
-          {card.country || blank("Your country")}
-        </p>
-      )}
-      {(tagline || preview) && (
-        <p className="mt-4 text-pretty wrap-anywhere text-base leading-[1.55]">
-          {tagline || blank("One line about your work")}
-        </p>
-      )}
+    >
+      {/* Inner radius 10px = the card's 16px less its 6px of padding. */}
+      <CardPhoto
+        src={card.photoUrl}
+        shape="cover"
+        className="rounded-[0.625rem]"
+      />
+      <div className="flex flex-col px-3.5 pt-4 pb-4 sm:px-4">
+        {(type || preview) && (
+          <p
+            className={cn(
+              label,
+              type ? "text-brand-cyan" : "text-muted-foreground/70",
+            )}
+          >
+            {type ?? "I create as"}
+          </p>
+        )}
+        <h3 className="mt-1.5 text-balance wrap-anywhere font-display text-[1.75rem] leading-[1.12]">
+          {name || blank("Your name")}
+        </h3>
+        {(card.country || preview) && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPinIcon aria-hidden weight="bold" className="size-4 shrink-0" />
+            {card.country || blank("Your country")}
+          </p>
+        )}
+        {(tagline || preview) && (
+          <p className="mt-3 text-pretty wrap-anywhere text-[0.9375rem] leading-[1.5]">
+            {tagline || blank("One line about your work")}
+          </p>
+        )}
 
-      {(content.length > 0 || languages.length > 0 || preview) && (
-        <dl className="mt-5 flex flex-col gap-4 border-t border-border pt-5">
-          {(content.length > 0 || preview) && (
-            <div>
-              <dt className={rowLabel}>Creates</dt>
-              <dd className="mt-2">
-                {content.length > 0 ? (
-                  <ul className="flex flex-wrap gap-1.5">
-                    {content.map((item) => (
-                      <li
-                        key={item}
-                        // Radius 13px: a full pill on one line, a soft
-                        // corner when a long label wraps to two.
-                        className="rounded-[0.8125rem] bg-paper-deep px-2.5 py-1 text-xs leading-[1.3] font-medium wrap-anywhere"
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm">{blank("What you make")}</p>
-                )}
-              </dd>
-            </div>
-          )}
-          {(languages.length > 0 || preview) && (
-            <div>
-              <dt className={rowLabel}>Publishes in</dt>
-              <dd className="mt-1 wrap-anywhere text-sm leading-[1.5]">
-                {languages.length > 0 ? languages.join(" · ") : blank("Your languages")}
-              </dd>
-            </div>
-          )}
-        </dl>
-      )}
+        {(content.length > 0 || languages.length > 0 || preview) && (
+          <dl className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
+            {(content.length > 0 || preview) && (
+              <div>
+                <dt className={rowLabel}>Creates</dt>
+                <dd className="mt-1.5">
+                  {content.length > 0 ? (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {content.map((item) => (
+                        <li
+                          key={item}
+                          // Radius 13px: a full pill on one line, a soft
+                          // corner when a long label wraps to two.
+                          className="rounded-[0.8125rem] bg-paper-deep px-2.5 py-1 text-xs leading-[1.3] font-medium wrap-anywhere"
+                        >
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm">{blank("What you make")}</p>
+                  )}
+                </dd>
+              </div>
+            )}
+            {(languages.length > 0 || preview) && (
+              <div>
+                <dt className={rowLabel}>Publishes in</dt>
+                <dd className="mt-0.5 wrap-anywhere text-sm leading-[1.5]">
+                  {languages.length > 0
+                    ? languages.join(" · ")
+                    : blank("Your languages")}
+                </dd>
+              </div>
+            )}
+          </dl>
+        )}
 
-      {(links.length > 0 || preview) && (
-        <div className="mt-5 border-t border-border pt-5">
-          {links.length > 0 ? (
-            <ul className="flex flex-wrap gap-2">
-              {links.map(({ value, label: site, url }) => {
-                const SocialIcon = SOCIAL_ICON[value];
-                const where = value === "website" ? "website" : `on ${site}`;
-                return (
-                  <li key={value}>
-                    {preview ? (
-                      <span className={linkChip}>
-                        <SocialIcon aria-hidden className="size-5" />
-                        <span className="sr-only">{site}</span>
-                      </span>
-                    ) : (
-                      <a
-                        href={url}
-                        target="_blank"
-                        // The address was typed by the creator, not by us.
-                        rel="noopener noreferrer nofollow"
-                        aria-label={`${name} ${where} (opens in new tab)`}
-                        className={cn(
-                          linkChip,
-                          "transition-[border-color,color] duration-150 ease-hover hover:border-brand-cyan hover:text-brand-cyan",
-                          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                        )}
-                      >
-                        <SocialIcon aria-hidden className="size-5" />
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm">{blank("Your links")}</p>
-          )}
-        </div>
-      )}
+        {(links.length > 0 || preview) && (
+          <div className="mt-4 border-t border-border pt-4">
+            {links.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {links.map(({ value, label: site, url }) => {
+                  const SocialIcon = SOCIAL_ICON[value];
+                  const where = value === "website" ? "website" : `on ${site}`;
+                  return (
+                    <li key={value}>
+                      {preview ? (
+                        <span className={linkChip}>
+                          <SocialIcon aria-hidden className="size-[1.125rem]" />
+                          <span className="sr-only">{site}</span>
+                        </span>
+                      ) : (
+                        <a
+                          href={url}
+                          target="_blank"
+                          // The address was typed by the creator, not by us.
+                          rel="noopener noreferrer nofollow"
+                          aria-label={`${name} ${where} (opens in new tab)`}
+                          className={cn(
+                            linkChip,
+                            "transition-[border-color,color] duration-150 ease-hover hover:border-brand-cyan hover:text-brand-cyan",
+                            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                          )}
+                        >
+                          <SocialIcon aria-hidden className="size-[1.125rem]" />
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm">{blank("Your links")}</p>
+            )}
+          </div>
+        )}
+      </div>
     </article>
   );
 }

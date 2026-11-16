@@ -366,23 +366,34 @@ export function TaglineField({
 
 /* The link to one place the creator publishes. A plain text field, not
    type="url": the server adds a missing "https://", and the browser's own
-   URL check would refuse "instagram.com/name" before the form was sent. */
+   URL check would refuse "instagram.com/name" before the form was sent.
+
+   A place a follower count is kept for takes the full row, the link with
+   its count beside it (under it on a phone): the two are one answer, and
+   the count is asked for as soon as there is a link. */
 export function LinkField({
   social,
   value,
   onChange,
   error,
+  followers,
+  onFollowersChange,
+  followersError,
   readOnly,
 }: {
   social: (typeof CARD_SOCIALS)[number];
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  /** The count as typed. Only read for a place that keeps one. */
+  followers?: string;
+  onFollowersChange?: (value: string) => void;
+  followersError?: string;
   readOnly?: boolean;
 }) {
   const id = `socials-${social.value}`;
   const SocialIcon = SOCIAL_ICON[social.value];
-  return (
+  const link = (
     <div className="flex min-w-0 flex-col gap-2">
       <Label htmlFor={id}>
         <SocialIcon aria-hidden className="size-4 text-muted-foreground" />
@@ -409,6 +420,54 @@ export function LinkField({
           {error}
         </p>
       )}
+    </div>
+  );
+  if (!("audience" in social)) return link;
+
+  const countId = `followers-${social.value}`;
+  const linked = value.trim() !== "";
+  return (
+    <div
+      role="group"
+      aria-label={social.label}
+      className="grid min-w-0 gap-x-5 gap-y-2.5 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_11rem]"
+    >
+      {link}
+      <div className="flex min-w-0 flex-col gap-2">
+        {/* As tall as the link's label with its icon, so the two boxes line up. */}
+        <Label htmlFor={countId} className="min-h-4">
+          <span className="sr-only">{`${social.label} `}</span>
+          {social.audience}
+          {linked && !readOnly && (
+            <>
+              <RequiredMark />
+              <span className="sr-only">(required)</span>
+            </>
+          )}
+        </Label>
+        {/* Text, not type="number": a count is typed as "12,500" or pasted
+            as the "12.5K" the app shows, and the server reads either. */}
+        <Input
+          id={countId}
+          name={`followers.${social.value}`}
+          value={followers ?? ""}
+          onChange={(event) => onFollowersChange?.(event.target.value)}
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={20}
+          aria-required={(linked && !readOnly) || undefined}
+          aria-invalid={!!followersError}
+          aria-describedby={followersError ? `${countId}-error` : undefined}
+          placeholder="e.g. 12,500"
+          readOnly={readOnly}
+          className={cn(field, "tabular-nums", readOnly && readOnlyField)}
+        />
+        {followersError && (
+          <p id={`${countId}-error`} className={errorText}>
+            {followersError}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

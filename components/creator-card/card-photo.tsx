@@ -13,17 +13,34 @@ import { cn } from "@/lib/utils";
 
    With no picture, or one that will not load (a signature that lapsed, an
    avatar its owner deleted), it is the faint figure the People page uses
-   where a portrait is missing. */
-export function CardPhoto({ src: given, className }: { src: string | null | undefined; className?: string }) {
+   where a portrait is missing.
+
+   `round` is the small avatar beside the photo field; `cover` is the large
+   picture across the top of the card, cut from the stored square with the
+   face kept, since a portrait sits in its upper part. */
+export function CardPhoto({
+  src: given,
+  shape = "round",
+  className,
+}: {
+  src: string | null | undefined;
+  shape?: "round" | "cover";
+  className?: string;
+}) {
   const src = cardPhotoSrc(given);
   // The src that failed, so a new src gets its own chance.
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
 
-  const frame = cn("size-20 shrink-0 overflow-hidden rounded-full bg-paper-deep", className);
+  const cover = shape === "cover";
+  const frame = cn(
+    "shrink-0 overflow-hidden bg-paper-deep",
+    cover ? "aspect-[5/4] w-full rounded-xl" : "size-20 rounded-full",
+    className,
+  );
   if (!src || failedSrc === src) {
     return (
       <div aria-hidden className={cn(frame, "flex items-center justify-center")}>
-        <UserIcon className="size-8 text-foreground/25" />
+        <UserIcon className={cover ? "size-16 text-foreground/20" : "size-8 text-foreground/25"} />
       </div>
     );
   }
@@ -39,11 +56,11 @@ export function CardPhoto({ src: given, className }: { src: string | null | unde
       src={src}
       // Decorative: the name is printed right under it.
       alt=""
-      width={80}
-      height={80}
+      width={cover ? 512 : 80}
+      height={cover ? 410 : 80}
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src)}
-      className={cn(frame, "object-cover outline -outline-offset-1 outline-black/10")}
+      className={cn(frame, "object-cover outline -outline-offset-1 outline-black/10", cover && "h-auto object-[50%_30%]")}
     />
   );
 }

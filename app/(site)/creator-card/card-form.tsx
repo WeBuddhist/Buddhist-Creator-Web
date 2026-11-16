@@ -25,23 +25,32 @@ import {
   CARD_NAME_MAX,
   CARD_PATH,
   CARD_SOCIALS,
+  COUNTED_SOCIALS,
   CREATOR_TYPES,
+  readFollowerCount,
+  totalFollowers,
   type CardContent,
   type CardFieldErrors,
+  type CardFollowers,
   type CardSocial,
+  type CountedSocial,
 } from "@/lib/creator-card";
 import type { CreatorCardStatus } from "@/lib/db/schema";
-import { formatDate } from "@/lib/format";
+import { formatCount, formatDate } from "@/lib/format";
 import { loginUrl } from "@/lib/login-url";
 import { sessionEnded } from "@/lib/session-ended";
 import { cn } from "@/lib/utils";
 import { submitCardAction, type CardSaveResult } from "./actions";
 import { ChipGroup, LinkField, PhotoField, Section, TaglineField } from "./card-fields";
 
+/** What the form keeps of a card: what the card shows, and the follower
+    counts, which it does not. */
+type StoredCard = CardContent & { followers: CardFollowers };
+
 /** The creator's card as the page hands it over: what it says and where it
     stands. The reviewer's note comes only with a rejection. `photoUrl` is
     set only for a photo the creator uploaded. */
-export type FormCard = CardContent & {
+export type FormCard = StoredCard & {
   status: CreatorCardStatus;
   reviewNote: string | null;
   submittedAt: string | null;
@@ -57,9 +66,16 @@ type Values = {
   contentTypesOther: string;
   tagline: string;
   socials: Record<CardSocial, string>;
+  /** Each count as typed; a stored one shows with its thousands grouped. */
+  followers: Record<CountedSocial, string>;
 };
 
-function toValues(card: CardContent | null, accountName: string | null): Values {
+/** "YouTube, Instagram and TikTok". */
+const COUNTED_PLACES = new Intl.ListFormat("en-GB", { type: "conjunction" }).format(
+  COUNTED_SOCIALS.map(({ label }) => label),
+);
+
+function toValues(card: StoredCard | null, accountName: string | null): Values {
   // A country that is not on the list cannot be shown by the field: it
   // reads as unanswered, to be picked again.
   const country = card?.country && isCountry(card.country) ? card.country : "";
@@ -77,6 +93,12 @@ function toValues(card: CardContent | null, accountName: string | null): Values 
       CardSocial,
       string
     >,
+    followers: Object.fromEntries(
+      COUNTED_SOCIALS.map(({ value }) => {
+        const count = card?.followers[value];
+        return [value, count == null ? "" : formatCount(count)];
+      }),
+    ) as Record<CountedSocial, string>,
   };
 }
 
@@ -93,18 +115,21 @@ const TOAST_ID = "creator-card";
 
 /* Each answer that can be refused, in the order of the form, with the
    element to go to for it. A group of chips or links is reached through
-   its first input. */
+   its first input; a link is followed by its follower count. */
 const PROBLEM_FIELDS: readonly (readonly [keyof CardFieldErrors, string])[] = [
   ["photo", "[data-photo-button]"],
   ["displayName", "#displayName"],
   ["country", "#country"],
   ["creatorType", 'input[name="creatorType"]'],
+  ["tagline", "#tagline"],
   ["languages", 'input[name="languages"]'],
   ["languagesOther", "#languagesOther"],
   ["contentTypes", 'input[name="contentTypes"]'],
   ["contentTypesOther", "#contentTypesOther"],
-  ["tagline", "#tagline"],
-  ...CARD_SOCIALS.map(({ value }) => [`socials.${value}`, `#socials-${value}`] as const),
+  ...CARD_SOCIALS.flatMap((social): (readonly [keyof CardFieldErrors, string])[] => [
+    [`socials.${social.value}`, `#socials-${social.value}`],
+    ...("audience" in social ? [[`followers.${social.value}`, `#followers-${social.value}`] as const] : []),
+  ]),
   ["socials", `#socials-${CARD_SOCIALS[0].value}`],
 ];
 
@@ -137,6 +162,15 @@ function showSignedOut() {
 function showSaved(outcome: SaveOutcome, from: CreatorCardStatus | null, banner: HTMLElement | null) {
   if (outcome === "unchanged") {
     toast("No changes to save", { id: TOAST_ID, description: "Your card is as it was." });
+    return;
+  }
+  // New follower counts alone are kept without a review, so the card
+  // stands where it stood and the banner has nothing new to say.
+  if (outcome === "counts") {
+    toast.success("Follower counts updated", {
+      id: TOAST_ID,
+      description: from === "approved" ? "Your card stays approved." : "Your card is still in review.",
+    });
     return;
   }
   // A rejected card that was sent again is a resubmission, changed or not.
@@ -259,6 +293,15 @@ export function CardForm({
   const photoUrl =
     photo.kind === "chosen" ? photo.url : photo.kind === "removed" ? accountPicture : (uploadedUrl ?? accountPicture);
   const preview: CardContent = { ...values, photoUrl };
+  // The counts that read as numbers so far, added up as the table will.
+  const total = totalFollowers(
+    Object.fromEntries(
+      COUNTED_SOCIALS.map(({ value }) => {
+        const count = readFollowerCount(values.followers[value]);
+        return [value, typeof count === "number" ? count : null];
+      }),
+    ),
+  );
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -353,6 +396,12 @@ export function CardForm({
             error={errors.creatorType?.[0]}
             disabled={!editable}
           />
+          <TaglineField
+            value={values.tagline}
+            onChange={(v) => set("tagline", v)}
+            error={errors.tagline?.[0]}
+            readOnly={!editable}
+          />
         </Section>
 
         <Section title="Your work">
@@ -386,18 +435,17 @@ export function CardForm({
             error={errors.contentTypes?.[0] ?? errors.contentTypesOther?.[0]}
             disabled={!editable}
           />
-          <TaglineField
-            value={values.tagline}
-            onChange={(v) => set("tagline", v)}
-            error={errors.tagline?.[0]}
-            readOnly={!editable}
-          />
         </Section>
 
         <Section
           title="Where to find you"
           description={
-            editable ? "Add the link for each place you publish. One is enough; add as many as you use." : undefined
+            editable
+              ? `Add the link for each place you publish. One is enough; add as many as you use. For ${COUNTED_PLACES}, also tell us how many people follow you there.${
+                  // Only worth saying once there is a review to send it back to.
+                  exists ? " You can update these numbers at any time; that does not send your card back for review." : ""
+                }`
+              : undefined
           }
           required
         >
@@ -407,24 +455,55 @@ export function CardForm({
             aria-label="Your links"
             aria-invalid={!!errors.socials || undefined}
             aria-describedby={errors.socials ? "socials-error" : undefined}
-            className="grid gap-x-5 gap-y-4 sm:grid-cols-2"
+            // On a phone a count sits under its link, so the places stand
+            // further apart than the two halves of one.
+            className="grid gap-x-5 gap-y-6 sm:grid-cols-2 sm:gap-y-4"
           >
             {/* Read-only, only the links the card has: an empty box with a
                 sample address in it would read as one of them. */}
-            {CARD_SOCIALS.filter((social) => editable || values.socials[social.value]).map((social) => (
-              <LinkField
-                key={social.value}
-                social={social}
-                readOnly={!editable}
-                value={values.socials[social.value]}
-                onChange={(v) => set("socials", { ...values.socials, [social.value]: v }, `socials.${social.value}`)}
-                error={errors[`socials.${social.value}`]?.[0]}
-              />
-            ))}
+            {CARD_SOCIALS.filter((social) => editable || values.socials[social.value]).map((social) => {
+              const counted = "audience" in social ? social.value : null;
+              return (
+                <LinkField
+                  key={social.value}
+                  social={social}
+                  readOnly={!editable}
+                  value={values.socials[social.value]}
+                  // A count's message can be about its link, so a changed
+                  // link answers both.
+                  onChange={(v) =>
+                    set(
+                      "socials",
+                      { ...values.socials, [social.value]: v },
+                      `socials.${social.value}`,
+                      `followers.${social.value}`,
+                    )
+                  }
+                  error={errors[`socials.${social.value}`]?.[0]}
+                  followers={counted ? values.followers[counted] : undefined}
+                  onFollowersChange={
+                    counted
+                      ? (v) => set("followers", { ...values.followers, [counted]: v }, `followers.${counted}`)
+                      : undefined
+                  }
+                  followersError={counted ? errors[`followers.${counted}`]?.[0] : undefined}
+                />
+              );
+            })}
           </fieldset>
           {errors.socials && (
             <p id="socials-error" className={errorText}>
               {errors.socials[0]}
+            </p>
+          )}
+          {/* The figure creators are ranked on, added up as it is typed. */}
+          {total !== null && (
+            <p className="flex items-baseline justify-between gap-4 border-t border-border pt-5 text-sm">
+              <span className="min-w-0">
+                <span className="font-medium">Total followers</span>
+                <span className="block text-muted-foreground sm:ms-2 sm:inline">{COUNTED_PLACES} together</span>
+              </span>
+              <span className="font-display text-2xl leading-none tabular-nums">{formatCount(total)}</span>
             </p>
           )}
         </Section>
@@ -448,7 +527,7 @@ export function CardForm({
           data-action-bar
           className={cn(cardFrame, "sticky bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30")}
         >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-transparent bg-card px-4 py-3 shadow-float sm:flex-nowrap">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3 sm:flex-nowrap">
             {editable ? (
               <React.Fragment key="editing">
                 <Button
@@ -508,12 +587,15 @@ export function CardForm({
         </div>
       </div>
 
-      {/* Beside the form on a wide screen, where the card stays in view. */}
+      {/* Beside the form on a wide screen, where the card stays in view
+          when the window is tall enough to show all of it (about 53rem
+          with the header and the label above it). On a shorter one it
+          scrolls with the page, or its links would stay below the fold. */}
       <CardPreview
         id="card-preview-beside"
         card={preview}
         editable={editable}
-        className="hidden lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:block"
+        className="hidden lg:top-[calc(var(--header-height)+1.5rem)] lg:block lg:[@media(min-height:53rem)]:sticky"
       />
     </form>
   );
@@ -545,7 +627,7 @@ function CardPreview({
       <CreatorCard
         card={card}
         preview={editable}
-        className="mt-3 shadow-[0_1px_2px_rgb(18_34_42/0.04),0_12px_32px_-16px_rgb(18_34_42/0.18)]"
+        className="mt-3"
       />
       {editable && <p className="mt-3 text-sm leading-[1.5] text-muted-foreground">It fills in as you answer.</p>}
     </aside>

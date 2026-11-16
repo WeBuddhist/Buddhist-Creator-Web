@@ -1,5 +1,6 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql, type SQL } from "drizzle-orm";
 import {
+  bigint,
   check,
   index,
   integer,
@@ -264,6 +265,23 @@ export const creatorCards = pgTable(
     photoKey: text("photo_key"),
     /** The link for each place the creator publishes, keyed by its slug. */
     socials: jsonb("socials").$type<CardSocials>().default({}).notNull(),
+    /* How many people follow the creator in each place a count is kept
+       for (COUNTED_SOCIALS in lib/creator-card.ts). The creator types
+       them in for now; null is a figure the card does not have. They are
+       columns rather than keys of `socials` so creators can be ranked in
+       SQL, on one place or on all of them. They are not part of what a
+       review reads: changing one moves neither `status` nor `revision`. */
+    youtubeFollowers: integer("youtube_followers"),
+    instagramFollowers: integer("instagram_followers"),
+    tiktokFollowers: integer("tiktok_followers"),
+    /** The counts added together, kept by the database so it cannot fall
+        out of step with them. A card with no count has 0. */
+    totalFollowers: bigint("total_followers", { mode: "number" })
+      .generatedAlwaysAs(
+        (): SQL =>
+          sql`coalesce(${creatorCards.youtubeFollowers}, 0)::bigint + coalesce(${creatorCards.instagramFollowers}, 0) + coalesce(${creatorCards.tiktokFollowers}, 0)`,
+      )
+      .notNull(),
 
     // Review. The note is for the creator: they see it with a rejection.
     reviewNote: text("review_note"),
@@ -280,6 +298,10 @@ export const creatorCards = pgTable(
     index("creator_cards_status_idx").on(table.status, table.submittedAt),
     check("creator_cards_display_name_check", sql`char_length(${table.displayName}) between 1 and 80`),
     check("creator_cards_tagline_check", sql`char_length(${table.tagline}) <= 140`),
+    check(
+      "creator_cards_followers_check",
+      sql`${table.youtubeFollowers} >= 0 and ${table.instagramFollowers} >= 0 and ${table.tiktokFollowers} >= 0`,
+    ),
   ],
 );
 

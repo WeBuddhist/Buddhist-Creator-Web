@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { card, cardInner, label } from "@/components/convention/section-heading";
 import { requireUser } from "@/lib/auth";
 import { CARD_FORM, CARD_PATH } from "@/lib/creator-card";
-import { getMyCard } from "@/lib/creator-cards";
+import { cardFollowers, getMyCard } from "@/lib/creator-cards";
 import type { CreatorCard } from "@/lib/db/schema";
 import { presignedGetUrl } from "@/lib/s3";
 import { cn } from "@/lib/utils";
@@ -79,6 +79,7 @@ async function fromRow(row: CreatorCard): Promise<FormCard> {
     contentTypesOther: row.contentTypesOther,
     tagline: row.tagline,
     socials: row.socials,
+    followers: cardFollowers(row),
   };
 }
 

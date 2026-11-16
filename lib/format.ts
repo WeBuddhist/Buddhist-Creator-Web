@@ -29,3 +29,10 @@ export function formatBytes(bytes: number | null | undefined) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+const wholeNumber = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+/** A count with its thousands grouped: 12,500. */
+export function formatCount(value: number) {
+  return wholeNumber.format(value);
+}

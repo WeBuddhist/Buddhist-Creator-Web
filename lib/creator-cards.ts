@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { CreatorCard, CreatorCardStatus } from "@/lib/db/schema";
-import type { CardValues } from "@/lib/creator-card";
+import { COUNTED_SOCIALS, type CardFollowers, type CardValues, type CountedSocial } from "@/lib/creator-card";
 
 /* Everything that reads or writes creator cards. Callers pass the current
    user in and check the role; the status rules live here, not in the UI.
@@ -11,7 +11,13 @@ import type { CardValues } from "@/lib/creator-card";
    A card's content only ever reaches `approved` through a review of that
    exact content: a creator's change puts the card back to pending and
    moves its revision on, and a review that read an older revision is
-   refused. */
+   refused.
+
+   The follower counts are the one part of a card that is not reviewed.
+   The review is there to say that this is a creator and the card is
+   theirs, and a number says nothing about that; it is kept to rank
+   creators by. So a changed count is saved where the card stands, and
+   neither the status nor the revision moves. */
 
 const { creatorCards, users } = schema;
 
@@ -33,6 +39,38 @@ export class CardChanged extends Error {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Follower counts                                                         */
+/* ---------------------------------------------------------------------- */
+
+/* The card's content names a count by its place ("youtube"); the table
+   keeps each in a column of its own. */
+const FOLLOWER_COLUMN = {
+  youtube: "youtubeFollowers",
+  instagram: "instagramFollowers",
+  tiktok: "tiktokFollowers",
+} as const satisfies Record<CountedSocial, keyof CreatorCard>;
+
+type FollowerColumns = Record<(typeof FOLLOWER_COLUMN)[CountedSocial], number | null>;
+
+/** A stored card's follower counts, keyed by place. */
+export function cardFollowers(card: FollowerColumns): CardFollowers {
+  return Object.fromEntries(
+    COUNTED_SOCIALS.map(({ value }) => [value, card[FOLLOWER_COLUMN[value]]]),
+  ) as CardFollowers;
+}
+
+function followerColumns(followers: CardFollowers): FollowerColumns {
+  return Object.fromEntries(
+    COUNTED_SOCIALS.map(({ value }) => [FOLLOWER_COLUMN[value], followers[value]]),
+  ) as FollowerColumns;
+}
+
+/** A card's content as the table's columns. */
+function cardColumns({ followers, ...content }: CardValues) {
+  return { ...content, ...followerColumns(followers) };
+}
+
+/* ---------------------------------------------------------------------- */
 /* Creator                                                                 */
 /* ---------------------------------------------------------------------- */
 
@@ -41,9 +79,13 @@ export async function getMyCard(userId: string): Promise<CreatorCard | null> {
   return row ?? null;
 }
 
-/* Arrays compare in order, so both sides are in the order they are stored. */
+const sameEntries = (a: object, b: object) =>
+  JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
+
+/* What the team reviews: everything but the follower counts. Arrays
+   compare in order, so both sides are in the order they are stored. */
 function sameContent(card: CreatorCard, values: CardValues) {
-  const stored: CardValues = {
+  const stored: Omit<CardValues, "followers"> = {
     displayName: card.displayName,
     country: card.country ?? "",
     creatorType: card.creatorType as CardValues["creatorType"],
@@ -54,15 +96,17 @@ function sameContent(card: CreatorCard, values: CardValues) {
     tagline: card.tagline ?? "",
     socials: card.socials,
   };
-  const keys = Object.keys(stored) as (keyof CardValues)[];
+  const keys = Object.keys(stored) as (keyof typeof stored)[];
   return keys.every((key) =>
     key === "socials"
-      ? JSON.stringify(Object.entries(stored.socials).sort()) === JSON.stringify(Object.entries(values.socials).sort())
+      ? sameEntries(stored.socials, values.socials)
       : JSON.stringify(stored[key]) === JSON.stringify(values[key]),
   );
 }
 
-export type SubmitOutcome = "created" | "resubmitted" | "unchanged";
+/** What a save did: made the card, sent a changed one back for review,
+    kept new follower counts without a review ("counts"), or nothing. */
+export type SubmitOutcome = "created" | "resubmitted" | "counts" | "unchanged";
 
 /** What a save does about the card's photo: leave it, go back to the
     picture from the sign-in account, or take a newly uploaded one, whose
@@ -84,6 +128,9 @@ export function cardPhotoKey(userId: string, extension: string) {
     nothing, so an approved card is not put back in the queue by an idle
     press of the button; a rejected one may be sent again as it is.
 
+    The follower counts stand apart: when they are all that changed, they
+    are saved and the card stays as it was, approved or in review.
+
     The caller has validated `values` and, for a new photo, has already
     stored it. `replacedPhotoKey` is the object the card no longer points
     at, for the caller to delete once this has committed. */
@@ -101,7 +148,7 @@ export async function submitMyCard(
         .insert(creatorCards)
         .values({
           userId,
-          ...values,
+          ...cardColumns(values),
           photoKey: photo.kind === "replace" ? photo.key : null,
           status: "pending",
           submittedAt: now,
@@ -117,12 +164,20 @@ export async function submitMyCard(
     const photoKey = photo.kind === "keep" ? current.photoKey : photo.kind === "replace" ? photo.key : null;
     const samePhoto = photoKey === current.photoKey;
     if (current.status !== "rejected" && samePhoto && sameContent(current, values)) {
-      return { card: current, outcome: "unchanged", replacedPhotoKey: null };
+      if (sameEntries(cardFollowers(current), values.followers)) {
+        return { card: current, outcome: "unchanged", replacedPhotoKey: null };
+      }
+      const [counted] = await tx
+        .update(creatorCards)
+        .set({ ...followerColumns(values.followers), updatedAt: now })
+        .where(eq(creatorCards.id, current.id))
+        .returning();
+      return { card: counted, outcome: "counts", replacedPhotoKey: null };
     }
     const [updated] = await tx
       .update(creatorCards)
       .set({
-        ...values,
+        ...cardColumns(values),
         photoKey,
         status: "pending",
         revision: current.revision + 1,

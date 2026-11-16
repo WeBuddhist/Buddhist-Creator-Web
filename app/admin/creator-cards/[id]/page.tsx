@@ -10,13 +10,14 @@ import { requireRole } from "@/lib/auth";
 import {
   CARD_CONTENT_TYPES,
   CARD_LANGUAGES,
+  cardAudiences,
   cardLabels,
   cardLinks,
   cardPhotoSrc,
   creatorTypeLabel,
 } from "@/lib/creator-card";
-import { getCard } from "@/lib/creator-cards";
-import { formatDateTime } from "@/lib/format";
+import { cardFollowers, getCard } from "@/lib/creator-cards";
+import { formatCount, formatDateTime } from "@/lib/format";
 import { presignedGetUrl } from "@/lib/s3";
 import { ReviewActions } from "./review-actions";
 
@@ -35,7 +36,9 @@ const link =
 
 /* One card, for review: what it says, how it will look, and the decision.
    The links are the part most worth opening before approving, so each is
-   spelled out in full rather than hidden behind an icon. */
+   spelled out in full rather than hidden behind an icon. The follower
+   counts are the creator's own figures, each listed under the link it can
+   be checked against. */
 async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]">["params"] }) {
   const viewer = await requireRole("admin", "/admin/creator-cards");
   const { id } = await params;
@@ -46,6 +49,7 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
   const languages = cardLabels(CARD_LANGUAGES, card.languages, card.languagesOther);
   const content = cardLabels(CARD_CONTENT_TYPES, card.contentTypes, card.contentTypesOther);
   const links = cardLinks(card.socials);
+  const audiences = cardAudiences(cardFollowers(card));
 
   // The creator's own upload, or failing that the picture from their
   // sign-in account, which is what the card shows by default.
@@ -76,18 +80,34 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
     { label: "Publishes in", value: languages.length > 0 ? <Chips items={languages} /> : null },
     { label: "Content", value: content.length > 0 ? <Chips items={content} /> : null },
     { label: "One line", value: card.tagline },
-    ...links.map(({ label, url }) => ({
-      label,
-      value: (
-        <a href={url} target="_blank" rel="noopener noreferrer nofollow" className={link}>
-          <span className="min-w-0 wrap-anywhere">{url}</span>
-          <ArrowUpRightIcon aria-hidden weight="bold" className="size-3 shrink-0 self-center text-muted-foreground" />
-          <span className="sr-only">(opens in new tab)</span>
-        </a>
-      ),
-    })),
+    ...links.flatMap(({ value: place, label, url }) => {
+      const audience = audiences.find((counted) => counted.value === place);
+      return [
+        {
+          label,
+          value: (
+            <a href={url} target="_blank" rel="noopener noreferrer nofollow" className={link}>
+              <span className="min-w-0 wrap-anywhere">{url}</span>
+              <ArrowUpRightIcon
+                aria-hidden
+                weight="bold"
+                className="size-3 shrink-0 self-center text-muted-foreground"
+              />
+              <span className="sr-only">(opens in new tab)</span>
+            </a>
+          ),
+        },
+        ...(audience ? [{ label: audience.label, value: <span className="tabular-nums">{audience.count}</span> }] : []),
+      ];
+    }),
   ];
   if (links.length === 0) answers.push({ label: "Links", value: null });
+  if (audiences.length > 0) {
+    answers.push({
+      label: "Total followers",
+      value: <span className="font-medium tabular-nums">{formatCount(card.totalFollowers)}</span>,
+    });
+  }
 
   const account: Fact[] = card.user
     ? [
