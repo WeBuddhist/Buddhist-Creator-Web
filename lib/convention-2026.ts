@@ -126,6 +126,7 @@ export const COMMUNITY_DAYS = {
               creator: "Quinthup Pema Bhutia",
               topic: "The story of my content creation journey",
               language: "Hindi & English",
+              videoHref: "https://youtu.be/e9c4DaBL1BE",
             },
             {
               creator: "Munpa Rabsel – Chhering Wangmo",
@@ -209,11 +210,13 @@ export const COMMUNITY_DAYS = {
               creator: "Aachen Tenzin Thupten",
               topic: "My journey into the world of digital creation",
               language: "English & Tibetan",
+              videoHref: "https://youtu.be/OOW9SI__Flg",
             },
             {
               creator: "Tashi Chosgon",
               topic: "If the Buddhas were online today, what would they teach?",
               language: "English",
+              videoHref: "https://youtu.be/jLjGsA2kOCE",
             },
             {
               creator: "Karmavajra Dhammachari",
