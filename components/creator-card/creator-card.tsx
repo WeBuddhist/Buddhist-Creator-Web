@@ -4,6 +4,7 @@ import {
   InstagramLogoIcon,
   MapPinIcon,
   TiktokLogoIcon,
+  UsersIcon,
   XLogoIcon,
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
@@ -19,6 +20,7 @@ import {
   type CardContent,
   type CardSocial,
 } from "@/lib/creator-card";
+import { formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const SOCIAL_ICON: Record<CardSocial, Icon> = {
@@ -38,7 +40,8 @@ const linkChip =
    it. One white card on a hairline and no shadow, the creator's photo large
    across the top, inset so its corners follow the card's, then the name in
    the serif and brand cyan for the line that says what kind of creator
-   this is.
+   this is. Under the name, the country and how many people follow the
+   creator, all their counted places together.
 
    Anything the card does not have is left out, so a card the team made
    from a name and a country is still a whole card. With `preview`, as
@@ -71,6 +74,7 @@ export function CreatorCard({
     card.contentTypesOther,
   );
   const links = cardLinks(card.socials);
+  const followers = card.totalFollowers ?? 0;
   const blank = (text: string) =>
     preview ? <span className="text-muted-foreground/70">{text}</span> : null;
 
@@ -101,10 +105,29 @@ export function CreatorCard({
         <h3 className="mt-1.5 text-balance wrap-anywhere font-display text-[1.75rem] leading-[1.12]">
           {name || blank("Your name")}
         </h3>
-        {(card.country || preview) && (
-          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPinIcon aria-hidden weight="bold" className="size-4 shrink-0" />
-            {card.country || blank("Your country")}
+        {/* One line while there is room; a long country puts the
+            followers on the next. */}
+        {(card.country || followers > 0 || preview) && (
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            {(card.country || preview) && (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <MapPinIcon aria-hidden weight="bold" className="size-4 shrink-0" />
+                <span className="min-w-0 wrap-anywhere">
+                  {card.country || blank("Your country")}
+                </span>
+              </span>
+            )}
+            {followers > 0 && (
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
+                <UsersIcon aria-hidden weight="bold" className="size-4 shrink-0" />
+                <span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatCount(followers)}
+                  </span>{" "}
+                  {followers === 1 ? "follower" : "followers"}
+                </span>
+              </span>
+            )}
           </p>
         )}
         {(tagline || preview) && (

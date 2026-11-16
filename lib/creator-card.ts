@@ -178,6 +178,9 @@ export type CardContent = {
   contentTypesOther: string | null;
   tagline: string | null;
   socials: Record<string, string | undefined>;
+  /** The follower counts added together. The card shows it once it is
+      above zero: "0 followers" tells a reader nothing. */
+  totalFollowers?: number | null;
 };
 
 /** A multi-choice answer as the card prints it: labels, in the list's own

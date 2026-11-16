@@ -292,7 +292,6 @@ export function CardForm({
   const uploadedUrl = card?.photoUrl ?? null;
   const photoUrl =
     photo.kind === "chosen" ? photo.url : photo.kind === "removed" ? accountPicture : (uploadedUrl ?? accountPicture);
-  const preview: CardContent = { ...values, photoUrl };
   // The counts that read as numbers so far, added up as the table will.
   const total = totalFollowers(
     Object.fromEntries(
@@ -302,6 +301,7 @@ export function CardForm({
       }),
     ),
   );
+  const preview: CardContent = { ...values, photoUrl, totalFollowers: total };
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
