@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ConventionHero } from "@/components/convention/hero";
+import { Highlights } from "@/components/convention/highlights";
 import { CommunityDays, Program } from "@/components/convention/program";
 import { Masterclass } from "@/components/convention/masterclass";
 import { Awards } from "@/components/convention/awards";
@@ -17,6 +18,7 @@ export default function Convention2026Page() {
     <main className="flex flex-1 flex-col">
       <ConventionHero />
       <Collaborators />
+      <Highlights />
       <Program />
       <CommunityDays />
       <Documentary />

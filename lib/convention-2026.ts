@@ -17,6 +17,9 @@ import avatarSagarGautam from "@/public/convention/2026/avatar-sagar-gautam.webp
 import avatarTsewangDorje from "@/public/convention/2026/avatar-tsewang-dorje.webp";
 import avatarPallaviDeshmukh from "@/public/convention/2026/avatar-pallavi-deshmukh.webp";
 import avatarSonamDolma from "@/public/convention/2026/avatar-sonam-dolma.webp";
+import talkQuinthupPemaBhutia from "@/public/convention/2026/talk-quinthup-pema-bhutia.webp";
+import talkAachenTenzinThupten from "@/public/convention/2026/talk-aachen-tenzin-thupten.webp";
+import talkTashiChosgon from "@/public/convention/2026/talk-tashi-chosgon.webp";
 
 export const CONVENTION = {
   year: 2026,
@@ -44,6 +47,38 @@ export const HERO_STATS = [
   { value: "110", label: "Creators" },
   { value: "10", label: "Countries" },
 ] as const;
+
+/* What there is to watch, shown straight under the hero so nobody has to
+   scroll through the program to find it. The three lightning talks that
+   were recorded, each with its title as published on YouTube and the
+   video's own thumbnail as the poster. The same three videos are linked
+   from their rows in the lightning-talk schedule below. */
+export const HIGHLIGHTS = {
+  eyebrow: "Watch",
+  title: "Highlights",
+  description:
+    "Three lightning talks recorded during the community days, and the video messages that opened the convention.",
+  talks: [
+    {
+      youtubeId: "e9c4DaBL1BE",
+      title: "The art of vlogging",
+      creator: "Quinthup Pema Bhutia",
+      poster: talkQuinthupPemaBhutia,
+    },
+    {
+      youtubeId: "OOW9SI__Flg",
+      title: "My journey into the world of digital creation",
+      creator: "Aachen Tenzin Thupten",
+      poster: talkAachenTenzinThupten,
+    },
+    {
+      youtubeId: "jLjGsA2kOCE",
+      title: "If the Buddha were online today, what would he teach?",
+      creator: "Tashi Chosgon",
+      poster: talkTashiChosgon,
+    },
+  ],
+} as const;
 
 export const PROGRAM = {
   eyebrow: "The Program",

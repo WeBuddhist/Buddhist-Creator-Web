@@ -92,26 +92,29 @@ export function CommunityDays() {
 
           <Block title="Keynote addresses">
             {/* Speakers as a disclosure list with the first open, so the
-                names scan as one column and each address reads on demand. */}
+                names scan as one column and each address reads on demand.
+                The link to a video message sits outside the panel, under
+                the name, so it shows whether or not the row is open. */}
             <Accordion defaultValue={[keynotes[0].name]} className="-mt-4">
               {keynotes.map(({ name, role, body, videoHref }) => (
                 <AccordionItem key={name} value={name}>
-                  <AccordionTrigger>
+                  <AccordionTrigger className={cn(videoHref && "pb-3")}>
                     <span className="flex flex-col">
                       <span className="font-medium text-foreground">{name}</span>
                       <span className="mt-0.5 text-sm text-muted-foreground">{role}</span>
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent>
+                  <AccordionContent className={cn(videoHref && "pb-3")}>
                     <p className="max-w-[58ch] text-pretty text-sm leading-[1.5] text-muted-foreground">
                       {body}
                     </p>
-                    {videoHref && (
-                      <InstagramLink href={videoHref} className="mt-3">
-                        Watch the video message
-                      </InstagramLink>
-                    )}
                   </AccordionContent>
+                  {videoHref && (
+                    <InstagramLink href={videoHref} className="mb-5">
+                      Watch the video message
+                      <span className="sr-only">from {name}</span>
+                    </InstagramLink>
+                  )}
                 </AccordionItem>
               ))}
             </Accordion>

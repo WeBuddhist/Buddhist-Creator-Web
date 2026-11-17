@@ -323,6 +323,15 @@ body:has([data-admin]) {
  * Everything else is Instrument Sans (font-sans): navigation, labels,
  * body copy, forms.
  */
+/* Words set straight on a photograph. The shade over the picture is kept
+   light so the picture reads, and each line carries its own soft halo
+   of ink instead: wide and faint enough not to read as a drop shadow. */
+@utility text-on-photo {
+  text-shadow:
+    0 0.0625rem 0.125rem rgb(4 20 27 / 0.45),
+    0 0 1.25rem rgb(4 20 27 / 0.55);
+}
+
 @utility font-display {
   font-family: var(--font-newsreader), ui-serif, Georgia, serif;
   font-weight: 400;

@@ -38,16 +38,16 @@ export function Hero() {
         <div
           aria-hidden
           // Below the desktop width the introduction sits over the crowd, not
-          // the ground, so the bottom shade starts higher and is all but
-          // solid by the time the text begins.
-          className="absolute inset-0 -z-10 bg-linear-to-b from-[#04202c]/80 via-[#04202c]/10 via-30% to-[#04141b]/92 to-56% lg:via-50% lg:to-100%"
+          // the ground, so the bottom shade starts higher and is at full
+          // strength by the time the text begins.
+          className="absolute inset-0 -z-10 bg-linear-to-b from-[#04202c]/55 via-[#04202c]/0 via-30% to-[#04141b]/72 to-56% lg:via-50% lg:to-100%"
         />
 
         <div className="flex flex-col items-center px-4 pt-[calc(var(--header-height)+clamp(1.5rem,5svh,3.5rem))] text-center">
-          <p className={cn(label, "text-gold-soft")}>A global sangha of creators</p>
+          <p className={cn(label, "text-gold-soft text-on-photo")}>A global sangha of creators</p>
           <h1
             id="hero-title"
-            className="mt-4 text-balance font-display text-[clamp(3.75rem,18vw,9rem)] leading-[0.92] tracking-[-0.03em] lg:whitespace-nowrap lg:text-[clamp(7rem,11vw,13.5rem)]"
+            className="mt-4 text-balance font-display text-on-photo text-[clamp(3.75rem,18vw,9rem)] leading-[0.92] tracking-[-0.03em] lg:whitespace-nowrap lg:text-[clamp(7rem,11vw,13.5rem)]"
           >
             {SITE_NAME}
           </h1>
@@ -55,7 +55,7 @@ export function Hero() {
 
         <div className="mt-auto flex flex-col gap-6 px-5 pt-10 pb-5 sm:gap-8 sm:px-7 sm:pt-16 sm:pb-7 lg:flex-row lg:items-end lg:justify-between lg:px-10 lg:pb-10">
           <div className="max-w-lg">
-            <p className="text-pretty text-base leading-[1.6] text-white/90 sm:text-xl sm:leading-[1.5]">
+            <p className="text-pretty text-base leading-[1.6] text-white/90 text-on-photo sm:text-xl sm:leading-[1.5]">
               A worldwide community of monastics, practitioners, and storytellers
               using digital media to carry the Dharma further than ever before.
             </p>
