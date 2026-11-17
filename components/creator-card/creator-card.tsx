@@ -9,6 +9,7 @@ import {
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
+import type * as React from "react";
 import {
   framedCard,
   framedCardInner,
@@ -59,10 +60,15 @@ const linkChip =
 export function CreatorCard({
   card,
   preview = false,
+  footer,
   className,
 }: {
   card: CardContent;
   preview?: boolean;
+  /** A last line inside the card, under a rule: the directory's way to
+      claim a card nobody owns. It sits at the foot of the card however
+      tall the row makes it. */
+  footer?: React.ReactNode;
   className?: string;
 }) {
   const name = card.displayName.trim();
@@ -84,11 +90,18 @@ export function CreatorCard({
     preview ? <span className="text-muted-foreground/70">{text}</span> : null;
 
   return (
-    <article className={cn(framedCard, "text-foreground", className)}>
-      <div className={cn(framedCardInner, "flex flex-col p-1.5")}>
+    <article className={cn(framedCard, "flex flex-col text-foreground", className)}>
+      <div className={cn(framedCardInner, "flex flex-1 flex-col p-1.5")}>
         {/* Radius 6px = the surface's 12px less its 6px of padding. */}
-        <CardPhoto src={card.photoUrl} shape="cover" className="rounded-md" />
-        <div className="flex flex-col px-3.5 pt-4 pb-4 sm:px-4">
+        <CardPhoto
+          src={card.photoUrl}
+          shape={card.photoStyle === "avatar" ? "avatar" : "cover"}
+          // Beside the form the empty space keeps the figure: it stands
+          // for a photo still to be chosen.
+          name={preview ? undefined : name}
+          className="rounded-md"
+        />
+        <div className="flex flex-1 flex-col px-3.5 pt-4 pb-4 sm:px-4">
           {(type || preview) && (
             <p
               className={cn(
@@ -223,6 +236,14 @@ export function CreatorCard({
               ) : (
                 <p className="text-sm">{blank("Your links")}</p>
               )}
+            </div>
+          )}
+
+          {footer && (
+            // mt-auto after pt: the rule keeps its gap from what is above
+            // it and takes whatever height the row has to spare.
+            <div className="mt-auto pt-4">
+              <div className="border-t border-border pt-3.5">{footer}</div>
             </div>
           )}
         </div>

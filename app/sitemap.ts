@@ -10,7 +10,8 @@ const ROUTES = [
   "/program",
   "/convention/2026",
   "/convention/2027",
-  "/people",
+  "/creators",
+  "/team",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

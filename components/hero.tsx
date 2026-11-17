@@ -77,7 +77,7 @@ export function Hero() {
                 size="pill"
                 nativeButton={false}
                 className={ghostButton}
-                render={<Link href="/people" />}
+                render={<Link href="/creators" />}
               >
                 Meet our creators
               </Button>

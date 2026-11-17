@@ -57,6 +57,41 @@
       "when": 1794839371493,
       "tag": "0007_creator_card_followers",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794889565993,
+      "tag": "0008_card_claims_and_facebook",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794890035031,
+      "tag": "0009_creators_from_sheet",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794892581585,
+      "tag": "0010_creator_links_from_sheet",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794894052465,
+      "tag": "0011_creators_with_links_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794894398421,
+      "tag": "0012_four_creators_back",
+      "breakpoints": true
     }
   ]
 }

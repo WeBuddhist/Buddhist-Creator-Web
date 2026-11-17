@@ -306,7 +306,14 @@ export function CardForm({
       }),
     ),
   );
-  const preview: CardContent = { ...values, photoUrl, totalFollowers: total };
+  const preview: CardContent = {
+    ...values,
+    photoUrl,
+    // The stored photo keeps its own way of being shown; a newly chosen
+    // one, or the account's picture, is an ordinary cover.
+    photoStyle: photo.kind === "untouched" && uploadedUrl ? card?.photoStyle : undefined,
+    totalFollowers: total,
+  };
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

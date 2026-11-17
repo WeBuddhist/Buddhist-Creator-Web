@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CardStatusBadge, CARD_STATUS_LABEL } from "@/components/admin/card-status-badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { Pagination } from "@/components/admin/pagination";
+import { Pagination } from "@/components/pagination";
 import { panel } from "@/components/admin/panel";
 import { requireRole } from "@/lib/auth";
 import { creatorTypeLabel } from "@/lib/creator-card";
@@ -37,7 +37,7 @@ export default function CreatorCardsPage(props: PageProps<"/admin/creator-cards"
     <>
       <PageHeader
         title="Creator cards"
-        description="Cards creators have sent in, newest first. Open one to read it and approve or reject it. A card a creator changes comes back here as pending."
+        description="Cards creators have sent in, and the ones our team made for creators it knows, newest first. Open one to read it and approve or reject it. A card a creator changes comes back here as pending."
         className="mb-6"
       />
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading creator cards…</p>}>

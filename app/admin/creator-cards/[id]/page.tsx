@@ -14,6 +14,7 @@ import {
   cardLabels,
   cardLinks,
   cardPhotoSrc,
+  cardPhotoStyle,
   creatorTypeLabel,
 } from "@/lib/creator-card";
 import { cardFollowers, getCard } from "@/lib/creator-cards";
@@ -51,11 +52,15 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
   const links = cardLinks(card.socials);
   const audiences = cardAudiences(cardFollowers(card));
 
-  // The creator's own upload, or failing that the picture from their
-  // sign-in account, which is what the card shows by default.
+  // The card's own photo (the creator's upload, or the profile picture the
+  // team took for a card it made), or failing that the picture from the
+  // owner's sign-in account, which is what the card shows by default.
   const photoUrl = await presignedGetUrl(card.photoKey ?? card.user?.picture);
+  const photoStyle = cardPhotoStyle(card.photoKey);
   const photoSource = card.photoKey
-    ? "Uploaded by the creator"
+    ? photoStyle === "avatar"
+      ? "Taken by our team from the creator's public profile"
+      : "Uploaded by the creator"
     : card.user?.picture
       ? "The picture from their sign-in account"
       : null;
@@ -120,6 +125,9 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
             </a>
           ),
         },
+        // Only a card the team made is claimed; nobody checks a claim, so
+        // this is where the team sees who took the card and when.
+        ...(card.claimedAt ? [{ label: "Claimed the card", value: formatDateTime(card.claimedAt) }] : []),
         { label: "Sent for review", value: formatDateTime(card.submittedAt) || null },
         { label: "Version", value: String(card.revision) },
       ]
@@ -148,12 +156,12 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
           <Section id="card-answers-title" title="What the card says">
             <Facts items={answers} />
           </Section>
-          <Section id="card-account-title" title="Who sent it">
+          <Section id="card-account-title" title={card.user && !card.claimedAt ? "Who sent it" : "Whose it is"}>
             {card.user ? (
               <Facts items={account} />
             ) : (
               <p className="text-sm text-muted-foreground">
-                Nobody has claimed this card yet, so it is not linked to an account.
+                Our team made this card. Nobody has claimed it yet, so it is not linked to an account.
               </p>
             )}
           </Section>
@@ -172,7 +180,7 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
             {/* The public site's own text face, so the card reads here as
                 it will there. */}
             <div className="font-[family-name:var(--font-instrument),ui-sans-serif,system-ui,sans-serif]">
-              <CreatorCard card={{ ...card, photoUrl }} />
+              <CreatorCard card={{ ...card, photoUrl, photoStyle }} />
             </div>
           </Section>
         </div>

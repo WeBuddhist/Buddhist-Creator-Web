@@ -73,7 +73,12 @@ export const CARD_SOCIALS = [
     audience: "Followers",
   },
   { value: "tiktok", label: "TikTok", placeholder: "https://www.tiktok.com/@yourhandle", audience: "Followers" },
-  { value: "facebook", label: "Facebook", placeholder: "https://www.facebook.com/yourpage" },
+  {
+    value: "facebook",
+    label: "Facebook",
+    placeholder: "https://www.facebook.com/yourpage",
+    audience: "Followers",
+  },
   { value: "x", label: "X", placeholder: "https://x.com/yourhandle" },
   { value: "website", label: "Website", placeholder: "https://" },
 ] as const satisfies readonly (Option & { placeholder: string; audience?: string })[];
@@ -164,11 +169,28 @@ export function cardPhotoSrc(url: string | null | undefined): string | null {
   return url.replace(/=s\d+(-c)?$/, "=s512-c");
 }
 
+/* A card the team makes for a creator it knows (the creators directory's list)
+   takes its picture from the creator's own public profile. Those are kept
+   apart in the bucket, because they are a different kind of picture: an
+   avatar, small and composed for a circle, where a creator's own upload is
+   a 512-pixel square the card can crop wide. The card shows each as what
+   it is (CardPhoto's "avatar" and "cover"). */
+export const PROFILE_PICTURE_PREFIX = "creator-cards/profile-pictures/";
+
+export type CardPhotoStyle = "cover" | "avatar";
+
+/** How the card shows the photo stored under `photoKey`. */
+export function cardPhotoStyle(photoKey: string | null | undefined): CardPhotoStyle {
+  return photoKey?.startsWith(PROFILE_PICTURE_PREFIX) ? "avatar" : "cover";
+}
+
 /** What the card shows. Everything but the name can be missing. */
 export type CardContent = {
   /** Where the browser loads the photo from: a presigned URL for an
       upload, the sign-in account's picture otherwise, or nothing. */
   photoUrl?: string | null;
+  /** "avatar" for a picture taken from the creator's public profile. */
+  photoStyle?: CardPhotoStyle;
   displayName: string;
   country: string | null;
   creatorType: string | null;

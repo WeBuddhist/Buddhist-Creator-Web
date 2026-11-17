@@ -12,7 +12,8 @@ import {
   type CardFieldErrors,
   type CardValues,
 } from "@/lib/creator-card";
-import { cardPhotoKey, submitMyCard, type PhotoChange, type SubmitOutcome } from "@/lib/creator-cards";
+import { cardPhotoKey, claimCard, submitMyCard, type PhotoChange, type SubmitOutcome } from "@/lib/creator-cards";
+import { CREATORS_PATH } from "@/lib/creators";
 import { forLog } from "@/lib/log-error";
 import { deleteObjectQuietly, uploadBytes } from "@/lib/s3";
 
@@ -100,7 +101,37 @@ export async function submitCardAction(formData: FormData): Promise<CardSaveResu
   }
   if (outcome !== "unchanged") {
     revalidatePath(CARD_PATH);
+    // A changed card leaves the directory until it is approved again.
+    revalidatePath(CREATORS_PATH);
     revalidatePath("/admin/creator-cards", "layout");
   }
   return { ok: true, outcome, saved: parsed.data };
+}
+
+/** What came of a claim. `taken`: somebody else has the card, or it is
+    gone. `has-card`: this person already has a card of their own. */
+export type ClaimResult = { ok: true } | { ok: false; reason: "taken" | "has-card" | "signed-out" | "failed" };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* Claim a card the team made: the signed-in person becomes its owner. The
+   session is re-read here, and the browser only names the card. Whether
+   it can still be had is settled by the one statement that takes it
+   (claimCard), so two people pressing at once cannot both get it. */
+export async function claimCardAction(cardId: string): Promise<ClaimResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, reason: "signed-out" };
+  if (typeof cardId !== "string" || !UUID.test(cardId)) return { ok: false, reason: "taken" };
+  let outcome;
+  try {
+    outcome = await claimCard(user.id, cardId);
+  } catch (error) {
+    console.error("[creator-card] could not claim", forLog(error));
+    return { ok: false, reason: "failed" };
+  }
+  if (outcome !== "claimed") return { ok: false, reason: outcome };
+  revalidatePath(CARD_PATH);
+  revalidatePath(CREATORS_PATH);
+  revalidatePath("/admin/creator-cards", "layout");
+  return { ok: true };
 }

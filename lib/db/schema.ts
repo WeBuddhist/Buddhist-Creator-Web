@@ -230,9 +230,11 @@ export const suggestions = pgTable(
    A signed-in creator fills one in (app/(site)/creator-card) and the team
    reviews it (app/admin/creator-cards).
 
-   Only the name is required here. The team will also make cards for
-   creators it knows, from details it only partly has, and those have no
-   owner until the creator claims theirs: `userId` is null until then. What
+   Only the name is required here. The team also makes cards for creators
+   it knows, from details it only partly has (drizzle/0009 holds the first
+   of them). Those are approved as they are made and have no owner: the
+   first person to claim one becomes its owner, and `userId` is null until
+   then. What
    a creator must fill in to send their own card is lib/creator-card.ts's
    business. The limits repeat that file's CARD_NAME_MAX and
    CARD_TAGLINE_MAX; drizzle-kit reads this file on its own, so they are
@@ -243,6 +245,9 @@ export const creatorCards = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     /** The creator the card belongs to. Null for a card nobody has claimed. */
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** When its owner claimed a card the team had made. Null for a card
+        nobody has claimed, and for one its creator made themselves. */
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
     status: creatorCardStatus("status").default("pending").notNull(),
     /** Counts the versions of the card's content. A review names the
         version it read, and is refused if the card has moved on. */
@@ -259,9 +264,12 @@ export const creatorCards = pgTable(
     contentTypesOther: text("content_types_other"),
     /** One line about the creator's work, shown on the card. */
     tagline: text("tagline"),
-    /** The S3 key of a photo the creator uploaded. Null means the card
-        shows the picture from its owner's sign-in account (users.picture),
-        as the backend's avatar_url does for a social login. */
+    /** The S3 key of the card's photo: one the creator uploaded, or, on a
+        card the team made, the picture from the creator's public profile
+        (PROFILE_PICTURE_PREFIX in lib/creator-card.ts). Null means the
+        card shows the picture from its owner's sign-in account
+        (users.picture), as the backend's avatar_url does for a social
+        login. */
     photoKey: text("photo_key"),
     /** The link for each place the creator publishes, keyed by its slug. */
     socials: jsonb("socials").$type<CardSocials>().default({}).notNull(),
@@ -274,12 +282,13 @@ export const creatorCards = pgTable(
     youtubeFollowers: integer("youtube_followers"),
     instagramFollowers: integer("instagram_followers"),
     tiktokFollowers: integer("tiktok_followers"),
+    facebookFollowers: integer("facebook_followers"),
     /** The counts added together, kept by the database so it cannot fall
         out of step with them. A card with no count has 0. */
     totalFollowers: bigint("total_followers", { mode: "number" })
       .generatedAlwaysAs(
         (): SQL =>
-          sql`coalesce(${creatorCards.youtubeFollowers}, 0)::bigint + coalesce(${creatorCards.instagramFollowers}, 0) + coalesce(${creatorCards.tiktokFollowers}, 0)`,
+          sql`coalesce(${creatorCards.youtubeFollowers}, 0)::bigint + coalesce(${creatorCards.instagramFollowers}, 0) + coalesce(${creatorCards.tiktokFollowers}, 0) + coalesce(${creatorCards.facebookFollowers}, 0)`,
       )
       .notNull(),
 
@@ -300,7 +309,7 @@ export const creatorCards = pgTable(
     check("creator_cards_tagline_check", sql`char_length(${table.tagline}) <= 140`),
     check(
       "creator_cards_followers_check",
-      sql`${table.youtubeFollowers} >= 0 and ${table.instagramFollowers} >= 0 and ${table.tiktokFollowers} >= 0`,
+      sql`${table.youtubeFollowers} >= 0 and ${table.instagramFollowers} >= 0 and ${table.tiktokFollowers} >= 0 and ${table.facebookFollowers} >= 0`,
     ),
   ],
 );

@@ -1,9 +1,10 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { CreatorCard, CreatorCardStatus } from "@/lib/db/schema";
 import { COUNTED_SOCIALS, type CardFollowers, type CardValues, type CountedSocial } from "@/lib/creator-card";
+import type { CreatorsView } from "@/lib/creators";
 
 /* Everything that reads or writes creator cards. Callers pass the current
    user in and check the role; the status rules live here, not in the UI.
@@ -17,7 +18,12 @@ import { COUNTED_SOCIALS, type CardFollowers, type CardValues, type CountedSocia
    The review is there to say that this is a creator and the card is
    theirs, and a number says nothing about that; it is kept to rank
    creators by. So a changed count is saved where the card stands, and
-   neither the status nor the revision moves. */
+   neither the status nor the revision moves.
+
+   The team also makes cards itself, for creators it knows. Those are
+   approved from the start and belong to nobody; the first signed-in person
+   to claim one becomes its owner (claimCard), and from then on it is their
+   card like any other. */
 
 const { creatorCards, users } = schema;
 
@@ -48,6 +54,7 @@ const FOLLOWER_COLUMN = {
   youtube: "youtubeFollowers",
   instagram: "instagramFollowers",
   tiktok: "tiktokFollowers",
+  facebook: "facebookFollowers",
 } as const satisfies Record<CountedSocial, keyof CreatorCard>;
 
 type FollowerColumns = Record<(typeof FOLLOWER_COLUMN)[CountedSocial], number | null>;
@@ -188,6 +195,150 @@ export async function submitMyCard(
       .returning();
     return { card: updated, outcome: "resubmitted", replacedPhotoKey: samePhoto ? null : current.photoKey };
   });
+}
+
+/* ---------------------------------------------------------------------- */
+/* Claiming a card the team made                                           */
+/* ---------------------------------------------------------------------- */
+
+/** A card that can still be claimed: approved, and nobody's yet. */
+export async function getClaimableCard(id: string): Promise<CreatorCard | null> {
+  const row = await db().query.creatorCards.findFirst({
+    where: and(eq(creatorCards.id, id), isNull(creatorCards.userId), eq(creatorCards.status, "approved")),
+  });
+  return row ?? null;
+}
+
+/** What a claim did: the card is now this person's ("claimed"), somebody
+    else got there first or the card is gone ("taken"), or this person
+    already has a card of their own ("has-card"). */
+export type ClaimOutcome = "claimed" | "taken" | "has-card";
+
+const isUniqueViolation = (error: unknown): boolean => {
+  // Drizzle wraps the driver's error; the code is on the cause.
+  for (let e = error as { code?: string; cause?: unknown } | undefined; e; e = e.cause as typeof e) {
+    if (e.code === "23505") return true;
+  }
+  return false;
+};
+
+/** Make `userId` the owner of a card nobody owns. One statement, so of two
+    people claiming the same card at once exactly one gets it: the second
+    update waits for the first, then finds the card taken. The index that
+    allows one card per person turns away someone who already has a card.
+
+    A claim changes who owns the card and nothing on it, so the card stays
+    approved and its revision stays where it was. Whatever the new owner
+    changes afterwards goes to review like any other change. */
+export async function claimCard(userId: string, cardId: string): Promise<ClaimOutcome> {
+  const now = new Date();
+  try {
+    const [claimed] = await db()
+      .update(creatorCards)
+      .set({ userId, claimedAt: now, updatedAt: now })
+      .where(and(eq(creatorCards.id, cardId), isNull(creatorCards.userId), eq(creatorCards.status, "approved")))
+      .returning({ id: creatorCards.id });
+    if (claimed) return "claimed";
+  } catch (error) {
+    if (isUniqueViolation(error)) return "has-card";
+    throw error;
+  }
+  // Nothing was written. A second press of the button finds the card
+  // already theirs; otherwise it is someone else's, or not there.
+  const mine = await getMyCard(userId);
+  return mine?.id === cardId ? "claimed" : mine ? "has-card" : "taken";
+}
+
+/* ---------------------------------------------------------------------- */
+/* The public directory                                                    */
+/* ---------------------------------------------------------------------- */
+
+export const CREATORS_PAGE_SIZE = 30;
+
+export type PublicCard = Pick<
+  CreatorCard,
+  | "id"
+  | "displayName"
+  | "country"
+  | "creatorType"
+  | "languages"
+  | "languagesOther"
+  | "contentTypes"
+  | "contentTypesOther"
+  | "tagline"
+  | "photoKey"
+  | "socials"
+  | "totalFollowers"
+> & {
+  /** Nobody owns it yet, so it can be claimed. */
+  unclaimed: boolean;
+  /** The owner's sign-in picture, which the card shows without an upload. */
+  ownerPicture: string | null;
+};
+
+/* `%` and `_` mean "anything" to LIKE; a name typed with one means itself. */
+const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, "\\$&")}%`;
+
+/** One page of the approved cards, the most followed first, narrowed by a
+    part of the name and by country. With it, what the filters need: how
+    many approved cards there are in all, and how many in each country. A
+    card with no country is counted in the total and in no country.
+
+    Only what the public card shows is read: never the owner's name or
+    address, the review note, or a card that is not approved. */
+export async function listPublicCards(view: CreatorsView, page = 1) {
+  const approved = eq(creatorCards.status, "approved");
+  const where = and(
+    approved,
+    view.country ? eq(creatorCards.country, view.country) : undefined,
+    view.q ? sql`${creatorCards.displayName} ilike ${likePattern(view.q)}` : undefined,
+  );
+  const offset = Math.max(0, page - 1) * CREATORS_PAGE_SIZE;
+  const [rows, [{ matching }], countries] = await Promise.all([
+    db()
+      .select({
+        id: creatorCards.id,
+        displayName: creatorCards.displayName,
+        country: creatorCards.country,
+        creatorType: creatorCards.creatorType,
+        languages: creatorCards.languages,
+        languagesOther: creatorCards.languagesOther,
+        contentTypes: creatorCards.contentTypes,
+        contentTypesOther: creatorCards.contentTypesOther,
+        tagline: creatorCards.tagline,
+        photoKey: creatorCards.photoKey,
+        socials: creatorCards.socials,
+        totalFollowers: creatorCards.totalFollowers,
+        unclaimed: sql<boolean>`${creatorCards.userId} is null`,
+        ownerPicture: users.picture,
+      })
+      .from(creatorCards)
+      .leftJoin(users, eq(users.id, creatorCards.userId))
+      .where(where)
+      // The id settles a tie, so a card never shows on two pages.
+      .orderBy(desc(creatorCards.totalFollowers), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
+      .limit(CREATORS_PAGE_SIZE)
+      .offset(offset),
+    db().select({ matching: sql<number>`count(*)::int` }).from(creatorCards).where(where),
+    db()
+      .select({ country: creatorCards.country, count: sql<number>`count(*)::int` })
+      .from(creatorCards)
+      .where(approved)
+      .groupBy(creatorCards.country),
+  ]);
+  return {
+    rows: rows as PublicCard[],
+    /** How many cards the filters leave. */
+    matching,
+    /** How many approved cards there are, whatever the filters. */
+    total: countries.reduce((sum, { count }) => sum + count, 0),
+    /** The countries that have a card, the fullest first, then A to Z. */
+    countries: countries
+      .filter((entry): entry is { country: string; count: number } => entry.country !== null)
+      .sort((a, b) => b.count - a.count || a.country.localeCompare(b.country)),
+    page,
+    pageSize: CREATORS_PAGE_SIZE,
+  };
 }
 
 /* ---------------------------------------------------------------------- */

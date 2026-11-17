@@ -3,13 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, ArrowUpRightIcon, EnvelopeSimpleIcon, ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
+import { JoinTeam } from "@/components/join-team";
 import { PageIntro } from "@/components/page-intro";
 import { PartnerLogos } from "@/components/partner-logos";
 import {
   SectionHeading,
   card,
   cardInner,
-  accentButton,
   label,
 } from "@/components/convention/section-heading";
 import { cn } from "@/lib/utils";
@@ -250,30 +250,7 @@ export default function GetInvolvedPage() {
         </div>
       </section>
 
-      {/* Join our team: the page's last word, on a sheet of brand cyan. */}
-      <section id={TEAM.id} aria-labelledby="team-title" className="bg-background">
-        <div className="mx-auto w-full max-w-6xl px-5 pt-24 pb-24 sm:px-6 lg:pt-32 lg:pb-32">
-          <div data-header-tone="dark" className="grid gap-8 rounded-3xl bg-brand-cyan px-6 py-10 text-white sm:px-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-10 lg:px-12 lg:py-14">
-            <SectionHeading
-              id="team-title"
-              level="h3"
-              eyebrow={TEAM.eyebrow}
-              title={TEAM.title}
-              description={TEAM.description}
-              onPanel
-            />
-            <Button
-              size="pill"
-              nativeButton={false}
-              className={cn(accentButton, "shrink-0 justify-self-start")}
-              render={<a href={TEAM.action.href} />}
-            >
-              <EnvelopeSimpleIcon data-icon="inline-start" weight="bold" />
-              {TEAM.action.label}
-            </Button>
-          </div>
-        </div>
-      </section>
+      <JoinTeam />
     </main>
   );
 }

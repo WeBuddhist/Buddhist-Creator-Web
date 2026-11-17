@@ -15,7 +15,9 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global sang
 | `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/convention/2027/register` | The convention application form (sign-in required) |
 | `/admin` | The selection committee's dashboard (admin role required) |
-| `/people` | The team and the creators |
+| `/creators` | The creators directory: every approved creator card, searchable and paged |
+| `/creator-card` | A creator's own card: make it, edit it, or claim one the team made (sign-in required) |
+| `/team` | The team, and the invitation to join it |
 
 ## Tech stack
 
@@ -40,6 +42,12 @@ Open [http://localhost:3000](http://localhost:3000). No environment variables ar
 - `npm run build` builds for production
 - `npm run start` serves the production build
 - `npm run lint` runs ESLint
+- `npm run db:migrate` applies the migrations in `drizzle/` that the database
+  has not had yet. It runs against `DATABASE_URL`, read from `.env.local`
+  when that file exists, so check which database that is before running it
+- `npm run db:generate` writes a new migration after a change to
+  `lib/db/schema.ts`
+- `npm run db:studio` opens Drizzle Studio on the same database
 
 ## Project structure
 
@@ -62,7 +70,8 @@ Most copy lives in typed data files in `lib/`, so it can be changed without touc
 | `lib/events.ts` | Events listing |
 | `lib/convention-2026.ts` | Convention 2026 page |
 | `lib/convention-2027.ts` | Convention 2027 page, including the registration switch |
-| `lib/people.ts` | Team and creators |
+| `lib/team.ts` | The team |
+| `lib/creators.ts` | Creators page: copy, and the search and country in the URL |
 | `lib/creator-card.ts` | Creator card form: copy and option lists |
 | `lib/navigation.ts` | Site navigation, name, URL and default description |
 
@@ -106,12 +115,33 @@ and is refused if the creator has changed the card since.
 | Preparing an uploaded photo in the browser | `components/creator-card/photo.ts` |
 | The form | `app/(site)/creator-card/` |
 | Review | `app/admin/creator-cards/` |
+| The public directory | `app/(site)/creators/`, `components/creators/` |
+| Claiming a card | `app/(site)/creator-card/claim-card.tsx` |
+
+Approved cards are public at `/creators`, the most followed first, thirty to
+a page, with a search by name and a filter by country. Both live in the URL
+and the database does the narrowing, since the list is paged.
 
 One table, `creator_cards`. Only `display_name` is required and `user_id`
-may be null: the team will also make cards for creators it knows from
-details it only partly has, and such a card has no owner until its creator
-claims it. Claiming is not built yet, and approved cards are not shown on
-the public site yet.
+may be null: the team also makes cards itself, for creators it knows, from
+details it only partly has. Migration `0009` holds the first of them, taken
+from the team's shared sheet. Such a card is approved as it is made, has no
+owner, and shows its creator's public profile picture (stored under
+`creator-cards/profile-pictures/`, drawn as a circle because that is what
+it was made for) or, without one, their initials.
+
+A card with no owner can be claimed once: its "claim this card" link in the
+directory leads, through sign-in, to a screen that shows the card and asks
+the visitor to confirm it is theirs. The first person to confirm becomes
+its owner (`claimCard`, one statement, so two people cannot both get it),
+and nobody who already has a card can claim another. Nothing checks that
+the claimant is the creator: a claim changes the owner and leaves the card
+approved, the dashboard shows who claimed it and when, and whatever the new
+owner then changes goes to review like any other edit.
+
+Follower counts are kept for YouTube, Instagram, TikTok and Facebook and
+added up by the database (`total_followers`); they order the directory and
+are never part of a review.
 
 ## Registration and the admin dashboard
 
