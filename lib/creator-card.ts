@@ -16,6 +16,9 @@ import { CONTENT_TOPICS, isWebLink, labelFor, type Option } from "@/lib/registra
 
 export const CARD_PATH = "/creator-card";
 
+/** The longest note a claimant can send with a claim. */
+export const CLAIM_NOTE_MAX = 1000;
+
 export const CARD_NAME_MAX = 80;
 export const CARD_TAGLINE_MAX = 140;
 const OTHER_MAX = 120;

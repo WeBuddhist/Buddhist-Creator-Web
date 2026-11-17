@@ -99,6 +99,13 @@
       "when": 1794895335636,
       "tag": "0013_vajiramedhi_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794896088188,
+      "tag": "0014_card_claims_reviewed",
+      "breakpoints": true
     }
   ]
 }

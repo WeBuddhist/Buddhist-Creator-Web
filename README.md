@@ -117,6 +117,7 @@ and is refused if the creator has changed the card since.
 | Review | `app/admin/creator-cards/` |
 | The public directory | `app/(site)/creators/`, `components/creators/` |
 | Claiming a card | `app/(site)/creator-card/claim-card.tsx` |
+| Deciding claims | `app/admin/creator-cards/claims/`, `app/admin/creator-cards/[id]/claim-review.tsx` |
 
 Approved cards are public at `/creators`, the most followed first, thirty to
 a page, with a search by name and a filter by country. Both live in the URL
@@ -138,14 +139,37 @@ tick (`components/creator-card/verified-mark.tsx`); pointing at it, or
 tapping it, says "Verified by Buddhist Creators". In the directory a card
 nobody owns has "Claim this card" in its top right corner.
 
-A card with no owner can be claimed once: its "claim this card" link in the
-directory leads, through sign-in, to a screen that shows the card and asks
-the visitor to confirm it is theirs. The first person to confirm becomes
-its owner (`claimCard`, one statement, so two people cannot both get it),
-and nobody who already has a card can claim another. Nothing checks that
-the claimant is the creator: a claim changes the owner and leaves the card
-approved, the dashboard shows who claimed it and when, and whatever the new
-owner then changes goes to review like any other edit.
+A card with no owner can be claimed, and a claim is a request, never a
+transfer. Signing in proves an email address, not that its owner runs the
+channel on the card, so nothing changes hands until an admin has approved:
+
+1. The card's claim link in the directory leads, through sign-in, to a
+   screen that shows the card and takes the claim, with an optional note.
+   The claim is stored in `creator_card_claims` with a code made on the
+   server (`BC-` and eight characters). The card stays unowned and listed.
+2. The claimant's `/creator-card` page then shows the claim waiting, with
+   the code to put in the bio or description of the channel the card links
+   to. That is the proof: only whoever runs the channel can put text on
+   it, and the team can see it there without being sent anything. The
+   claimant can withdraw the claim.
+3. Admins see waiting claims at `/admin/creator-cards/claims` and decide
+   each on the card's own page, beside the card's links: approve, or
+   reject with a note the claimant reads. Approving (`reviewClaim`) makes
+   the claimant the card's owner, leaves the card approved, and rejects
+   every other claim waiting on it. From then on it is their card, and
+   whatever they change goes to review like any other edit.
+
+4. An approval that was a mistake can be taken back: the approved claim
+   on the card's admin page has "Undo approval" (`undoClaimApproval`). The
+   card loses that owner and can be claimed again, the claim becomes a
+   rejected one with a note the person reads, and the claims that approval
+   turned away go back to waiting. If the person changed the card while it
+   was theirs, it also goes back to pending, out of the directory, until an
+   admin has reviewed it. A card a creator made themselves has no claim to
+   undo and cannot be taken from them this way.
+
+Several people may claim one card; a person has one claim waiting at a
+time and none while they have a card. Nothing is emailed at any step.
 
 Follower counts are kept for YouTube, Instagram, TikTok and Facebook and
 added up by the database (`total_followers`); they order the directory and
@@ -304,6 +328,7 @@ so the history outlives the admin who made it.
 | `notification_state` | `sending`, `sent`, `failed`, `uncertain` |
 | `notification_kind` | `decision`, `resend` |
 | `creator_card_status` | `pending`, `approved`, `rejected` |
+| `card_claim_status` | `pending`, `approved`, `rejected` |
 
 ### Setting it up
 

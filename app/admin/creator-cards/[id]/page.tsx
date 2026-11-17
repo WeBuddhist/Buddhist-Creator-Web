@@ -17,9 +17,11 @@ import {
   isProfilePicture,
   creatorTypeLabel,
 } from "@/lib/creator-card";
-import { cardFollowers, getCard } from "@/lib/creator-cards";
+import { cardFollowers, getCard, listCardClaims } from "@/lib/creator-cards";
 import { formatCount, formatDateTime } from "@/lib/format";
 import { presignedGetUrl } from "@/lib/s3";
+import { ClaimReview } from "./claim-review";
+import { ClaimUndo } from "./claim-undo";
 import { ReviewActions } from "./review-actions";
 
 export const metadata: Metadata = { title: "Creator card" };
@@ -124,13 +126,16 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
             </a>
           ),
         },
-        // Only a card the team made is claimed; nobody checks a claim, so
-        // this is where the team sees who took the card and when.
-        ...(card.claimedAt ? [{ label: "Claimed the card", value: formatDateTime(card.claimedAt) }] : []),
+        // Only a card the team made is claimed: this is when the team
+        // approved the claim that gave it this owner.
+        ...(card.claimedAt ? [{ label: "Claim approved", value: formatDateTime(card.claimedAt) }] : []),
         { label: "Sent for review", value: formatDateTime(card.submittedAt) || null },
         { label: "Version", value: String(card.revision) },
       ]
     : [];
+
+  const claims = await listCardClaims(card.id);
+  const waiting = claims.filter((claim) => claim.status === "pending").length;
 
   const reviewer = card.reviewer
     ? card.reviewer.id === viewer.id
@@ -152,6 +157,88 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
+          {/* Who says this card is theirs. A claim changes nothing until
+              it is approved here; it comes first because, when there is
+              one waiting, it is what the reviewer came to decide. */}
+          {claims.length > 0 && (
+            <Section
+              id="card-claims-title"
+              title="Claims on this card"
+              meta={waiting > 0 ? `${waiting} waiting` : undefined}
+              bodyClassName="p-0"
+            >
+              <ul className="divide-y divide-border">
+                {claims.map((claim) => {
+                  const who = claim.claimant.name ?? claim.claimant.email;
+                  const by = claim.reviewer
+                    ? claim.reviewer.id === viewer.id
+                      ? "you"
+                      : (claim.reviewer.name ?? claim.reviewer.email)
+                    : null;
+                  return (
+                    <li key={claim.id} className="flex flex-col gap-4 px-5 py-4">
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                        <p className="min-w-0 text-sm font-medium wrap-anywhere text-foreground">{who}</p>
+                        <CardStatusBadge status={claim.status} />
+                      </div>
+                      <Facts
+                        items={[
+                          {
+                            label: "Email",
+                            value: (
+                              <a href={`mailto:${claim.claimant.email}`} className={link}>
+                                <span className="min-w-0 wrap-anywhere">{claim.claimant.email}</span>
+                              </a>
+                            ),
+                          },
+                          { label: "Sent", value: formatDateTime(claim.createdAt) },
+                          {
+                            label: "Code to look for",
+                            value: <code className="font-mono font-semibold tracking-[0.06em]">{claim.code}</code>,
+                          },
+                          { label: "Their note", value: claim.note },
+                          ...(claim.status === "pending"
+                            ? []
+                            : [
+                                {
+                                  label: "Decided",
+                                  value: `${CARD_STATUS_LABEL[claim.status]} ${formatDateTime(claim.reviewedAt)}${by ? ` by ${by}` : ""}`,
+                                },
+                                { label: "Note to them", value: claim.reviewNote },
+                              ]),
+                        ]}
+                      />
+                      {claim.status === "pending" &&
+                        (card.userId ? (
+                          <p className="text-sm text-muted-foreground">
+                            This card has an owner now, so this claim can only be rejected.
+                          </p>
+                        ) : (
+                          <p className="text-sm leading-[1.5] text-muted-foreground">
+                            Open the card&rsquo;s {links.length === 1 ? "link" : "links"} below and look for the code in
+                            the profile&rsquo;s bio or description. Approve only if it is there, or you have confirmed
+                            the claim another way. Approving makes this person the card&rsquo;s owner and rejects any
+                            other claim on it.
+                          </p>
+                        ))}
+                      {claim.status === "pending" && <ClaimReview claimId={claim.id} claimant={who} />}
+                      {/* The approval that made this person the owner can
+                          be taken back for as long as the card is theirs
+                          by it. */}
+                      {claim.status === "approved" && card.claimedAt && card.userId === claim.userId && (
+                        <ClaimUndo
+                          claimId={claim.id}
+                          claimant={who}
+                          cardName={card.displayName}
+                          edited={card.submittedAt !== null}
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Section>
+          )}
           <Section id="card-answers-title" title="What the card says">
             <Facts items={answers} />
           </Section>

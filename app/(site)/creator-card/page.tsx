@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { requireUser } from "@/lib/auth";
-import { CARD_FORM, CARD_PATH } from "@/lib/creator-card";
-import { cardFollowers, getClaimableCard, getMyCard } from "@/lib/creator-cards";
+import { CARD_FORM, CARD_PATH, type CardContent } from "@/lib/creator-card";
+import { cardFollowers, getClaimableCard, getMyCard, getMyClaim } from "@/lib/creator-cards";
 import { claimHref } from "@/lib/creators";
 import type { CreatorCard } from "@/lib/db/schema";
 import { presignedGetUrl } from "@/lib/s3";
 import { cn } from "@/lib/utils";
 import { CardForm, type FormCard } from "./card-form";
-import { ClaimCard } from "./claim-card";
+import { ClaimCard, ClaimPending } from "./claim-card";
 
 export const metadata: Metadata = {
   title: "Your creator card",
@@ -26,9 +26,12 @@ export const metadata: Metadata = {
    it for review.
 
    The page is also where a card the team made is claimed: the directory's
-   "claim this card" link arrives here as ?claim=<id>, after the sign-in.
-   Someone with no card of their own is then shown that card and asked to
-   confirm it is theirs, in place of the empty form. */
+   claim link arrives here as ?claim=<id>, after the sign-in. Someone with
+   no card of their own is then shown that card and can send a claim for
+   it, in place of the empty form. A claim is a request: while it is with
+   our team this page shows it waiting, with the code to put on the
+   channel, and the card becomes theirs here only once an admin has
+   approved it. */
 export default function CreatorCardPage(props: PageProps<"/creator-card">) {
   return (
     <main className="flex flex-1 flex-col bg-background">
@@ -82,46 +85,83 @@ async function CardLoader({ searchParams }: { searchParams: PageProps<"/creator-
     );
   }
 
+  const claim = await getMyClaim(user.id);
+  if (claim?.status === "pending") {
+    return (
+      <>
+        {claimId && claimId !== claim.cardId && (
+          <Notice>
+            You already have a claim with our team, for the card below. To claim a different card, withdraw this one
+            first.
+          </Notice>
+        )}
+        <ClaimPending
+          card={await cardContent(claim.card)}
+          code={claim.code}
+          sentAt={claim.createdAt.toISOString()}
+          email={user.email}
+        />
+      </>
+    );
+  }
+
   const claimable = claimId ? await getClaimableCard(claimId) : null;
   if (claimable) {
-    return (
-      <ClaimCard
-        cardId={claimable.id}
-        email={user.email}
-        // Only what the card shows goes to the browser.
-        card={{
-          photoUrl: await presignedGetUrl(claimable.photoKey),
-          displayName: claimable.displayName,
-          country: claimable.country,
-          creatorType: claimable.creatorType,
-          languages: claimable.languages,
-          languagesOther: claimable.languagesOther,
-          contentTypes: claimable.contentTypes,
-          contentTypesOther: claimable.contentTypesOther,
-          tagline: claimable.tagline,
-          socials: claimable.socials,
-          totalFollowers: claimable.totalFollowers,
-        }}
-      />
-    );
+    return <ClaimCard cardId={claimable.id} email={user.email} card={await cardContent(claimable)} />;
   }
   return (
     <>
-      {claimId && (
+      {claimId ? (
         <Notice>
-          That card has already been claimed, or is no longer there. If it is yours, write to{" "}
-          <a
-            href={`mailto:${CARD_FORM.contact}`}
-            className="font-medium underline decoration-current/35 underline-offset-4 hover:decoration-current"
-          >
-            {CARD_FORM.contact}
-          </a>
-          . You can still make a card of your own below.
+          That card has an owner already, or is no longer there. If it is yours, write to {contactLink}. You can still
+          make a card of your own below.
         </Notice>
+      ) : (
+        // The last claim was turned down: say so once, where they look.
+        claim?.status === "rejected" && (
+          <Notice>
+            Your claim for <span className="font-medium">{claim.card.displayName}</span> was not approved.
+            {claim.reviewNote && (
+              <span className="mt-2 block whitespace-pre-line wrap-anywhere border-s-2 border-brand-cyan/40 ps-3">
+                {claim.reviewNote}
+              </span>
+            )}
+            <span className={claim.reviewNote ? "mt-2 block" : undefined}>
+              {" "}
+              If you have a question about it, write to {contactLink}. You can also make a card of your own below.
+            </span>
+          </Notice>
+        )
       )}
       <CardForm accountName={user.name} accountPicture={user.picture} card={null} />
     </>
   );
+}
+
+const contactLink = (
+  <a
+    href={`mailto:${CARD_FORM.contact}`}
+    className="font-medium underline decoration-current/35 underline-offset-4 hover:decoration-current"
+  >
+    {CARD_FORM.contact}
+  </a>
+);
+
+/** What a card shows, and nothing else of its row, for the browser. */
+async function cardContent(row: CreatorCard): Promise<CardContent> {
+  return {
+    photoUrl: await presignedGetUrl(row.photoKey),
+    displayName: row.displayName,
+    country: row.country,
+    creatorType: row.creatorType,
+    languages: row.languages,
+    languagesOther: row.languagesOther,
+    contentTypes: row.contentTypes,
+    contentTypesOther: row.contentTypesOther,
+    tagline: row.tagline,
+    socials: row.socials,
+    totalFollowers: row.totalFollowers,
+  };
 }
 
 /* A line above the form about the claim that brought the visitor here. */

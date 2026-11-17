@@ -49,6 +49,11 @@ export const notificationKind = pgEnum("notification_kind", ["decision", "resend
    nothing on an approved card is ever unread. */
 export const creatorCardStatus = pgEnum("creator_card_status", ["pending", "approved", "rejected"]);
 
+/* A claim on a card the team made is read by the team before the card
+   changes hands: pending → approved | rejected. A decision is final; a
+   person whose claim was rejected may send another. */
+export const cardClaimStatus = pgEnum("card_claim_status", ["pending", "approved", "rejected"]);
+
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -232,9 +237,9 @@ export const suggestions = pgTable(
 
    Only the name is required here. The team also makes cards for creators
    it knows, from details it only partly has (drizzle/0009 holds the first
-   of them). Those are approved as they are made and have no owner: the
-   first person to claim one becomes its owner, and `userId` is null until
-   then. What
+   of them). Those are approved as they are made and have no owner:
+   `userId` is null until a claim on the card (creator_card_claims) has
+   been approved by the team. What
    a creator must fill in to send their own card is lib/creator-card.ts's
    business. The limits repeat that file's CARD_NAME_MAX and
    CARD_TAGLINE_MAX; drizzle-kit reads this file on its own, so they are
@@ -245,8 +250,9 @@ export const creatorCards = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     /** The creator the card belongs to. Null for a card nobody has claimed. */
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-    /** When its owner claimed a card the team had made. Null for a card
-        nobody has claimed, and for one its creator made themselves. */
+    /** When the team approved its owner's claim on a card the team had
+        made. Null for a card nobody has claimed, and for one its creator
+        made themselves. */
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     status: creatorCardStatus("status").default("pending").notNull(),
     /** Counts the versions of the card's content. A review names the
@@ -314,6 +320,47 @@ export const creatorCards = pgTable(
   ],
 );
 
+/* A claim: a signed-in person saying that a card the team made is theirs.
+   Signing in proves an email address, not that its owner runs the channel
+   on the card, so a claim changes nothing until an admin has approved it
+   (lib/creator-cards.ts). What the admin checks is the code: the claimant
+   puts it on the channel the card links to, where only whoever runs the
+   channel can put it, and the admin looks for it there.
+
+   Any number of people may claim the same card; approving one rejects the
+   rest. A person has at most one claim waiting at a time. The note's limit
+   repeats CLAIM_NOTE_MAX in lib/creator-card.ts. */
+export const creatorCardClaims = pgTable(
+  "creator_card_claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => creatorCards.id, { onDelete: "cascade" }),
+    /** The person claiming. */
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: cardClaimStatus("status").default("pending").notNull(),
+    /** The code to show on the channel, made here when the claim is. */
+    code: text("code").notNull(),
+    /** Whatever else the claimant says to help the team confirm it. */
+    note: text("note"),
+    // Review. The note is for the claimant: they see it with a rejection.
+    reviewNote: text("review_note"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    // One claim waiting per person.
+    uniqueIndex("creator_card_claims_pending_user_idx").on(table.userId).where(sql`${table.status} = 'pending'`),
+    index("creator_card_claims_card_idx").on(table.cardId, table.createdAt),
+    index("creator_card_claims_status_idx").on(table.status, table.createdAt),
+    check("creator_card_claims_note_check", sql`char_length(${table.note}) <= 1000`),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one }) => ({
   application: one(applications, {
     fields: [users.id],
@@ -321,9 +368,16 @@ export const usersRelations = relations(users, ({ one }) => ({
   }),
 }));
 
-export const creatorCardsRelations = relations(creatorCards, ({ one }) => ({
+export const creatorCardsRelations = relations(creatorCards, ({ one, many }) => ({
   user: one(users, { fields: [creatorCards.userId], references: [users.id] }),
   reviewer: one(users, { fields: [creatorCards.reviewedBy], references: [users.id] }),
+  claims: many(creatorCardClaims),
+}));
+
+export const creatorCardClaimsRelations = relations(creatorCardClaims, ({ one }) => ({
+  card: one(creatorCards, { fields: [creatorCardClaims.cardId], references: [creatorCards.id] }),
+  claimant: one(users, { fields: [creatorCardClaims.userId], references: [users.id] }),
+  reviewer: one(users, { fields: [creatorCardClaims.reviewedBy], references: [users.id] }),
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
@@ -360,3 +414,5 @@ export type NotificationKind = ApplicationNotification["kind"];
 export type Suggestion = typeof suggestions.$inferSelect;
 export type CreatorCard = typeof creatorCards.$inferSelect;
 export type CreatorCardStatus = CreatorCard["status"];
+export type CreatorCardClaim = typeof creatorCardClaims.$inferSelect;
+export type CardClaimStatus = CreatorCardClaim["status"];

@@ -8,7 +8,13 @@ import { Pagination } from "@/components/pagination";
 import { panel } from "@/components/admin/panel";
 import { requireRole } from "@/lib/auth";
 import { creatorTypeLabel } from "@/lib/creator-card";
-import { CARD_STATUSES, countCardsByStatus, listCards, type CardFilter } from "@/lib/creator-cards";
+import {
+  CARD_STATUSES,
+  countCardsByStatus,
+  countClaimsByStatus,
+  listCards,
+  type CardFilter,
+} from "@/lib/creator-cards";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +67,11 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
   const filter = FILTERS.find((value) => value === asked) ?? DEFAULT_FILTER;
   const page = Math.max(1, Number(params.page) || 1);
 
-  const [list, counts] = await Promise.all([listCards(filter, page), countCardsByStatus()]);
+  const [list, counts, claims] = await Promise.all([
+    listCards(filter, page),
+    countCardsByStatus(),
+    countClaimsByStatus(),
+  ]);
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
   // A page past the end (a stale link, or a review that emptied the last
   // page) lands on the last real page rather than an empty table.
@@ -71,6 +81,19 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
 
   return (
     <>
+      {/* Claims are decided from their own queue; this says when there is
+          something in it. */}
+      {claims.pending > 0 && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          <Link
+            href={`${PATH}/claims`}
+            className="font-medium text-foreground underline decoration-foreground/20 underline-offset-4 hover:decoration-foreground"
+          >
+            {claims.pending === 1 ? "1 claim is waiting" : `${claims.pending} claims are waiting`}
+          </Link>{" "}
+          for a decision.
+        </p>
+      )}
       <nav aria-label="Filter by status" className="mb-6 flex flex-wrap gap-2">
         {FILTERS.map((value) => {
           const active = value === filter;

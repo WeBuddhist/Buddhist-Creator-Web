@@ -13,6 +13,7 @@ import {
   HouseIcon,
   IdentificationCardIcon,
   ListIcon,
+  SealCheckIcon,
   TrayIcon,
   UsersThreeIcon,
   XIcon,
@@ -35,6 +36,7 @@ import logoMark from "@/public/logo-mark.png";
 
 const REGISTER = "/convention/2027/register";
 const CREATOR_CARD = "/creator-card";
+const CARD_CLAIMS = "/admin/creator-cards/claims";
 
 type NavItem = {
   href: string;
@@ -54,7 +56,13 @@ const WORKSPACE: NavItem[] = [
     icon: TrayIcon,
     match: (p) => p === "/admin" || p.startsWith("/admin/applications"),
   },
-  { href: "/admin/creator-cards", label: "Creator cards", icon: IdentificationCardIcon },
+  {
+    href: "/admin/creator-cards",
+    label: "Creator cards",
+    icon: IdentificationCardIcon,
+    match: (p) => p.startsWith("/admin/creator-cards") && !p.startsWith(CARD_CLAIMS),
+  },
+  { href: CARD_CLAIMS, label: "Card claims", icon: SealCheckIcon },
   { href: "/admin/suggestions", label: "Suggestions", icon: ChatTeardropTextIcon },
   { href: "/admin/users", label: "Users & roles", icon: UsersThreeIcon, superadmin: true },
 ];

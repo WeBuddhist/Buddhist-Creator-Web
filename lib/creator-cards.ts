@@ -1,8 +1,8 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
-import type { CreatorCard, CreatorCardStatus } from "@/lib/db/schema";
+import type { CardClaimStatus, CreatorCard, CreatorCardStatus } from "@/lib/db/schema";
 import { COUNTED_SOCIALS, type CardFollowers, type CardValues, type CountedSocial } from "@/lib/creator-card";
 import type { CreatorsView } from "@/lib/creators";
 
@@ -21,11 +21,11 @@ import type { CreatorsView } from "@/lib/creators";
    neither the status nor the revision moves.
 
    The team also makes cards itself, for creators it knows. Those are
-   approved from the start and belong to nobody; the first signed-in person
-   to claim one becomes its owner (claimCard), and from then on it is their
-   card like any other. */
+   approved from the start and belong to nobody. A signed-in person can
+   claim one, and the team reads the claim before the card changes hands
+   (see "Claiming a card the team made" below). */
 
-const { creatorCards, users } = schema;
+const { creatorCards, creatorCardClaims, users } = schema;
 
 export const CARD_STATUSES: readonly CreatorCardStatus[] = ["pending", "approved", "rejected"];
 
@@ -201,6 +201,18 @@ export async function submitMyCard(
 /* Claiming a card the team made                                           */
 /* ---------------------------------------------------------------------- */
 
+/* A claim is a request, never a transfer. Signing in proves an email
+   address; it does not prove that its owner runs the channel on the card,
+   and anyone could sign in and say they are a well-known teacher. So a
+   claim only records who is asking, with a code made here, and the card
+   stays as it is, unowned and in the directory. The claimant shows the
+   code on the channel the card links to; an admin looks for it there and
+   approves or rejects (reviewClaim). Only an approval gives the card an
+   owner.
+
+   Several people may claim one card; approving one rejects the others. A
+   person can have one claim waiting, and none while they have a card. */
+
 /** A card that can still be claimed: approved, and nobody's yet. */
 export async function getClaimableCard(id: string): Promise<CreatorCard | null> {
   const row = await db().query.creatorCards.findFirst({
@@ -209,44 +221,266 @@ export async function getClaimableCard(id: string): Promise<CreatorCard | null> 
   return row ?? null;
 }
 
-/** What a claim did: the card is now this person's ("claimed"), somebody
-    else got there first or the card is gone ("taken"), or this person
-    already has a card of their own ("has-card"). */
-export type ClaimOutcome = "claimed" | "taken" | "has-card";
+/* What a claimant reads when their claim was turned away without anyone
+   deciding against them in particular. */
+const SUPERSEDED_NOTE = "This card has been claimed by its creator.";
+const UNDONE_NOTE = "Our team approved this claim by mistake and has taken the approval back.";
 
-const isUniqueViolation = (error: unknown): boolean => {
-  // Drizzle wraps the driver's error; the code is on the cause.
-  for (let e = error as { code?: string; cause?: unknown } | undefined; e; e = e.cause as typeof e) {
-    if (e.code === "23505") return true;
-  }
-  return false;
-};
+/* No 0, O, 1, I or L: the code is typed by hand into a profile. */
+const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
-/** Make `userId` the owner of a card nobody owns. One statement, so of two
-    people claiming the same card at once exactly one gets it: the second
-    update waits for the first, then finds the card taken. The index that
-    allows one card per person turns away someone who already has a card.
+/** A code no one could guess or already have on their profile: "BC-" and
+    eight characters, about 10^12 possibilities. */
+function claimCode() {
+  let code = "";
+  for (let i = 0; i < 8; i++) code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  return `BC-${code}`;
+}
 
-    A claim changes who owns the card and nothing on it, so the card stays
-    approved and its revision stays where it was. Whatever the new owner
-    changes afterwards goes to review like any other change. */
-export async function claimCard(userId: string, cardId: string): Promise<ClaimOutcome> {
-  const now = new Date();
-  try {
-    const [claimed] = await db()
+/** What a request did: it is with the team ("requested"); the card is
+    someone's already or gone ("taken"); this person has a card of their
+    own ("has-card"); or they already have a claim waiting ("has-claim"). */
+export type ClaimRequestOutcome = "requested" | "taken" | "has-card" | "has-claim";
+
+/** Record that `userId` says the card is theirs. Nothing about the card
+    changes. The index that allows one waiting claim per person settles two
+    presses of the button: the second inserts nothing. */
+export async function requestClaim(userId: string, cardId: string, note: string | null): Promise<ClaimRequestOutcome> {
+  return db().transaction(async (tx) => {
+    const [mine] = await tx.select({ id: creatorCards.id }).from(creatorCards).where(eq(creatorCards.userId, userId));
+    if (mine) return "has-card";
+    const [card] = await tx
+      .select({ id: creatorCards.id })
+      .from(creatorCards)
+      .where(and(eq(creatorCards.id, cardId), isNull(creatorCards.userId), eq(creatorCards.status, "approved")));
+    if (!card) return "taken";
+    const [created] = await tx
+      .insert(creatorCardClaims)
+      .values({ cardId, userId, code: claimCode(), note })
+      .onConflictDoNothing()
+      .returning({ id: creatorCardClaims.id });
+    return created ? "requested" : "has-claim";
+  });
+}
+
+/** The person's most recent claim, with the card it is on: the one that is
+    waiting if there is one, otherwise the last one decided. */
+export async function getMyClaim(userId: string) {
+  const row = await db().query.creatorCardClaims.findFirst({
+    where: eq(creatorCardClaims.userId, userId),
+    orderBy: [desc(creatorCardClaims.createdAt), desc(creatorCardClaims.id)],
+    with: { card: true },
+  });
+  return row ?? null;
+}
+
+/** Take back a claim that is still waiting. True if there was one. */
+export async function withdrawClaim(userId: string): Promise<boolean> {
+  const gone = await db()
+    .delete(creatorCardClaims)
+    .where(and(eq(creatorCardClaims.userId, userId), eq(creatorCardClaims.status, "pending")))
+    .returning({ id: creatorCardClaims.id });
+  return gone.length > 0;
+}
+
+/* Admin side. */
+
+export type ClaimFilter = "all" | CardClaimStatus;
+
+export const CLAIM_STATUSES: readonly CardClaimStatus[] = ["pending", "approved", "rejected"];
+
+export const CLAIMS_PAGE_SIZE = 50;
+
+/** One page of claims for the dashboard, newest first, with how many the
+    filter holds in all. */
+export async function listClaims(filter: ClaimFilter, page = 1) {
+  const where = filter === "all" ? undefined : eq(creatorCardClaims.status, filter);
+  const offset = Math.max(0, page - 1) * CLAIMS_PAGE_SIZE;
+  const [rows, [{ total }]] = await Promise.all([
+    db()
+      .select({
+        id: creatorCardClaims.id,
+        status: creatorCardClaims.status,
+        createdAt: creatorCardClaims.createdAt,
+        cardId: creatorCardClaims.cardId,
+        cardName: creatorCards.displayName,
+        claimantName: users.name,
+        claimantEmail: users.email,
+      })
+      .from(creatorCardClaims)
+      .innerJoin(creatorCards, eq(creatorCards.id, creatorCardClaims.cardId))
+      .innerJoin(users, eq(users.id, creatorCardClaims.userId))
+      .where(where)
+      .orderBy(desc(creatorCardClaims.createdAt), desc(creatorCardClaims.id))
+      .limit(CLAIMS_PAGE_SIZE)
+      .offset(offset),
+    db().select({ total: sql<number>`count(*)::int` }).from(creatorCardClaims).where(where),
+  ]);
+  return { rows, total, page, pageSize: CLAIMS_PAGE_SIZE };
+}
+
+export async function countClaimsByStatus() {
+  const rows = await db()
+    .select({ status: creatorCardClaims.status, count: sql<number>`count(*)::int` })
+    .from(creatorCardClaims)
+    .groupBy(creatorCardClaims.status);
+  const counts: Record<CardClaimStatus, number> = { pending: 0, approved: 0, rejected: 0 };
+  for (const row of rows) counts[row.status] = row.count;
+  return counts;
+}
+
+/** Every claim on one card, the waiting ones first, then newest first. */
+export async function listCardClaims(cardId: string) {
+  return db().query.creatorCardClaims.findMany({
+    where: eq(creatorCardClaims.cardId, cardId),
+    orderBy: [sql`${creatorCardClaims.status} = 'pending' desc`, desc(creatorCardClaims.createdAt)],
+    with: { claimant: true, reviewer: true },
+  });
+}
+
+/** What a review of a claim did. "decided": it had been decided already.
+    "card-taken": the card has an owner now, so nobody else can have it.
+    "claimant-has-card": the claimant has made a card of their own since. */
+export type ClaimReviewOutcome = "approved" | "rejected" | "decided" | "card-taken" | "claimant-has-card" | "missing";
+
+/** An admin's decision on a claim. Approving is the one place a card the
+    team made gets an owner: the card and the claim are locked together, so
+    two admins approving two claims on one card cannot both succeed, and
+    every other claim waiting on that card is rejected in the same step. */
+export async function reviewClaim(args: {
+  claimId: string;
+  actorId: string;
+  decision: "approved" | "rejected";
+  note: string | null;
+}): Promise<{ outcome: ClaimReviewOutcome; cardId: string | null }> {
+  return db().transaction(async (tx) => {
+    const [claim] = await tx
+      .select()
+      .from(creatorCardClaims)
+      .where(eq(creatorCardClaims.id, args.claimId))
+      .for("update");
+    if (!claim) return { outcome: "missing", cardId: null };
+    const cardId = claim.cardId;
+    if (claim.status !== "pending") return { outcome: "decided", cardId };
+    const now = new Date();
+    const decided = { reviewedBy: args.actorId, reviewedAt: now, updatedAt: now };
+
+    if (args.decision === "rejected") {
+      await tx
+        .update(creatorCardClaims)
+        .set({ status: "rejected", reviewNote: args.note, ...decided })
+        .where(eq(creatorCardClaims.id, claim.id));
+      return { outcome: "rejected", cardId };
+    }
+
+    const [card] = await tx.select().from(creatorCards).where(eq(creatorCards.id, cardId)).for("update");
+    if (!card || card.userId) return { outcome: "card-taken", cardId };
+    const [theirs] = await tx
+      .select({ id: creatorCards.id })
+      .from(creatorCards)
+      .where(eq(creatorCards.userId, claim.userId));
+    if (theirs) return { outcome: "claimant-has-card", cardId };
+
+    // The owner changes and nothing on the card does: it stays approved,
+    // at the same revision. What the owner changes later goes to review.
+    await tx
       .update(creatorCards)
-      .set({ userId, claimedAt: now, updatedAt: now })
-      .where(and(eq(creatorCards.id, cardId), isNull(creatorCards.userId), eq(creatorCards.status, "approved")))
-      .returning({ id: creatorCards.id });
-    if (claimed) return "claimed";
-  } catch (error) {
-    if (isUniqueViolation(error)) return "has-card";
-    throw error;
-  }
-  // Nothing was written. A second press of the button finds the card
-  // already theirs; otherwise it is someone else's, or not there.
-  const mine = await getMyCard(userId);
-  return mine?.id === cardId ? "claimed" : mine ? "has-card" : "taken";
+      .set({ userId: claim.userId, claimedAt: now, updatedAt: now })
+      .where(eq(creatorCards.id, cardId));
+    await tx
+      .update(creatorCardClaims)
+      .set({ status: "approved", reviewNote: args.note, ...decided })
+      .where(eq(creatorCardClaims.id, claim.id));
+    await tx
+      .update(creatorCardClaims)
+      .set({ status: "rejected", reviewNote: SUPERSEDED_NOTE, ...decided })
+      .where(and(eq(creatorCardClaims.cardId, cardId), eq(creatorCardClaims.status, "pending")));
+    return { outcome: "approved", cardId };
+  });
+}
+
+/** What undoing an approval did. "not-approved": the claim is not an
+    approved one. "moved-on": the card is no longer this claimant's by
+    that claim, so there is nothing of theirs to take back. */
+export type ClaimUndoOutcome = "undone" | "not-approved" | "moved-on" | "missing";
+
+/** Take back an approval that was a mistake: the card loses the owner the
+    claim gave it and can be claimed again.
+
+    - The claim becomes a rejected one, with the admin's note or a line
+      saying the approval was taken back, which is what the person now
+      reads on their card page.
+    - The claims the approval turned away on its own are put back in the
+      queue, since one of them may be the real creator's. One whose
+      claimant has since claimed something else, or made a card, stays
+      rejected: a person has one claim waiting, and one card.
+    - If the person changed the card while it was theirs, those words and
+      links are not the team's and may not be the creator's, so the card
+      goes back to pending, out of the directory, until an admin has read
+      it. A card they never changed stays approved as the team made it.
+
+    Only a card that got its owner through a claim can be undone here. A
+    card a creator made themselves is theirs. */
+export async function undoClaimApproval(args: {
+  claimId: string;
+  actorId: string;
+  note: string | null;
+}): Promise<{ outcome: ClaimUndoOutcome; cardId: string | null; edited: boolean; reopened: number }> {
+  return db().transaction(async (tx) => {
+    const none = { edited: false, reopened: 0 };
+    const [claim] = await tx
+      .select()
+      .from(creatorCardClaims)
+      .where(eq(creatorCardClaims.id, args.claimId))
+      .for("update");
+    if (!claim) return { outcome: "missing", cardId: null, ...none };
+    const cardId = claim.cardId;
+    if (claim.status !== "approved") return { outcome: "not-approved", cardId, ...none };
+    const [card] = await tx.select().from(creatorCards).where(eq(creatorCards.id, cardId)).for("update");
+    if (!card || card.userId !== claim.userId || !card.claimedAt) return { outcome: "moved-on", cardId, ...none };
+
+    const now = new Date();
+    // A card the team made has never been submitted; an owner's change
+    // submits it.
+    const edited = card.submittedAt !== null;
+    await tx
+      .update(creatorCards)
+      .set({
+        userId: null,
+        claimedAt: null,
+        updatedAt: now,
+        ...(edited ? { status: "pending" as const, revision: card.revision + 1, reviewedBy: null, reviewedAt: null } : {}),
+      })
+      .where(eq(creatorCards.id, cardId));
+    await tx
+      .update(creatorCardClaims)
+      .set({
+        status: "rejected",
+        reviewNote: args.note ?? UNDONE_NOTE,
+        reviewedBy: args.actorId,
+        reviewedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(creatorCardClaims.id, claim.id));
+    // The claims that approval rejected carry its note and its exact time.
+    const reopened = claim.reviewedAt
+      ? await tx
+          .update(creatorCardClaims)
+          .set({ status: "pending", reviewNote: null, reviewedBy: null, reviewedAt: null, updatedAt: now })
+          .where(
+            and(
+              eq(creatorCardClaims.cardId, cardId),
+              eq(creatorCardClaims.status, "rejected"),
+              eq(creatorCardClaims.reviewNote, SUPERSEDED_NOTE),
+              eq(creatorCardClaims.reviewedAt, claim.reviewedAt),
+              sql`not exists (select 1 from ${creatorCardClaims} as waiting where waiting.user_id = ${creatorCardClaims.userId} and waiting.status = 'pending')`,
+              sql`not exists (select 1 from ${creatorCards} as theirs where theirs.user_id = ${creatorCardClaims.userId})`,
+            ),
+          )
+          .returning({ id: creatorCardClaims.id })
+      : [];
+    return { outcome: "undone", cardId, edited, reopened: reopened.length };
+  });
 }
 
 /* ---------------------------------------------------------------------- */

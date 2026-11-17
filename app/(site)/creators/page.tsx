@@ -117,10 +117,13 @@ async function Directory({ searchParams }: { searchParams: PageProps<"/creators"
                       // Behind a sign-in: nothing to fetch ahead for a visitor.
                       prefetch={false}
                       rel="nofollow"
-                      className="inline-flex h-8 shrink-0 items-center rounded-full border border-border px-3 text-[0.8125rem] font-medium text-foreground transition-[border-color,color] duration-150 ease-hover hover:border-brand-cyan hover:text-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      className="group flex shrink-0 flex-col items-end rounded-xl border border-border px-2.5 py-1.5 text-xs leading-[1.35] transition-[border-color] duration-150 ease-hover hover:border-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
-                      {CREATORS_DIRECTORY.claim}
-                      <span className="sr-only">: {row.displayName}</span>
+                      <span className="text-muted-foreground">{CREATORS_DIRECTORY.claim.ask}</span>
+                      <span className="font-semibold text-brand-cyan">
+                        {CREATORS_DIRECTORY.claim.action}
+                        <span className="sr-only"> the card for {row.displayName}</span>
+                      </span>
                     </Link>
                   )
                 }

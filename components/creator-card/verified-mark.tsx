@@ -37,14 +37,19 @@ export function VerifiedMark({ className }: { className?: string }) {
           if (touch.current) timer.current = setTimeout(() => setOpen(false), 2500);
         }}
         className={cn(
-          // The white disc is what shows through the tick, and its ring
-          // keeps the seal clear of the photo behind it.
-          "flex size-7 cursor-default items-center justify-center rounded-full bg-card text-brand-cyan ring-2 ring-card",
+          "flex size-7 cursor-default items-center justify-center rounded-full text-brand-cyan",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
           className,
         )}
       >
-        <SealCheckIcon aria-hidden weight="fill" className="size-7" />
+        {/* The seal sits straight on the photo, with nothing around it.
+            Its tick is a hole in the shape, so a small white dot behind
+            the middle is what makes the tick white; the seal's own body
+            hides the rest of the dot. */}
+        <span className="relative flex size-7 items-center justify-center">
+          <span aria-hidden className="absolute inset-[27%] rounded-full bg-white" />
+          <SealCheckIcon aria-hidden weight="fill" className="relative size-7" />
+        </span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner side="top" sideOffset={6} collisionPadding={12} className="z-50">
