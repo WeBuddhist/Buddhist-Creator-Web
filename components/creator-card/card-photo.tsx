@@ -6,45 +6,43 @@ import { cardPhotoSrc } from "@/lib/creator-card";
 import { cn } from "@/lib/utils";
 
 /** A name's initials: the first letter of its first word and of its last,
-    "Ted Kunchok" → "TK". One word gives one letter. */
+    "Ted Kunchok" → "TK". One word gives one letter. A name written in two
+    scripts, "พระศักดา สุนฺทโร (Phra Sakda Suntharo)", gives the Latin
+    ones, "PS", rather than a letter from each. */
 function cardInitials(name: string | undefined) {
-  const words = (name ?? "").split(/\s+/).flatMap((word) => /[\p{L}\p{N}]/u.exec(word)?.[0] ?? []);
+  const letters = (name ?? "").split(/\s+/).flatMap((word) => /[\p{L}\p{N}]/u.exec(word)?.[0] ?? []);
+  const latin = letters.filter((letter) => /[\p{Script=Latin}\p{N}]/u.test(letter));
+  const words = latin.length > 0 ? latin : letters;
   if (words.length === 0) return "";
   return (words.length === 1 ? words[0] : words[0] + words[words.length - 1]).toUpperCase();
 }
 
-/* The round photo on a creator card. A plain img rather than next/image,
-   for the reason the header's avatar gives: the picture comes from a
-   sign-in provider's host or a presigned S3 URL, and none is worth a
-   remote pattern at this size. No referrer, since Google's CDN refuses
+/* The round photo of a creator: on the card itself (`card`), and smaller
+   beside the form's photo field (`field`). A plain img rather than
+   next/image, for the reason the header's avatar gives: the picture comes
+   from a sign-in provider's host or a presigned S3 URL, and none is worth
+   a remote pattern at this size. No referrer, since Google's CDN refuses
    some cross-site requests that carry one.
 
+   A circle suits every picture a card can have. A creator's own upload is
+   a square cut around them; the picture on a card our team made is the
+   creator's profile picture from the place they publish, which was
+   composed for a circle and is small (Instagram hands out 150 pixels), so
+   the card's 6.5rem is about as large as it stays sharp.
+
    With no picture, or one that will not load (a signature that lapsed, an
-   avatar its owner deleted), it is the faint figure the Team page uses
-   where a portrait is missing.
-
-   `round` is the small avatar beside the photo field; `cover` is the large
-   picture across the top of the card, cut from the stored square with the
-   face kept, since a portrait sits in its upper part.
-
-   `avatar` fills the same space as `cover` with a picture that cannot be
-   one: a creator's profile picture from the place they publish, which is
-   small (Instagram hands out 150 pixels) and composed for a circle, often
-   a logo that a wide crop would cut through. It is shown whole, as the
-   circle it was made for, on a ground of its own colours: the same
-   picture, enlarged and blurred. */
+   avatar its owner deleted), the circle holds the creator's initials when
+   it is told whose card this is, and otherwise the faint figure the Team
+   page uses where a portrait is missing. */
 export function CardPhoto({
   src: given,
-  shape = "round",
+  size = "field",
   name,
   className,
 }: {
   src: string | null | undefined;
-  shape?: "round" | "cover" | "avatar";
-  /** Whose card it is. On the card itself a missing picture is then the
-      creator's initials in a circle, where the picture would be, rather
-      than the figure: in a directory many cards have no picture yet, and
-      a wall of the same grey figure reads as something broken. */
+  size?: "field" | "card";
+  /** Whose card it is, for the initials that stand in for a picture. */
   name?: string;
   className?: string;
 }) {
@@ -52,57 +50,27 @@ export function CardPhoto({
   // The src that failed, so a new src gets its own chance.
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
 
-  const cover = shape !== "round";
+  const onCard = size === "card";
   const frame = cn(
-    "shrink-0 overflow-hidden bg-paper-deep",
-    cover ? "aspect-[5/4] w-full rounded-xl" : "size-20 rounded-full",
+    "shrink-0 overflow-hidden rounded-full bg-paper-deep",
+    onCard ? "size-26" : "size-20",
     className,
   );
   if (!src || failedSrc === src) {
-    const initials = cover ? cardInitials(name) : "";
-    if (initials) {
-      return (
-        <div aria-hidden className={cn(frame, "flex items-center justify-center")}>
-          <span className="flex size-30 items-center justify-center rounded-full bg-card font-display text-[2.5rem] leading-none text-brand-cyan shadow-border">
-            {initials}
-          </span>
-        </div>
-      );
-    }
+    const initials = cardInitials(name);
     return (
       <div aria-hidden className={cn(frame, "flex items-center justify-center")}>
-        <UserIcon className={cover ? "size-16 text-foreground/20" : "size-8 text-foreground/25"} />
+        {initials ? (
+          <span className={cn("font-display leading-none text-brand-cyan", onCard ? "text-[2.25rem]" : "text-[1.75rem]")}>
+            {initials}
+          </span>
+        ) : (
+          <UserIcon className={onCard ? "size-10 text-foreground/25" : "size-8 text-foreground/25"} />
+        )}
       </div>
     );
   }
-  if (shape === "avatar") {
-    return (
-      <div className={cn(frame, "relative isolate flex items-center justify-center")}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt=""
-          aria-hidden
-          referrerPolicy="no-referrer"
-          className="absolute inset-0 -z-10 size-full scale-150 object-cover opacity-55 blur-2xl saturate-125"
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={(img) => {
-            if (img?.complete && img.naturalWidth === 0) setFailedSrc(src);
-          }}
-          src={src}
-          alt=""
-          width={150}
-          height={150}
-          referrerPolicy="no-referrer"
-          onError={() => setFailedSrc(src)}
-          // 7.5rem: as large as a 150-pixel picture stays sharp.
-          className="size-30 rounded-full bg-card object-cover shadow-float outline-3 outline-white"
-        />
-      </div>
-    );
-  }
+  const pixels = onCard ? 104 : 80;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -115,11 +83,11 @@ export function CardPhoto({
       src={src}
       // Decorative: the name is printed right under it.
       alt=""
-      width={cover ? 512 : 80}
-      height={cover ? 410 : 80}
+      width={pixels}
+      height={pixels}
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src)}
-      className={cn(frame, "object-cover outline -outline-offset-1 outline-black/10", cover && "h-auto object-[50%_30%]")}
+      className={cn(frame, "object-cover outline -outline-offset-1 outline-black/10")}
     />
   );
 }

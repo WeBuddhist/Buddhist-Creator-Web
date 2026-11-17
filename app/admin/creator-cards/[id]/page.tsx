@@ -14,7 +14,7 @@ import {
   cardLabels,
   cardLinks,
   cardPhotoSrc,
-  cardPhotoStyle,
+  isProfilePicture,
   creatorTypeLabel,
 } from "@/lib/creator-card";
 import { cardFollowers, getCard } from "@/lib/creator-cards";
@@ -56,9 +56,8 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
   // team took for a card it made), or failing that the picture from the
   // owner's sign-in account, which is what the card shows by default.
   const photoUrl = await presignedGetUrl(card.photoKey ?? card.user?.picture);
-  const photoStyle = cardPhotoStyle(card.photoKey);
   const photoSource = card.photoKey
-    ? photoStyle === "avatar"
+    ? isProfilePicture(card.photoKey)
       ? "Taken by our team from the creator's public profile"
       : "Uploaded by the creator"
     : card.user?.picture
@@ -180,7 +179,7 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
             {/* The public site's own text face, so the card reads here as
                 it will there. */}
             <div className="font-[family-name:var(--font-instrument),ui-sans-serif,system-ui,sans-serif]">
-              <CreatorCard card={{ ...card, photoUrl, photoStyle }} />
+              <CreatorCard card={{ ...card, photoUrl }} verified={card.status === "approved"} />
             </div>
           </Section>
         </div>

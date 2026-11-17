@@ -150,7 +150,8 @@ export function ClaimCard({ cardId, card, email }: { cardId: string; card: CardC
         <h2 id="claim-card-preview" className={cn(eyebrow, "text-muted-foreground")}>
           The card
         </h2>
-        <CreatorCard card={card} className="mt-3" />
+        {/* Only an approved card can be claimed, so it wears the mark. */}
+        <CreatorCard card={card} verified className="mt-3" />
       </aside>
     </div>
   );

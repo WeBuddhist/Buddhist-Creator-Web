@@ -92,6 +92,13 @@
       "when": 1794894398421,
       "tag": "0012_four_creators_back",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794895335636,
+      "tag": "0013_vajiramedhi_photo",
+      "breakpoints": true
     }
   ]
 }

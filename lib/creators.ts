@@ -25,8 +25,8 @@ export const CREATORS_DIRECTORY = {
     action: "Create your creator card",
     note: "Share the Dharma on your own channel? Tell us who you are and what you make. Our team reads every card.",
   },
-  /* Under a card nobody owns yet. */
-  claim: "Is this you? Claim this card",
+  /* In the corner of a card nobody owns yet. */
+  claim: "Claim this card",
 } as const;
 
 export const SEARCH_MAX = 80;

@@ -127,8 +127,16 @@ may be null: the team also makes cards itself, for creators it knows, from
 details it only partly has. Migration `0009` holds the first of them, taken
 from the team's shared sheet. Such a card is approved as it is made, has no
 owner, and shows its creator's public profile picture (stored under
-`creator-cards/profile-pictures/`, drawn as a circle because that is what
-it was made for) or, without one, their initials.
+`creator-cards/profile-pictures/`) or, without one, their initials.
+
+Every card is laid out the same way: the photo as a circle top left, then
+the name, the country and follower total, the links, and the line about
+the creator's work; what a creator adds beyond that (how they create, what
+kinds of content, which languages) follows under a rule. An approved card
+carries the verification mark on the edge of its photo, a cyan seal with a
+tick (`components/creator-card/verified-mark.tsx`); pointing at it, or
+tapping it, says "Verified by Buddhist Creators". In the directory a card
+nobody owns has "Claim this card" in its top right corner.
 
 A card with no owner can be claimed once: its "claim this card" link in the
 directory leads, through sign-in, to a screen that shows the card and asks

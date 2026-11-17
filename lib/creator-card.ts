@@ -169,19 +169,16 @@ export function cardPhotoSrc(url: string | null | undefined): string | null {
   return url.replace(/=s\d+(-c)?$/, "=s512-c");
 }
 
-/* A card the team makes for a creator it knows (the creators directory's list)
-   takes its picture from the creator's own public profile. Those are kept
-   apart in the bucket, because they are a different kind of picture: an
-   avatar, small and composed for a circle, where a creator's own upload is
-   a 512-pixel square the card can crop wide. The card shows each as what
-   it is (CardPhoto's "avatar" and "cover"). */
+/* A card the team makes for a creator it knows takes its picture from
+   the creator's own public profile. Those are kept apart in the bucket
+   from the photos creators upload, so the dashboard can say which kind a
+   card has. The card shows both the same way, as a circle. */
 export const PROFILE_PICTURE_PREFIX = "creator-cards/profile-pictures/";
 
-export type CardPhotoStyle = "cover" | "avatar";
-
-/** How the card shows the photo stored under `photoKey`. */
-export function cardPhotoStyle(photoKey: string | null | undefined): CardPhotoStyle {
-  return photoKey?.startsWith(PROFILE_PICTURE_PREFIX) ? "avatar" : "cover";
+/** Whether the photo stored under `photoKey` is one the team took from the
+    creator's public profile. */
+export function isProfilePicture(photoKey: string | null | undefined) {
+  return photoKey?.startsWith(PROFILE_PICTURE_PREFIX) ?? false;
 }
 
 /** What the card shows. Everything but the name can be missing. */
@@ -189,8 +186,6 @@ export type CardContent = {
   /** Where the browser loads the photo from: a presigned URL for an
       upload, the sign-in account's picture otherwise, or nothing. */
   photoUrl?: string | null;
-  /** "avatar" for a picture taken from the creator's public profile. */
-  photoStyle?: CardPhotoStyle;
   displayName: string;
   country: string | null;
   creatorType: string | null;

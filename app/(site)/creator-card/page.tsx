@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { requireUser } from "@/lib/auth";
-import { CARD_FORM, CARD_PATH, cardPhotoStyle } from "@/lib/creator-card";
+import { CARD_FORM, CARD_PATH } from "@/lib/creator-card";
 import { cardFollowers, getClaimableCard, getMyCard } from "@/lib/creator-cards";
 import { claimHref } from "@/lib/creators";
 import type { CreatorCard } from "@/lib/db/schema";
@@ -91,7 +91,6 @@ async function CardLoader({ searchParams }: { searchParams: PageProps<"/creator-
         // Only what the card shows goes to the browser.
         card={{
           photoUrl: await presignedGetUrl(claimable.photoKey),
-          photoStyle: cardPhotoStyle(claimable.photoKey),
           displayName: claimable.displayName,
           country: claimable.country,
           creatorType: claimable.creatorType,
@@ -141,7 +140,6 @@ async function fromRow(row: CreatorCard): Promise<FormCard> {
   return {
     // Only an uploaded photo; the form falls back to the account's picture.
     photoUrl: await presignedGetUrl(row.photoKey),
-    photoStyle: cardPhotoStyle(row.photoKey),
     status: row.status,
     // The note is written for a rejection; it is not shown otherwise.
     reviewNote: row.status === "rejected" ? row.reviewNote : null,

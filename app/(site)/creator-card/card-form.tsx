@@ -309,9 +309,6 @@ export function CardForm({
   const preview: CardContent = {
     ...values,
     photoUrl,
-    // The stored photo keeps its own way of being shown; a newly chosen
-    // one, or the account's picture, is an ordinary cover.
-    photoStyle: photo.kind === "untouched" && uploadedUrl ? card?.photoStyle : undefined,
     totalFollowers: total,
   };
 
@@ -528,7 +525,7 @@ export function CardForm({
 
         {/* On a phone the card comes after the questions, just above the
             bar that sends it. */}
-        <CardPreview id="card-preview-below" card={preview} editable={editable} className="lg:hidden" />
+        <CardPreview id="card-preview-below" card={preview} editable={editable} verified={!editable && status === "approved"} className="lg:hidden" />
 
         {/* The actions, floating at the foot of the viewport for as long
             as the form is on screen. On a phone the main button takes the
@@ -613,7 +610,7 @@ export function CardForm({
       <CardPreview
         id="card-preview-beside"
         card={preview}
-        editable={editable}
+        editable={editable} verified={!editable && status === "approved"}
         className="hidden lg:top-[calc(var(--header-height)+1.5rem)] lg:block lg:[@media(min-height:53rem)]:sticky"
       />
     </form>
@@ -631,11 +628,15 @@ function CardPreview({
   id,
   card,
   editable,
+  verified,
   className,
 }: {
   id: string;
   card: CardContent;
   editable: boolean;
+  /** The stored card is approved. While the fields are open it is a
+      draft of a change, which nobody has approved yet. */
+  verified: boolean;
   className?: string;
 }) {
   return (
@@ -646,6 +647,7 @@ function CardPreview({
       <CreatorCard
         card={card}
         preview={editable}
+        verified={verified}
         className="mt-3"
       />
       {editable && <p className="mt-3 text-sm leading-[1.5] text-muted-foreground">It fills in as you answer.</p>}

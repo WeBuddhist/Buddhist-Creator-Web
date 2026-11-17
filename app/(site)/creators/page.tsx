@@ -8,7 +8,7 @@ import { CreatorFilters } from "@/components/creators/creator-filters";
 import { PageIntro } from "@/components/page-intro";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
-import { CARD_PATH, cardPhotoStyle } from "@/lib/creator-card";
+import { CARD_PATH } from "@/lib/creator-card";
 import { listPublicCards, type PublicCard } from "@/lib/creator-cards";
 import {
   CREATORS_DIRECTORY,
@@ -107,19 +107,20 @@ async function Directory({ searchParams }: { searchParams: PageProps<"/creators"
             <li key={row.id} className="flex min-w-0">
               <CreatorCard
                 className="min-w-0 flex-1"
-                card={{ ...row, photoUrl: photo, photoStyle: cardPhotoStyle(row.photoKey) }}
-                footer={
+                card={{ ...row, photoUrl: photo }}
+                // Only approved cards are listed, so each wears the mark.
+                verified
+                action={
                   row.unclaimed && (
                     <Link
                       href={claimHref(row.id)}
                       // Behind a sign-in: nothing to fetch ahead for a visitor.
                       prefetch={false}
                       rel="nofollow"
-                      className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-brand-cyan underline decoration-current/35 underline-offset-[5px] transition-[text-decoration-color] duration-150 ease-hover hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      className="inline-flex h-8 shrink-0 items-center rounded-full border border-border px-3 text-[0.8125rem] font-medium text-foreground transition-[border-color,color] duration-150 ease-hover hover:border-brand-cyan hover:text-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
                       {CREATORS_DIRECTORY.claim}
                       <span className="sr-only">: {row.displayName}</span>
-                      <ArrowRightIcon aria-hidden weight="bold" className="size-3.5" />
                     </Link>
                   )
                 }
