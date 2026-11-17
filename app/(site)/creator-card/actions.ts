@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   CARD_PATH,
   CARD_PHOTO_MAX_BYTES,
+  CLAIM_NOTE_MAX,
   cardFieldErrors,
   cardFormValues,
   cardPhotoType,
@@ -12,7 +13,15 @@ import {
   type CardFieldErrors,
   type CardValues,
 } from "@/lib/creator-card";
-import { cardPhotoKey, submitMyCard, type PhotoChange, type SubmitOutcome } from "@/lib/creator-cards";
+import {
+  cardPhotoKey,
+  requestClaim,
+  submitMyCard,
+  withdrawClaim,
+  type PhotoChange,
+  type SubmitOutcome,
+} from "@/lib/creator-cards";
+import { CREATORS_PATH } from "@/lib/creators";
 import { forLog } from "@/lib/log-error";
 import { deleteObjectQuietly, uploadBytes } from "@/lib/s3";
 
@@ -100,7 +109,55 @@ export async function submitCardAction(formData: FormData): Promise<CardSaveResu
   }
   if (outcome !== "unchanged") {
     revalidatePath(CARD_PATH);
+    // A changed card leaves the directory until it is approved again.
+    revalidatePath(CREATORS_PATH);
     revalidatePath("/admin/creator-cards", "layout");
   }
   return { ok: true, outcome, saved: parsed.data };
+}
+
+/** What came of asking for a card. `taken`: somebody else has the card,
+    or it is gone. `has-card`: this person already has a card of their own.
+    `has-claim`: they already have a claim waiting. */
+export type ClaimResult =
+  | { ok: true }
+  | { ok: false; reason: "taken" | "has-card" | "has-claim" | "signed-out" | "failed" };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* Ask for a card the team made. Nothing changes hands here: the claim
+   goes to the team, who approve it or not (lib/creator-cards.ts). The
+   session is re-read, and the browser only names the card and sends the
+   claimant's note. */
+export async function requestClaimAction(cardId: string, note: string): Promise<ClaimResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, reason: "signed-out" };
+  if (typeof cardId !== "string" || !UUID.test(cardId)) return { ok: false, reason: "taken" };
+  const said = typeof note === "string" ? note.replaceAll("\0", "").trim().slice(0, CLAIM_NOTE_MAX) : "";
+  let outcome;
+  try {
+    outcome = await requestClaim(user.id, cardId, said || null);
+  } catch (error) {
+    console.error("[creator-card] could not record a claim", forLog(error));
+    return { ok: false, reason: "failed" };
+  }
+  if (outcome !== "requested") return { ok: false, reason: outcome };
+  revalidatePath(CARD_PATH);
+  revalidatePath("/admin/creator-cards", "layout");
+  return { ok: true };
+}
+
+/* Take back a claim that is still with the team. */
+export async function withdrawClaimAction(): Promise<{ ok: true } | { ok: false; reason: "signed-out" | "failed" }> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, reason: "signed-out" };
+  try {
+    await withdrawClaim(user.id);
+  } catch (error) {
+    console.error("[creator-card] could not withdraw a claim", forLog(error));
+    return { ok: false, reason: "failed" };
+  }
+  revalidatePath(CARD_PATH);
+  revalidatePath("/admin/creator-cards", "layout");
+  return { ok: true };
 }

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { UserIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { photo } from "@/components/convention/section-heading";
-import type { TeamMember } from "@/lib/people";
+import type { TeamMember } from "@/lib/team";
 
 type Portrait = TeamMember["image"];
 

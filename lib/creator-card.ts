@@ -16,6 +16,9 @@ import { CONTENT_TOPICS, isWebLink, labelFor, type Option } from "@/lib/registra
 
 export const CARD_PATH = "/creator-card";
 
+/** The longest note a claimant can send with a claim. */
+export const CLAIM_NOTE_MAX = 1000;
+
 export const CARD_NAME_MAX = 80;
 export const CARD_TAGLINE_MAX = 140;
 const OTHER_MAX = 120;
@@ -73,7 +76,12 @@ export const CARD_SOCIALS = [
     audience: "Followers",
   },
   { value: "tiktok", label: "TikTok", placeholder: "https://www.tiktok.com/@yourhandle", audience: "Followers" },
-  { value: "facebook", label: "Facebook", placeholder: "https://www.facebook.com/yourpage" },
+  {
+    value: "facebook",
+    label: "Facebook",
+    placeholder: "https://www.facebook.com/yourpage",
+    audience: "Followers",
+  },
   { value: "x", label: "X", placeholder: "https://x.com/yourhandle" },
   { value: "website", label: "Website", placeholder: "https://" },
 ] as const satisfies readonly (Option & { placeholder: string; audience?: string })[];
@@ -162,6 +170,18 @@ export function cardPhotoSrc(url: string | null | undefined): string | null {
   if (!url) return null;
   if (!URL.canParse(url) || !new URL(url).hostname.endsWith(".googleusercontent.com")) return url;
   return url.replace(/=s\d+(-c)?$/, "=s512-c");
+}
+
+/* A card the team makes for a creator it knows takes its picture from
+   the creator's own public profile. Those are kept apart in the bucket
+   from the photos creators upload, so the dashboard can say which kind a
+   card has. The card shows both the same way, as a circle. */
+export const PROFILE_PICTURE_PREFIX = "creator-cards/profile-pictures/";
+
+/** Whether the photo stored under `photoKey` is one the team took from the
+    creator's public profile. */
+export function isProfilePicture(photoKey: string | null | undefined) {
+  return photoKey?.startsWith(PROFILE_PICTURE_PREFIX) ?? false;
 }
 
 /** What the card shows. Everything but the name can be missing. */

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/admin/page-header";
-import { Pagination } from "@/components/admin/pagination";
+import { Pagination } from "@/components/pagination";
 import { panel } from "@/components/admin/panel";
 import { RemoveSuggestion } from "@/components/admin/remove-suggestion";
 import { hasRole, requireRole } from "@/lib/auth";

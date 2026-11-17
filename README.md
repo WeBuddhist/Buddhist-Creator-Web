@@ -15,7 +15,9 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global sang
 | `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/convention/2027/register` | The convention application form (sign-in required) |
 | `/admin` | The selection committee's dashboard (admin role required) |
-| `/people` | The team and the creators |
+| `/creators` | The creators directory: every approved creator card, searchable and paged |
+| `/creator-card` | A creator's own card: make it, edit it, or claim one the team made (sign-in required) |
+| `/team` | The team, and the invitation to join it |
 
 ## Tech stack
 
@@ -40,6 +42,12 @@ Open [http://localhost:3000](http://localhost:3000). No environment variables ar
 - `npm run build` builds for production
 - `npm run start` serves the production build
 - `npm run lint` runs ESLint
+- `npm run db:migrate` applies the migrations in `drizzle/` that the database
+  has not had yet. It runs against `DATABASE_URL`, read from `.env.local`
+  when that file exists, so check which database that is before running it
+- `npm run db:generate` writes a new migration after a change to
+  `lib/db/schema.ts`
+- `npm run db:studio` opens Drizzle Studio on the same database
 
 ## Project structure
 
@@ -62,7 +70,8 @@ Most copy lives in typed data files in `lib/`, so it can be changed without touc
 | `lib/events.ts` | Events listing |
 | `lib/convention-2026.ts` | Convention 2026 page |
 | `lib/convention-2027.ts` | Convention 2027 page, including the registration switch |
-| `lib/people.ts` | Team and creators |
+| `lib/team.ts` | The team |
+| `lib/creators.ts` | Creators page: copy, and the search and country in the URL |
 | `lib/creator-card.ts` | Creator card form: copy and option lists |
 | `lib/navigation.ts` | Site navigation, name, URL and default description |
 
@@ -106,12 +115,65 @@ and is refused if the creator has changed the card since.
 | Preparing an uploaded photo in the browser | `components/creator-card/photo.ts` |
 | The form | `app/(site)/creator-card/` |
 | Review | `app/admin/creator-cards/` |
+| The public directory | `app/(site)/creators/`, `components/creators/` |
+| Claiming a card | `app/(site)/creator-card/claim-card.tsx` |
+| Deciding claims | `app/admin/creator-cards/claims/`, `app/admin/creator-cards/[id]/claim-review.tsx` |
+
+Approved cards are public at `/creators`, the most followed first, thirty to
+a page, with a search by name and a filter by country. Both live in the URL
+and the database does the narrowing, since the list is paged.
 
 One table, `creator_cards`. Only `display_name` is required and `user_id`
-may be null: the team will also make cards for creators it knows from
-details it only partly has, and such a card has no owner until its creator
-claims it. Claiming is not built yet, and approved cards are not shown on
-the public site yet.
+may be null: the team also makes cards itself, for creators it knows, from
+details it only partly has. Migration `0009` holds the first of them, taken
+from the team's shared sheet. Such a card is approved as it is made, has no
+owner, and shows its creator's public profile picture (stored under
+`creator-cards/profile-pictures/`) or, without one, their initials.
+
+Every card is laid out the same way: the photo as a circle top left, then
+the name, the country and follower total, the links, and the line about
+the creator's work; what a creator adds beyond that (how they create, what
+kinds of content, which languages) follows under a rule. An approved card
+carries the verification mark on the edge of its photo, a cyan seal with a
+tick (`components/creator-card/verified-mark.tsx`); pointing at it, or
+tapping it, says "Verified by Buddhist Creators". In the directory a card
+nobody owns has "Claim this card" in its top right corner.
+
+A card with no owner can be claimed, and a claim is a request, never a
+transfer. Signing in proves an email address, not that its owner runs the
+channel on the card, so nothing changes hands until an admin has approved:
+
+1. The card's claim link in the directory leads, through sign-in, to a
+   screen that shows the card and takes the claim, with an optional note.
+   The claim is stored in `creator_card_claims` with a code made on the
+   server (`BC-` and eight characters). The card stays unowned and listed.
+2. The claimant's `/creator-card` page then shows the claim waiting, with
+   the code to put in the bio or description of the channel the card links
+   to. That is the proof: only whoever runs the channel can put text on
+   it, and the team can see it there without being sent anything. The
+   claimant can withdraw the claim.
+3. Admins see waiting claims at `/admin/creator-cards/claims` and decide
+   each on the card's own page, beside the card's links: approve, or
+   reject with a note the claimant reads. Approving (`reviewClaim`) makes
+   the claimant the card's owner, leaves the card approved, and rejects
+   every other claim waiting on it. From then on it is their card, and
+   whatever they change goes to review like any other edit.
+
+4. An approval that was a mistake can be taken back: the approved claim
+   on the card's admin page has "Undo approval" (`undoClaimApproval`). The
+   card loses that owner and can be claimed again, the claim becomes a
+   rejected one with a note the person reads, and the claims that approval
+   turned away go back to waiting. If the person changed the card while it
+   was theirs, it also goes back to pending, out of the directory, until an
+   admin has reviewed it. A card a creator made themselves has no claim to
+   undo and cannot be taken from them this way.
+
+Several people may claim one card; a person has one claim waiting at a
+time and none while they have a card. Nothing is emailed at any step.
+
+Follower counts are kept for YouTube, Instagram, TikTok and Facebook and
+added up by the database (`total_followers`); they order the directory and
+are never part of a review.
 
 ## Registration and the admin dashboard
 
@@ -266,6 +328,7 @@ so the history outlives the admin who made it.
 | `notification_state` | `sending`, `sent`, `failed`, `uncertain` |
 | `notification_kind` | `decision`, `resend` |
 | `creator_card_status` | `pending`, `approved`, `rejected` |
+| `card_claim_status` | `pending`, `approved`, `rejected` |
 
 ### Setting it up
 

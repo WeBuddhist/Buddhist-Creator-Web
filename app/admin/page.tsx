@@ -8,7 +8,7 @@ import { EmailStatusLine } from "@/components/admin/email-status";
 import { ListFrame, TableHead } from "@/components/admin/applications-head";
 import { EmptyRows, FilterSkeleton, TableSkeleton } from "@/components/admin/applications-skeleton";
 import { PageHeader } from "@/components/admin/page-header";
-import { Pagination } from "@/components/admin/pagination";
+import { Pagination } from "@/components/pagination";
 import { panel } from "@/components/admin/panel";
 import { StatusBadge, STATUS_LABEL } from "@/components/admin/status-badge";
 import { countByStatus, listApplications, PAGE_SIZE, type ListFilter } from "@/lib/applications";

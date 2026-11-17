@@ -31,7 +31,8 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
   },
-  { label: "People", href: "/people" },
+  { label: "Creators", href: "/creators" },
+  { label: "Team", href: "/team" },
 ];
 
 export const SITE_NAME = "Buddhist Creators";
