@@ -125,7 +125,7 @@ function audienceOf(card: FormCard | null, place: CountedSocial, typed: string) 
   const same =
     !!stored &&
     socialLinkKey(place, /^https?:\/\//i.test(link) ? link : `https://${link}`) === socialLinkKey(place, stored);
-  if (!card || !same) return { count: null, note: "We read this from your link once your card is saved." };
+  if (!card || !same) return { count: null, note: "We read this from your link once your card is approved." };
 
   const figure = card.followers[place];
   const count = figure == null ? null : formatCount(figure);
@@ -134,7 +134,8 @@ function audienceOf(card: FormCard | null, place: CountedSocial, typed: string) 
   if (check?.status === "not_found" || check?.status === "unreadable") {
     return { count, note: "We could not read this account. Check that the link is your public profile." };
   }
-  if (card.status === "rejected") return { count, note: "We read this once your card is sent again." };
+  // Only an approved card's links are read.
+  if (card.status !== "approved") return { count, note: "We read this once your card is approved." };
   return { count, note: count ? "Updated every month." : "We will read this within a day." };
 }
 

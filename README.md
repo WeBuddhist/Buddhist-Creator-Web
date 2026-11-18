@@ -204,9 +204,13 @@ profile endpoints (one credit per account read).
   Actions tab, with its box ticked, reads every link again now and writes
   over the month's rows. It costs a SocialCrawl credit for each Instagram,
   TikTok and Facebook link.
+- **Only approved cards are read.** A reading costs a credit, so a card
+  waiting for a review is not read; its links are read within a day of
+  its approval.
 - **A reading belongs to a link.** Rows carry the link in the form links
   are compared in (`socialLinkKey`), and a card whose link changes loses
-  that place's count until the new account is read, within a day.
+  that place's count until the card is approved again and the new account
+  is read.
 - **A link that cannot be read keeps the count it had** and shows on the
   admin page above: an account that is gone, a hidden count, a personal
   Facebook profile.
@@ -235,6 +239,10 @@ day the counts were last read.
   channel's own share.
 - **Change** appears once two months of readings exist: this month's
   figure less last month's, for the same account.
+- **The mission's progress bar** on the home page (`components/mission.tsx`)
+  is the same counts added up, `networkAudience`, against the hundred
+  million the mission names. It counts followers, so somebody who follows
+  two creators is in it twice.
 
 It needs `YOUTUBE_API_KEY`, `SOCIALCRAWL_API_KEY` and `CRON_SECRET` on the
 site, and two secrets on the GitHub repository: `CRON_SECRET` (the same

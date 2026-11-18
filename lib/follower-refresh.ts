@@ -14,7 +14,7 @@ import { fetchSocialProfile, type SocialCrawlPlace } from "@/lib/socialcrawl";
 import { fetchYoutubeChannel, fetchYoutubeChannels, YOUTUBE_IDS_PER_REQUEST } from "@/lib/youtube";
 
 /* The monthly reading of follower counts. Each counted link of each
-   listed card is read once a month from the place itself: YouTube from its
+   approved card is read once a month from the place itself: YouTube from its
    own API, Instagram, TikTok and Facebook through SocialCrawl, where each
    account read costs a credit. A reading goes to creator_follower_checks,
    one row for the card, place and month, and its figure to the card's own
@@ -22,9 +22,10 @@ import { fetchYoutubeChannel, fetchYoutubeChannels, YOUTUBE_IDS_PER_REQUEST } fr
 
    It is run every day (app/api/cron/follower-refresh). On the first run
    of a month every link is due; on the others only what is new since, and
-   what failed and is tried again. So a new card has its figure within a
-   day, and a month's readings are all taken as near its start as they can
-   be, which is what makes one month comparable with the next.
+   what failed and is tried again. So a card has its figure within a day
+   of being approved, and a month's readings are all taken as near its
+   start as they can be, which is what makes one month comparable with
+   the next.
 
    A link is due when the month has no row for it under its current key,
    or has one that failed more than RETRY_AFTER_MS ago. A missing account

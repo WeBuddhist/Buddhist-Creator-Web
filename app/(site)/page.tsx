@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
       <Hero />
-      <LeaderboardSection browse className="py-20 lg:py-28" />
+      <LeaderboardSection invite className="py-20 lg:py-28" />
       <Mission />
       <Gallery />
       <Programs />

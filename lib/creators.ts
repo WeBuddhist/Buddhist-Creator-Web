@@ -32,7 +32,16 @@ export const CREATORS_LEADERBOARD = {
   empty: "The leaderboard appears here after our first monthly reading of the counts.",
   change: "An arrow shows how far a count has moved since last month's reading.",
   failed: "We could not load the rest of the leaderboard. Check your connection and try again.",
-  browse: "Browse all creators",
+  /* Under the home page's board: the way in for a creator who is not on
+     it, and the way on to everybody who is. */
+  invite: {
+    eyebrow: "For creators",
+    title: "Not on the list yet?",
+    description:
+      "If you share the Dharma on your own channel, create your creator card. Our team reads every card. Once yours is approved you are in the directory, and your channels are counted for the leaderboard.",
+    create: "Create your creator card",
+    browse: "Browse all Buddhist creators",
+  },
 } as const;
 
 /** How many creators a board shows before it is opened, and at most. */

@@ -708,15 +708,16 @@ export async function reviewCard(args: {
 /** One counted link of one card. */
 export type CountedLink = { cardId: string; platform: CountedSocial; link: string; linkKey: string };
 
-/** Every counted link there is to read: those of the cards in the
-    directory and of the ones waiting for a review, so that a card has its
-    figure by the time it is approved and an edited one keeps its history.
-    A rejected card is left alone. */
+/** Every counted link there is to read: those of the approved cards,
+    which are the ones the directory lists. A card waiting for a review is
+    not read, and neither is a rejected one: a reading costs a credit, and
+    it would be thrown away if the card were turned down. Once a card is
+    approved its links are due, and the next daily run reads them. */
 export async function listCountedLinks(): Promise<CountedLink[]> {
   const rows = await db()
     .select({ id: creatorCards.id, socials: creatorCards.socials })
     .from(creatorCards)
-    .where(inArray(creatorCards.status, ["approved", "pending"]))
+    .where(eq(creatorCards.status, "approved"))
     .orderBy(asc(creatorCards.id));
   return rows.flatMap(({ id, socials }) =>
     COUNTED_SOCIALS.flatMap(({ value }) => {
@@ -845,7 +846,8 @@ export async function listUnreadLinks(): Promise<UnreadLink[]> {
     })
     .from(creatorFollowerChecks)
     .innerJoin(creatorCards, eq(creatorCards.id, creatorFollowerChecks.cardId))
-    .where(inArray(creatorCards.status, ["approved", "pending"]))
+    // Only approved cards are read, so only theirs can be waiting on a fix.
+    .where(eq(creatorCards.status, "approved"))
     .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.platform, desc(creatorFollowerChecks.month));
   return rows
     .flatMap(({ check, card }) => {
@@ -897,9 +899,7 @@ export type Leaderboard = {
   boards: Partial<Record<LeaderboardPlace, LeaderboardRow[]>>;
   /** How many creators each whole board has, LEADERBOARD_SIZE at most. */
   sizes: Record<LeaderboardPlace, number>;
-  /** When the counts were last read: the day most of the latest month's
-      readings were taken, which is the day the reading ran. Null before
-      the first one. */
+  /** When the counts were last read (lastReadingDay). */
   readAt: Date | null;
 };
 
@@ -907,6 +907,40 @@ export type Leaderboard = {
 function monthBefore(month: string) {
   const [year, index] = month.split("-").map(Number);
   return new Date(Date.UTC(year, index - 2, 1)).toISOString().slice(0, 10);
+}
+
+/** When the counts were last read: the day most of the latest month's
+    readings were taken, which is the day the reading ran. A few links
+    read later in the month (a new card's, a retry) do not move it. Null
+    before the first reading. */
+async function lastReadingDay(): Promise<Date | null> {
+  const [day] = await db()
+    .select({ at: sql<Date>`max(${creatorFollowerChecks.checkedAt})`.mapWith(creatorFollowerChecks.checkedAt) })
+    .from(creatorFollowerChecks)
+    .where(sql`${creatorFollowerChecks.month} = (select max(${creatorFollowerChecks.month}) from ${creatorFollowerChecks})`)
+    .groupBy(sql`(${creatorFollowerChecks.checkedAt} at time zone 'UTC')::date`)
+    .orderBy(desc(sql`count(*)`), desc(sql`max(${creatorFollowerChecks.checkedAt})`))
+    .limit(1);
+  return day?.at ?? null;
+}
+
+/** Everybody the listed creators reach, as their counts add up: the
+    followers of every approved card in all its counted places, and how
+    many creators that is. One person who follows two creators, or one
+    creator in two places, is counted twice; it is an audience, not a
+    head count. */
+export async function networkAudience(): Promise<{ followers: number; creators: number; readAt: Date | null }> {
+  const [[total], readAt] = await Promise.all([
+    db()
+      .select({
+        followers: sql<number>`coalesce(sum(${creatorCards.totalFollowers}), 0)::float8`,
+        creators: sql<number>`count(*)::int`,
+      })
+      .from(creatorCards)
+      .where(eq(creatorCards.status, "approved")),
+    lastReadingDay(),
+  ]);
+  return { followers: Number(total.followers), creators: total.creators, readAt };
 }
 
 const boardFigure = (place: LeaderboardPlace) =>
@@ -958,10 +992,9 @@ export async function creatorLeaderboard(
   ]);
 
   const ids = [...new Set(lists.flat().map((card) => card.id))];
-  const [readings, [day]] =
+  const [readings, readAt] = await Promise.all([
     month && ids.length > 0
-      ? await Promise.all([
-          db()
+      ? db()
             .select({
               cardId: creatorFollowerChecks.cardId,
               platform: creatorFollowerChecks.platform,
@@ -976,16 +1009,10 @@ export async function creatorLeaderboard(
                 inArray(creatorFollowerChecks.month, [month, monthBefore(month)]),
                 eq(creatorFollowerChecks.status, "ok"),
               ),
-            ),
-          db()
-            .select({ at: sql<Date>`max(${creatorFollowerChecks.checkedAt})`.mapWith(creatorFollowerChecks.checkedAt) })
-            .from(creatorFollowerChecks)
-            .where(eq(creatorFollowerChecks.month, month))
-            .groupBy(sql`(${creatorFollowerChecks.checkedAt} at time zone 'UTC')::date`)
-            .orderBy(desc(sql`count(*)`), desc(sql`max(${creatorFollowerChecks.checkedAt})`))
-            .limit(1),
-        ])
-      : [[], []];
+            )
+      : [],
+    lastReadingDay(),
+  ]);
 
   /* A place's gain: this month's figure less last month's, when both are
      readings of the link the card has now. */
@@ -1028,5 +1055,5 @@ export async function creatorLeaderboard(
     LEADERBOARD_PLACES.map((place) => [place, Math.min(counts[place], LEADERBOARD_SIZE)]),
   ) as Record<LeaderboardPlace, number>;
 
-  return { boards, sizes, readAt: day?.at ?? null };
+  return { boards, sizes, readAt };
 }
