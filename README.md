@@ -15,7 +15,7 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global netw
 | `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/convention/2027/register` | The convention application form (sign-in required) |
 | `/admin` | The selection committee's dashboard (admin role required) |
-| `/creators` | The leaderboard of the most followed creators, and the creators directory: every approved creator card, searchable and paged |
+| `/creators` | The leaderboard of the most followed creators (also on the home page), and the creators directory: every approved creator card, searchable and paged |
 | `/creator-card` | A creator's own card: make it, edit it, or claim one the team made (sign-in required) |
 | `/team` | The team, and the invitation to join it |
 
@@ -213,12 +213,28 @@ profile endpoints (one credit per account read).
 - **YouTube rounds** the subscriber count it gives out to three figures
   (2,970,000; 24,900), so a large channel's count moves in steps.
 
-**The leaderboard** at the top of `/creators` is made of the same rows
-(`creatorLeaderboard` in `lib/creator-cards.ts`,
-`components/creators/leaderboard.tsx`): the ten most followed creators in
-all their counted places together and in each place, the day the counts
-were last read, and, once two months of readings exist, how far each count
-has moved since the month before.
+**The leaderboard** is made of the same rows. It is the first thing under
+the home page's opening photograph and the first thing on `/creators`
+(`components/creators/leaderboard-section.tsx`): the most followed
+creators in all their counted places together and in each place, with the
+day the counts were last read.
+
+| Piece | Where |
+| --- | --- |
+| The ranking and the month-on-month change | `creatorLeaderboard` in `lib/creator-cards.ts` |
+| The boards as a page gets them, with photos | `lib/creator-leaderboard.ts` |
+| Tabs, the first three as cards, the rows | `components/creators/leaderboard.tsx` |
+| A whole board, for the browser | `GET /api/creators/leaderboard?place=youtube` |
+
+- **Ten, then a hundred.** A page carries each board's first ten. "Show the
+  top 100" asks the address above for that one board, so the home page
+  stays light.
+- **Every figure names its channels.** A row shows the icon of each channel
+  its figure was read from, and each icon is the link to the creator
+  there. On the board of all channels the first three also show each
+  channel's own share.
+- **Change** appears once two months of readings exist: this month's
+  figure less last month's, for the same account.
 
 It needs `YOUTUBE_API_KEY`, `SOCIALCRAWL_API_KEY` and `CRON_SECRET` on the
 site, and two secrets on the GitHub repository: `CRON_SECRET` (the same

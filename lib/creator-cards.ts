@@ -17,7 +17,13 @@ import {
   type CardValues,
   type CountedSocial,
 } from "@/lib/creator-card";
-import type { CreatorsView } from "@/lib/creators";
+import {
+  LEADERBOARD_PLACES,
+  LEADERBOARD_SIZE,
+  type BoardSource,
+  type CreatorsView,
+  type LeaderboardPlace,
+} from "@/lib/creators";
 import type { FollowerReading } from "@/lib/follower-reading";
 
 /* Everything that reads or writes creator cards. Callers pass the current
@@ -870,11 +876,6 @@ export async function listUnreadLinks(): Promise<UnreadLink[]> {
    it, and two months of readings set beside each other say how far a
    creator has moved since the last one. */
 
-/** How many creators a board lists. */
-export const LEADERBOARD_SIZE = 10;
-
-export type LeaderboardPlace = "all" | CountedSocial;
-
 export type LeaderboardRow = {
   id: string;
   displayName: string;
@@ -886,14 +887,16 @@ export type LeaderboardRow = {
   /** How far that figure has moved since last month's reading. Null
       until there are two readings of the same account to compare. */
   gain: number | null;
-  /** Where the creator is found: in that place, or, on the board of all
-      places, in the one where most people follow them. */
-  link: string | null;
-  linkPlace: CountedSocial | null;
+  /** The channels the figure is made of: the one place, or, on the board
+      of all places, every place the creator has a count in. */
+  sources: BoardSource[];
 };
 
 export type Leaderboard = {
-  boards: Record<LeaderboardPlace, LeaderboardRow[]>;
+  /** The boards asked for, each with its first `limit` creators. */
+  boards: Partial<Record<LeaderboardPlace, LeaderboardRow[]>>;
+  /** How many creators each whole board has, LEADERBOARD_SIZE at most. */
+  sizes: Record<LeaderboardPlace, number>;
   /** When the counts were last read: the day most of the latest month's
       readings were taken, which is the day the reading ran. Null before
       the first one. */
@@ -906,10 +909,17 @@ function monthBefore(month: string) {
   return new Date(Date.UTC(year, index - 2, 1)).toISOString().slice(0, 10);
 }
 
-export async function creatorLeaderboard(): Promise<Leaderboard> {
-  const places: LeaderboardPlace[] = ["all", ...COUNTED_SOCIALS.map(({ value }) => value)];
+const boardFigure = (place: LeaderboardPlace) =>
+  place === "all" ? creatorCards.totalFollowers : creatorCards[FOLLOWER_COLUMN[place]];
+
+export async function creatorLeaderboard(
+  options: { places?: readonly LeaderboardPlace[]; limit?: number } = {},
+): Promise<Leaderboard> {
+  const places = options.places ?? LEADERBOARD_PLACES;
+  const limit = Math.min(options.limit ?? LEADERBOARD_SIZE, LEADERBOARD_SIZE);
+  const approved = eq(creatorCards.status, "approved");
   const top = (place: LeaderboardPlace) => {
-    const figure = place === "all" ? creatorCards.totalFollowers : creatorCards[FOLLOWER_COLUMN[place]];
+    const figure = boardFigure(place);
     return db()
       .select({
         id: creatorCards.id,
@@ -926,13 +936,24 @@ export async function creatorLeaderboard(): Promise<Leaderboard> {
       })
       .from(creatorCards)
       .leftJoin(users, eq(users.id, creatorCards.userId))
-      .where(and(eq(creatorCards.status, "approved"), sql`${figure} > 0`))
+      .where(and(approved, sql`${figure} > 0`))
       // As the directory orders: the name and the id settle a tie.
       .orderBy(desc(figure), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
-      .limit(LEADERBOARD_SIZE);
+      .limit(limit);
   };
-  const [lists, [{ month }]] = await Promise.all([
+  const onBoard = (place: LeaderboardPlace) => sql<number>`count(*) filter (where ${boardFigure(place)} > 0)::int`;
+  const [lists, [counts], [{ month }]] = await Promise.all([
     Promise.all(places.map(top)),
+    db()
+      .select({
+        all: onBoard("all"),
+        youtube: onBoard("youtube"),
+        instagram: onBoard("instagram"),
+        tiktok: onBoard("tiktok"),
+        facebook: onBoard("facebook"),
+      })
+      .from(creatorCards)
+      .where(approved),
     db().select({ month: sql<string | null>`max(${creatorFollowerChecks.month})::text` }).from(creatorFollowerChecks),
   ]);
 
@@ -981,18 +1002,14 @@ export async function creatorLeaderboard(): Promise<Leaderboard> {
     places.map((place, index) => [
       place,
       lists[index].map((card): LeaderboardRow => {
-        const counted = COUNTED_SOCIALS.map(({ value }) => ({
-          place: value,
-          followers: card[FOLLOWER_COLUMN[value]] ?? 0,
-          link: card.socials[value]?.trim() || null,
-          gain: gainIn(card, value),
-        }));
-        const gains = counted.flatMap(({ gain }) => (gain === null ? [] : [gain]));
-        // On the board of all places, the place most people follow them in.
-        const lead =
-          place === "all"
-            ? counted.filter(({ link }) => link).sort((a, b) => b.followers - a.followers)[0]
-            : counted.find((entry) => entry.place === place);
+        // The channels with a figure, in the order the places are listed.
+        const counted = COUNTED_SOCIALS.flatMap(({ value }) => {
+          const link = card.socials[value]?.trim();
+          const followers = card[FOLLOWER_COLUMN[value]] ?? 0;
+          return link && followers > 0 ? [{ place: value, link, followers, gain: gainIn(card, value) }] : [];
+        });
+        const own = place === "all" ? counted : counted.filter((entry) => entry.place === place);
+        const gains = own.flatMap(({ gain }) => (gain === null ? [] : [gain]));
         return {
           id: card.id,
           displayName: card.displayName,
@@ -1000,13 +1017,16 @@ export async function creatorLeaderboard(): Promise<Leaderboard> {
           photoKey: card.photoKey,
           ownerPicture: card.ownerPicture,
           followers: place === "all" ? Number(card.totalFollowers) : (card[FOLLOWER_COLUMN[place]] ?? 0),
-          gain: place === "all" ? (gains.length > 0 ? gains.reduce((sum, gain) => sum + gain, 0) : null) : (lead?.gain ?? null),
-          link: lead?.link ?? null,
-          linkPlace: lead?.link ? lead.place : null,
+          gain: gains.length > 0 ? gains.reduce((sum, gain) => sum + gain, 0) : null,
+          sources: own.map(({ place: source, link, followers }) => ({ place: source, link, followers })),
         };
       }),
     ]),
-  ) as Record<LeaderboardPlace, LeaderboardRow[]>;
+  ) as Partial<Record<LeaderboardPlace, LeaderboardRow[]>>;
 
-  return { boards, readAt: day?.at ?? null };
+  const sizes = Object.fromEntries(
+    LEADERBOARD_PLACES.map((place) => [place, Math.min(counts[place], LEADERBOARD_SIZE)]),
+  ) as Record<LeaderboardPlace, number>;
+
+  return { boards, sizes, readAt: day?.at ?? null };
 }

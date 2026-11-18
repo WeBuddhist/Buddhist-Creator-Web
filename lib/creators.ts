@@ -1,4 +1,4 @@
-import { CARD_PATH } from "@/lib/creator-card";
+import { CARD_PATH, COUNTED_SOCIALS, type CountedSocial } from "@/lib/creator-card";
 
 /* The creators page: its copy, and how the directory is being looked at.
    The search and the country live in the URL, so a view can be shared,
@@ -19,18 +19,58 @@ export const CREATORS_PAGE = {
 } as const;
 
 /* The leaderboard: the creators with the largest audiences, in all their
-   counted places together and in each one. `updated` is the line that
-   says when the counts were last read. */
+   counted places together and in each one. It opens on its first ten and
+   can be opened to a hundred. It is on the home page and at the top of
+   this one. */
 export const CREATORS_LEADERBOARD = {
   eyebrow: "Leaderboard",
   title: "The most followed creators",
   description:
-    "The ten creators with the largest audience, across all their channels and on each one. We read every count from the channel itself, once a month.",
+    "The creators with the largest audience, across all their channels and on each one. We read every count from the channel itself, once a month.",
   all: "All channels",
   updated: "Last updated",
   empty: "The leaderboard appears here after our first monthly reading of the counts.",
-  change: "The arrows show how far a count has moved since last month's reading.",
+  change: "An arrow shows how far a count has moved since last month's reading.",
+  failed: "We could not load the rest of the leaderboard. Check your connection and try again.",
+  browse: "Browse all creators",
 } as const;
+
+/** How many creators a board shows before it is opened, and at most. */
+export const LEADERBOARD_OPENING = 10;
+export const LEADERBOARD_SIZE = 100;
+
+/** Where the browser asks for a whole board: `?place=youtube`. */
+export const LEADERBOARD_API = "/api/creators/leaderboard";
+
+/** A board: every counted place together, or one of them. */
+export type LeaderboardPlace = "all" | CountedSocial;
+
+export const LEADERBOARD_PLACES: readonly LeaderboardPlace[] = ["all", ...COUNTED_SOCIALS.map(({ value }) => value)];
+
+/** One of a creator's channels a figure on the board was read from. */
+export type BoardSource = { place: CountedSocial; link: string; followers: number };
+
+/** A creator on a board, as the browser gets it. */
+export type BoardRow = {
+  id: string;
+  displayName: string;
+  country: string | null;
+  photoUrl: string | null;
+  /** The audience the board ranks on. */
+  followers: number;
+  /** Since last month's reading; null when there is nothing to compare. */
+  gain: number | null;
+  /** The channels that figure is made of, each with its own. */
+  sources: BoardSource[];
+};
+
+export type Board = {
+  place: LeaderboardPlace;
+  /** Its first creators, LEADERBOARD_OPENING at most. */
+  rows: BoardRow[];
+  /** How many creators the whole board has, LEADERBOARD_SIZE at most. */
+  size: number;
+};
 
 export const CREATORS_DIRECTORY = {
   title: "Find a creator",

@@ -110,6 +110,16 @@
   --color-status-rejected-text: oklch(0.47 0.16 25);
   --color-status-rejected-solid: oklch(0.58 0.19 25);
 
+  /* The first three places on the leaderboard: gold, silver and bronze.
+     Each is the fill of the place's medal, the ring of its card and, let
+     down to about a fifth, the wash at the card's top. First place is
+     the banners' gold. Ink is the text on a medal: measured 8.6:1 on
+     first, 7.2:1 on second and 5.7:1 on third. On the 22% wash over the
+     white card, ink measures 13.2:1 or more and muted text 5.0:1 or more. */
+  --color-rank-first: var(--color-saffron);
+  --color-rank-second: #a3adb8;
+  --color-rank-third: #cf8a4f;
+
   /* Hairline ring, and ring + soft lift. Nested they read as a double border.
      Pair either with `border border-transparent`: forced-colors mode drops
      box-shadow and paints that border instead. */

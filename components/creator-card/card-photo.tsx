@@ -87,6 +87,9 @@ export function CardPhoto({
       alt=""
       width={pixels}
       height={pixels}
+      // A row is one of up to a hundred, most of them far down the page.
+      loading={size === "row" ? "lazy" : undefined}
+      decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src)}
       className={cn(frame, "object-cover outline -outline-offset-1 outline-black/10")}
