@@ -50,7 +50,7 @@ const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
   dharma: LightbulbIcon,
   tools: SparkleIcon,
   create: VideoCameraIcon,
-  sangha: GlobeHemisphereEastIcon,
+  network: GlobeHemisphereEastIcon,
 };
 
 /* The flyer everyone knows from the homepage opens the page. Under it the

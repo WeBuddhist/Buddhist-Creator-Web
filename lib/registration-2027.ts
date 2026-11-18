@@ -14,7 +14,7 @@ export const CONTENT_TOPICS = [
   { value: "meditation-guides", label: "Meditation & Mindfulness Guides" },
   { value: "philosophy-explainers", label: "Buddhist Philosophy Explainers" },
   { value: "sutra-reflections", label: "Sutra/Scripture Reflections" },
-  { value: "monastic-life", label: "Monastic Life & Sangha Stories" },
+  { value: "monastic-life", label: "Monastic Life & Community Stories" },
   { value: "buddhist-art", label: "Buddhist Art" },
   { value: "chanting-music", label: "Chanting & Music" },
   { value: "pilgrimage-vlogs", label: "Pilgrimage & Temple Vlogs" },
@@ -28,7 +28,7 @@ export const CONTENT_TOPICS = [
 
 export const TARGET_AUDIENCES = [
   { value: "new-practitioners", label: "New practitioners just beginning their journey" },
-  { value: "sangha-members", label: "Long-time Sangha members with established practice" },
+  { value: "sangha-members", label: "Long-time community members with established practice" },
   { value: "youth", label: "Youth and teenagers" },
   { value: "young-adults", label: "Young adults and college students" },
   { value: "families", label: "Families with children" },

@@ -151,7 +151,7 @@ export const PAST_EVENTS: EventEntry[] = [
     title: "Buddhist Creators Convention 2026",
     date: { label: "29 January – 6 February 2026", start: "2026-01-29", end: "2026-02-06" },
     location: "Bodh Gaya, Bihar, India",
-    gist: "In January 2026, 110 creators from 10 countries gathered in Bodh Gaya, the first global sangha of its kind. Nine days ran in three phases: community days with an opening ceremony, keynotes, a panel and lightning talks; a masterclass on marketing the Dharma; and a closing ceremony with the first Buddhist Influencer of the Year awards.",
+    gist: "In January 2026, 110 creators from 10 countries gathered in Bodh Gaya, the first global network of its kind. Nine days ran in three phases: community days with an opening ceremony, keynotes, a panel and lightning talks; a masterclass on marketing the Dharma; and a closing ceremony with the first Buddhist Influencer of the Year awards.",
     href: "/convention/2026",
     cta: "Read the report",
     image: {

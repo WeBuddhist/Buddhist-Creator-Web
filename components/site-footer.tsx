@@ -72,7 +72,7 @@ export function SiteFooter() {
               instead of leaving one of them alone in a half-empty row. */}
           <div className="max-w-sm sm:col-span-2 md:col-span-1">
             <p className="text-pretty font-display text-3xl leading-[1.15] sm:text-[2rem]">
-              A global sangha of creators bringing the Dharma to the digital age.
+              A global network of creators bringing the Dharma to the digital age.
             </p>
             <ul className="mt-8 flex items-center gap-2.5">
               {SOCIAL.map(({ label: name, href, Icon }) => (

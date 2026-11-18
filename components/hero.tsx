@@ -44,7 +44,7 @@ export function Hero() {
         />
 
         <div className="flex flex-col items-center px-4 pt-[calc(var(--header-height)+clamp(1.5rem,5svh,3.5rem))] text-center">
-          <p className={cn(label, "text-gold-soft text-on-photo")}>A global sangha of creators</p>
+          <p className={cn(label, "text-gold-soft text-on-photo")}>A global network of creators</p>
           <h1
             id="hero-title"
             className="mt-4 text-balance font-display text-on-photo text-[clamp(3.75rem,18vw,9rem)] leading-[0.92] tracking-[-0.03em] lg:whitespace-nowrap lg:text-[clamp(7rem,11vw,13.5rem)]"

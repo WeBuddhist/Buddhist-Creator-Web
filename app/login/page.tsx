@@ -44,7 +44,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
               <Image src={logoMark} alt="" width={80} height={80} preload className="size-10 brightness-0 invert" />
               <span className="font-display text-[1.375rem] leading-none">{SITE_NAME}</span>
             </Link>
-            <p className={cn(label, "mt-14 text-gold-soft xl:mt-20")}>A global sangha of creators</p>
+            <p className={cn(label, "mt-14 text-gold-soft xl:mt-20")}>A global network of creators</p>
             <p className="mt-5 max-w-lg text-balance font-display text-4xl leading-[1.1] xl:text-5xl">
               A worldwide community of monastics, practitioners and storytellers carrying the Dharma further
               than ever before.

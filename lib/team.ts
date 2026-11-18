@@ -19,7 +19,7 @@ export type TeamMember = {
 
 export const TEAM_PAGE = {
   eyebrow: "Team",
-  title: "The sangha behind the mission",
+  title: "The network behind the mission",
   description: "The team behind Buddhist Creators, and how to join it.",
 } as const;
 

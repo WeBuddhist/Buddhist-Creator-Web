@@ -52,4 +52,4 @@ export const SITE_URL = siteUrl();
 
 /** The default meta description, and the homepage's social-card text. */
 export const SITE_DESCRIPTION =
-  "A global sangha of monastics, practitioners and storytellers carrying the Dharma to the digital age through a convention, awards and campaigns.";
+  "A global network of monastics, practitioners and storytellers carrying the Dharma to the digital age through a convention, awards and campaigns.";

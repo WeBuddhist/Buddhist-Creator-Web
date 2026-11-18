@@ -84,7 +84,7 @@ export const PROGRAM = {
   eyebrow: "The Program",
   title: "Nine days, three phases",
   description:
-    "In January 2026, over a hundred Buddhist creators from more than a dozen countries gathered in Bodh Gaya — the first global sangha of its kind.",
+    "In January 2026, over a hundred Buddhist creators from more than a dozen countries gathered in Bodh Gaya — the first global network of its kind.",
 } as const;
 
 export const COMMUNITY_DAYS = {
@@ -390,7 +390,7 @@ export const MASTERCLASS = {
     },
     {
       title: "Community Engagement",
-      body: "Building online sanghas that support genuine practice, handling questions and criticism with grace, interactive experiences, and converting followers into committed practitioners.",
+      body: "Building online networks that support genuine practice, handling questions and criticism with grace, interactive experiences, and converting followers into committed practitioners.",
     },
     {
       title: "Sustainable Creator Practice",

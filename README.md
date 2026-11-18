@@ -1,8 +1,8 @@
-![Buddhist Creators: a global sangha of creators, bringing the Dharma to the digital age](assets/readme-banner.png)
+![Buddhist Creators: a global network of creators, bringing the Dharma to the digital age](assets/readme-banner.png)
 
 # Buddhist Creators
 
-The website for [Buddhist Creators](https://buddhistcreators.com), a global sangha of monastics, practitioners and storytellers carrying the Dharma to the digital age through a convention, awards and campaigns.
+The website for [Buddhist Creators](https://buddhistcreators.com), a global network of monastics, practitioners and storytellers carrying the Dharma to the digital age through a convention, awards and campaigns.
 
 ## Pages
 

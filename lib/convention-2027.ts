@@ -38,7 +38,7 @@ export const WELCOME = {
 
 export type ProgrammeItem = {
   /** Keys the icon the page draws beside the title. */
-  id: "journeys" | "dharma" | "tools" | "create" | "sangha";
+  id: "journeys" | "dharma" | "tools" | "create" | "network";
   title: string;
   body: string;
 };
@@ -67,8 +67,8 @@ export const IN_STORE = {
       body: "Practical sessions on using AI tools to brainstorm, edit, translate and share your content, while keeping your own voice at the heart of it.",
     },
     {
-      id: "sangha",
-      title: "Sangha Without Borders",
+      id: "network",
+      title: "Network Without Borders",
       body: "Good food, great conversations, friends for life.",
     },
   ] satisfies ProgrammeItem[],
