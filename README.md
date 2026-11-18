@@ -237,8 +237,11 @@ day the counts were last read.
   its figure was read from, and each icon is the link to the creator
   there. On the board of all channels the first three also show each
   channel's own share.
-- **Change** appears once two months of readings exist: this month's
-  figure less last month's, for the same account.
+- **Change** appears once two months of readings exist. Beside a count:
+  this month's figure less last month's, for the same account. Beside a
+  rank: the places gained or lost against last month's order (`ranksBefore`),
+  or "New" for a creator last month has no reading of. Up is green, down
+  is red, each with its own sign.
 - **The mission's progress bar** on the home page (`components/mission.tsx`)
   is the same counts added up, `networkAudience`, against the hundred
   million the mission names. It counts followers, so somebody who follows

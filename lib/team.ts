@@ -62,7 +62,7 @@ export const TEAM: TeamMember[] = [
   },
   {
     name: "Norbu Tsering",
-    role: "Social Media & Communication Associate",
+    role: "Media and Communication Officer",
     image: portrait(norbuTsering, "Norbu Tsering"),
   },
 ];

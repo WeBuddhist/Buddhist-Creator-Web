@@ -30,7 +30,8 @@ export const CREATORS_LEADERBOARD = {
   all: "All channels",
   updated: "Last updated",
   empty: "The leaderboard appears here after our first monthly reading of the counts.",
-  change: "An arrow shows how far a count has moved since last month's reading.",
+  change:
+    "Changes are since last month's reading: the triangle by a rank is places gained or lost on the board, and the arrow by a count is followers gained or lost.",
   failed: "We could not load the rest of the leaderboard. Check your connection and try again.",
   /* Under the home page's board: the way in for a creator who is not on
      it, and the way on to everybody who is. */
@@ -69,6 +70,11 @@ export type BoardRow = {
   followers: number;
   /** Since last month's reading; null when there is nothing to compare. */
   gain: number | null;
+  /** Places gained on the board since last month's reading, less than
+      nothing for places lost; null when there is nothing to compare. */
+  climbed: number | null;
+  /** On the board for the first time this month. */
+  fresh: boolean;
   /** The channels that figure is made of, each with its own. */
   sources: BoardSource[];
 };

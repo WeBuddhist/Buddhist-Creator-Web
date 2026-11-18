@@ -56,8 +56,11 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
    photo, name and country, the figure, and the channels it was read
    from. A channel is a link to the creator there, so the board says
    where every number comes from. From the second monthly reading on, a
-   figure also carries how far it has moved since the one before, as an
-   arrow and a number, never as colour alone.
+   creator also carries what the month did: beside the rank, the places
+   gained or lost on the board (a triangle, or "New" for a first
+   appearance), and beside the figure, the followers gained or lost (an
+   arrow). Up is green and down is red, and each has its sign and its
+   words for a screen reader, so colour is never the only carrier.
 
    Rank order is the order in the markup, on every screen. On a phone a
    row's figure and channels sit under the name, so a long name has the
@@ -143,6 +146,8 @@ function BoardPanel({
   const loading = open && more && whole.isPending;
   const unit = boardUnit(board.place);
   const moved = rows.some((row) => row.gain);
+  // Anything at all to say about last month, which the line under the board explains.
+  const compared = moved || rows.some((row) => row.climbed !== null || row.fresh);
   const first = rows.slice(0, 3);
   const rest = rows.slice(3);
   const listId = `leaderboard-${board.place}`;
@@ -187,7 +192,9 @@ function BoardPanel({
         </div>
       )}
 
-      {moved && <p className="mt-3 text-sm text-muted-foreground">{CREATORS_LEADERBOARD.change}</p>}
+      {compared && (
+        <p className="mt-3 max-w-[75ch] text-sm text-pretty text-muted-foreground">{CREATORS_LEADERBOARD.change}</p>
+      )}
 
       {more && (
         <div className="mt-6 flex flex-col items-center gap-3">
@@ -245,10 +252,10 @@ function BoardPanel({
    every row so the figures line up. */
 const rowGrid = (moved: boolean) =>
   cn(
-    "grid grid-cols-[1.75rem_auto_minmax(0,1fr)] items-center gap-x-3 px-4 sm:px-5 md:gap-x-5 md:px-6",
+    "grid grid-cols-[2.25rem_auto_minmax(0,1fr)] items-center gap-x-3 px-4 sm:px-5 md:gap-x-5 md:px-6",
     moved
-      ? "md:grid-cols-[2.25rem_3rem_minmax(0,1fr)_7.5rem_5.5rem_8.5rem]"
-      : "md:grid-cols-[2.25rem_3rem_minmax(0,1fr)_7.5rem_8.5rem]",
+      ? "md:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_5.5rem_8.5rem]"
+      : "md:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_8.5rem]",
   );
 
 function BoardRowCells({
@@ -267,10 +274,13 @@ function BoardRowCells({
 }) {
   return (
     <>
-      <span className="row-span-2 text-center font-display text-xl leading-none text-muted-foreground tabular-nums md:row-span-1">
-        <span className="sr-only">Rank </span>
-        {rank}
-      </span>
+      <div className="row-span-2 flex flex-col items-center gap-1 md:row-span-1">
+        <span className="font-display text-xl leading-none text-muted-foreground tabular-nums">
+          <span className="sr-only">Rank </span>
+          {rank}
+        </span>
+        <RankMove row={row} />
+      </div>
       <CardPhoto src={row.photoUrl} size="row" name={row.displayName} className="row-span-2 md:row-span-1" />
       <div className="min-w-0">
         <p className="wrap-anywhere text-[0.9375rem] leading-[1.35] font-medium text-foreground">
@@ -368,6 +378,7 @@ function LeadCard({ row, rank, unit, board }: { row: BoardRow; rank: number; uni
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <p className="text-sm text-muted-foreground">{unit}</p>
             {!!row.gain && <Change gain={row.gain} />}
+            <RankMove row={row} words />
           </div>
         </div>
         <div className="mt-4">
@@ -445,9 +456,59 @@ function Channels({ row, slots, className }: { row: BoardRow; slots: boolean; cl
   );
 }
 
-/* How far a figure has moved since last month's reading: up in the green
-   the site keeps for good news, down in plain muted ink. The arrow and the
-   words for a screen reader say which, so colour is never the only sign. */
+/* The places a creator has gained or lost on the board since last month's
+   reading: a filled triangle and the number, green for up and red for
+   down. "New" for a first appearance, a dash for the same place, and
+   nothing when last month has no place to compare with. `words` spells
+   the unit out ("2 places"), for where no column head says it. */
+function RankMove({ row, words = false }: { row: BoardRow; words?: boolean }) {
+  const small = "text-xs leading-[1.3] font-medium tabular-nums";
+  if (row.fresh) {
+    return (
+      <span className="text-[0.6875rem] leading-[1.3] font-semibold tracking-[0.08em] text-brand-cyan uppercase">
+        New<span className="sr-only"> on the board this month</span>
+      </span>
+    );
+  }
+  if (row.climbed === null) return null;
+  if (row.climbed === 0) {
+    return (
+      <span className={cn(small, "text-muted-foreground")}>
+        {words ? (
+          "Same place"
+        ) : (
+          <>
+            <span aria-hidden>–</span>
+            <span className="sr-only">Same place as last month</span>
+          </>
+        )}
+      </span>
+    );
+  }
+  const up = row.climbed > 0;
+  const places = Math.abs(row.climbed);
+  const Triangle = up ? CaretUpIcon : CaretDownIcon;
+  const unit = places === 1 ? " place" : " places";
+  return (
+    <span
+      className={cn(
+        small,
+        "inline-flex items-center gap-0.5",
+        up ? "text-status-accepted-text" : "text-status-rejected-text",
+      )}
+    >
+      <Triangle aria-hidden weight="fill" className="size-3" />
+      <span className="sr-only">{up ? "Up " : "Down "}</span>
+      {places}
+      {words ? unit : <span className="sr-only">{unit}</span>}
+      <span className="sr-only"> since last month</span>
+    </span>
+  );
+}
+
+/* How far a figure has moved since last month's reading: followers gained
+   in green, lost in red. The arrow and the words for a screen reader say
+   which, so colour is never the only sign. */
 function Change({ gain }: { gain: number }) {
   const up = gain > 0;
   const Arrow = up ? ArrowUpIcon : ArrowDownIcon;
@@ -455,13 +516,13 @@ function Change({ gain }: { gain: number }) {
     <p
       className={cn(
         "flex items-center gap-0.5 text-sm leading-[1.3] font-medium tabular-nums",
-        up ? "text-status-accepted-text" : "text-muted-foreground",
+        up ? "text-status-accepted-text" : "text-status-rejected-text",
       )}
     >
       <Arrow aria-hidden weight="bold" className="size-3.5" />
       <span className="sr-only">{up ? "Up " : "Down "}</span>
       {formatCount(Math.abs(gain))}
-      <span className="sr-only"> since last month</span>
+      <span className="sr-only"> followers since last month</span>
     </p>
   );
 }

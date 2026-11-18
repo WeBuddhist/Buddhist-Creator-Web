@@ -889,6 +889,13 @@ export type LeaderboardRow = {
   /** How far that figure has moved since last month's reading. Null
       until there are two readings of the same account to compare. */
   gain: number | null;
+  /** How many places the creator has moved up the board since last
+      month's reading, less than nothing for places lost. Null when last
+      month has no place for them to compare with. */
+  climbed: number | null;
+  /** On the board for the first time: last month has no reading of
+      theirs at all. */
+  fresh: boolean;
   /** The channels the figure is made of: the one place, or, on the board
       of all places, every place the creator has a count in. */
   sources: BoardSource[];
@@ -943,6 +950,75 @@ export async function networkAudience(): Promise<{ followers: number; creators: 
   return { followers: Number(total.followers), creators: total.creators, readAt };
 }
 
+/* Where every approved card stood on each board a month ago, worked out
+   from last month's readings: its place among the cards that had a figure
+   then, in the order the boards use. A card's figure then is last month's
+   reading of the link it has now; on the board of all places it is those
+   added up, and only when every place the card is counted in now was read
+   then, so that a channel added since does not pass for a climb. Null
+   when last month has no readings at all, which is the first month. */
+async function ranksBefore(
+  month: string,
+  places: readonly LeaderboardPlace[],
+): Promise<{ rank: Map<string, number>; known: Set<string> } | null> {
+  const [cards, readings] = await Promise.all([
+    db()
+      .select({
+        id: creatorCards.id,
+        displayName: creatorCards.displayName,
+        socials: creatorCards.socials,
+        youtubeFollowers: creatorCards.youtubeFollowers,
+        instagramFollowers: creatorCards.instagramFollowers,
+        tiktokFollowers: creatorCards.tiktokFollowers,
+        facebookFollowers: creatorCards.facebookFollowers,
+      })
+      .from(creatorCards)
+      .where(eq(creatorCards.status, "approved")),
+    db()
+      .select({
+        cardId: creatorFollowerChecks.cardId,
+        platform: creatorFollowerChecks.platform,
+        linkKey: creatorFollowerChecks.linkKey,
+        followers: creatorFollowerChecks.followers,
+      })
+      .from(creatorFollowerChecks)
+      .where(and(eq(creatorFollowerChecks.month, month), eq(creatorFollowerChecks.status, "ok"))),
+  ]);
+  if (readings.length === 0) return null;
+
+  const read = new Map(readings.map((row) => [`${row.cardId} ${row.platform} ${row.linkKey}`, row.followers ?? 0]));
+  const then = (card: (typeof cards)[number], place: CountedSocial) => {
+    const key = linkKeyOf(card.socials, place);
+    return key ? read.get(`${card.id} ${place} ${key}`) : undefined;
+  };
+  const rank = new Map<string, number>();
+  for (const place of places) {
+    const stood = cards.flatMap((card) => {
+      let figure: number | undefined;
+      if (place === "all") {
+        const counted = COUNTED_SOCIALS.filter(
+          ({ value }) => card.socials[value]?.trim() && (card[FOLLOWER_COLUMN[value]] ?? 0) > 0,
+        ).map(({ value }) => then(card, value));
+        figure = counted.length > 0 && counted.every((value) => value !== undefined)
+          ? counted.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+          : undefined;
+      } else {
+        figure = then(card, place);
+      }
+      return figure !== undefined && figure > 0 ? [{ card, figure }] : [];
+    });
+    // As the boards order: the figure, then the name, then the id.
+    stood.sort(
+      (a, b) =>
+        b.figure - a.figure ||
+        a.card.displayName.toLowerCase().localeCompare(b.card.displayName.toLowerCase()) ||
+        a.card.id.localeCompare(b.card.id),
+    );
+    stood.forEach(({ card }, index) => rank.set(`${place} ${card.id}`, index + 1));
+  }
+  return { rank, known: new Set(readings.map((row) => row.cardId)) };
+}
+
 const boardFigure = (place: LeaderboardPlace) =>
   place === "all" ? creatorCards.totalFollowers : creatorCards[FOLLOWER_COLUMN[place]];
 
@@ -992,7 +1068,7 @@ export async function creatorLeaderboard(
   ]);
 
   const ids = [...new Set(lists.flat().map((card) => card.id))];
-  const [readings, readAt] = await Promise.all([
+  const [readings, readAt, before] = await Promise.all([
     month && ids.length > 0
       ? db()
             .select({
@@ -1012,6 +1088,7 @@ export async function creatorLeaderboard(
             )
       : [],
     lastReadingDay(),
+    month && ids.length > 0 ? ranksBefore(monthBefore(month), places) : null,
   ]);
 
   /* A place's gain: this month's figure less last month's, when both are
@@ -1028,7 +1105,8 @@ export async function creatorLeaderboard(
   const boards = Object.fromEntries(
     places.map((place, index) => [
       place,
-      lists[index].map((card): LeaderboardRow => {
+      lists[index].map((card, position): LeaderboardRow => {
+        const stoodAt = before?.rank.get(`${place} ${card.id}`);
         // The channels with a figure, in the order the places are listed.
         const counted = COUNTED_SOCIALS.flatMap(({ value }) => {
           const link = card.socials[value]?.trim();
@@ -1045,6 +1123,9 @@ export async function creatorLeaderboard(
           ownerPicture: card.ownerPicture,
           followers: place === "all" ? Number(card.totalFollowers) : (card[FOLLOWER_COLUMN[place]] ?? 0),
           gain: gains.length > 0 ? gains.reduce((sum, gain) => sum + gain, 0) : null,
+          // The list starts at the first place, so a row's place is its position.
+          climbed: stoodAt === undefined ? null : stoodAt - (position + 1),
+          fresh: !!before && !before.known.has(card.id),
           sources: own.map(({ place: source, link, followers }) => ({ place: source, link, followers })),
         };
       }),
