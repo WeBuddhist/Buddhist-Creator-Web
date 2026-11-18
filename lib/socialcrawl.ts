@@ -14,6 +14,8 @@ export type SocialCrawlPlace = "instagram" | "tiktok" | "facebook";
 
 const DEFAULT_BASE = "https://www.socialcrawl.dev/v1";
 const TIMEOUT_MS = 25_000;
+/** The first part of a Facebook address that is not an account's name. */
+const FACEBOOK_PATH_WORDS = new Set(["p", "people", "profile.php", "pages"]);
 
 /* Only the fields that are read. Everything is optional: a reply that is
    not shaped as expected gives no figure, never a thrown error. */
@@ -81,11 +83,14 @@ export async function fetchSocialProfile(place: SocialCrawlPlace, account: Socia
     // count is the likes on the account's posts, never its audience.
     const followers = readCount(author.followers) ?? (place === "facebook" ? readCount(author.likes_count) : null);
     if (followers === null) return { status: "unreadable" };
+    const handle = author.username?.replace(/^@/, "") || null;
     return {
       status: "ok",
       followers,
       externalId: author.id == null ? null : String(author.id),
-      handle: author.username?.replace(/^@/, "") || null,
+      // For a Facebook address like /p/Name-123/ the name that comes back
+      // is the "p", which is no handle.
+      handle: place === "facebook" && handle && FACEBOOK_PATH_WORDS.has(handle.toLowerCase()) ? null : handle,
     };
   }
 }

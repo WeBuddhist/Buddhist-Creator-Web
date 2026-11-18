@@ -127,7 +127,7 @@ One table, `creator_cards`. Only `display_name` is required and `user_id`
 may be null: the team also makes cards itself, for creators it knows, from
 details it only partly has. Migration `0009` holds the first of them, taken
 from the team's shared sheet, and `0017` the team's final sheet of November
-2026, which brought the list to 353 creators. Such a card is approved as it
+2026, 353 creators (a few have been taken off since). Such a card is approved as it
 is made, has no owner, and shows its creator's public profile picture
 (stored under `creator-cards/profile-pictures/`) or, without one, their
 initials.
