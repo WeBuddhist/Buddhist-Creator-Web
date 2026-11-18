@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRightIcon, PencilSimpleIcon } from "@phosphor-icons/react/dist/ssr";
+import { CardDetailSkeleton } from "@/components/admin/card-skeleton";
 import { CardStatusBadge, CARD_STATUS_LABEL } from "@/components/admin/card-status-badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { Chips, Facts, Section, type Fact } from "@/components/admin/section";
 import { CreatorCard } from "@/components/creator-card/creator-card";
+import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth";
 import {
   CARD_CONTENT_TYPES,
@@ -29,7 +32,7 @@ export const metadata: Metadata = { title: "Creator card" };
 
 export default function CreatorCardPage(props: PageProps<"/admin/creator-cards/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading creator card…</p>}>
+    <Suspense fallback={<CardDetailSkeleton />}>
       <Loaded params={props.params} />
     </Suspense>
   );
@@ -182,6 +185,21 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
         eyebrow="Creator card"
         title={<span className="wrap-anywhere">{card.displayName}</span>}
         badge={<CardStatusBadge status={card.status} />}
+        // A card nobody owns is the team's to keep right.
+        actions={
+          !card.userId && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="px-3"
+              nativeButton={false}
+              render={<Link href={`/admin/creator-cards/${card.id}/edit`} />}
+            >
+              <PencilSimpleIcon data-icon="inline-start" aria-hidden />
+              Edit card
+            </Button>
+          )
+        }
         className="mb-6"
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">

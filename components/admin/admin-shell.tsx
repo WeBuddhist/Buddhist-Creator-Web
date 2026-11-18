@@ -281,6 +281,8 @@ function Breadcrumb() {
     ? [{ label: "Users & roles" }]
     : pathname.startsWith("/admin/suggestions")
       ? [{ label: "Suggestions" }]
+      : pathname === "/admin/creator-cards/new"
+      ? [{ label: "Creator cards", href: "/admin/creator-cards" }, { label: "Add a creator" }]
       : pathname.startsWith("/admin/creator-cards/")
       ? [{ label: "Creator cards", href: "/admin/creator-cards" }, { label: "Creator card" }]
       : pathname.startsWith("/admin/creator-cards")

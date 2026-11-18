@@ -29,6 +29,8 @@ const reply = z.object({
           // Optional by name: zod requires an `unknown` key to be there.
           followers: z.unknown().optional(),
           likes_count: z.unknown().optional(),
+          avatar_url: z.unknown().optional(),
+          ext: z.unknown().optional(),
         })
         .nullish(),
     })
@@ -41,6 +43,14 @@ function query(place: SocialCrawlPlace, account: SocialAccount): URLSearchParams
   if (account.by !== "handle") return null;
   // `trim` leaves the recent posts out of an Instagram reply.
   return new URLSearchParams(place === "instagram" ? { handle: account.handle, trim: "true" } : { handle: account.handle });
+}
+
+/** The account's profile picture: the larger one Instagram also gives
+      (`ext.hd_avatar_url`), or the plain one. */
+function pictureOf(author: { avatar_url?: unknown; ext?: unknown }): string | null {
+  const large = (author.ext as { hd_avatar_url?: unknown } | null | undefined)?.hd_avatar_url;
+  const picture = typeof large === "string" && large ? large : author.avatar_url;
+  return typeof picture === "string" && picture ? picture : null;
 }
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -91,6 +101,7 @@ export async function fetchSocialProfile(place: SocialCrawlPlace, account: Socia
       // For a Facebook address like /p/Name-123/ the name that comes back
       // is the "p", which is no handle.
       handle: place === "facebook" && handle && FACEBOOK_PATH_WORDS.has(handle.toLowerCase()) ? null : handle,
+      avatarUrl: pictureOf(author),
     };
   }
 }

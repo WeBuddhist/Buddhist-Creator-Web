@@ -118,6 +118,7 @@ and is refused if the creator has changed the card since.
 | The public directory | `app/(site)/creators/`, `components/creators/` |
 | Claiming a card | `app/(site)/creator-card/claim-card.tsx` |
 | Deciding claims | `app/admin/creator-cards/claims/`, `app/admin/creator-cards/[id]/claim-review.tsx` |
+| Adding and keeping the team's own cards | `app/admin/creator-cards/new/`, `app/admin/creator-cards/[id]/edit/`, `card-editor.tsx`, `editor-actions.ts` |
 
 Approved cards are public at `/creators`, the most followed first, thirty to
 a page, with a search by name and a filter by country. Both live in the URL
@@ -131,6 +132,25 @@ from the team's shared sheet, and `0017` the team's final sheet of November
 is made, has no owner, and shows its creator's public profile picture
 (stored under `creator-cards/profile-pictures/`) or, without one, their
 initials.
+
+The dashboard keeps these cards without a migration. "Add a creator" on
+`/admin/creator-cards` makes one from a name and at least one link, and
+"Edit card" on a card nobody owns changes its name, country, line, links
+and photo; the list there is searched by name. Saving keeps the card
+approved, since the admin is the reviewer, and then:
+
+- reads the follower count of each link that is new or changed, at once
+  (`readCardLinks`), so the count is on the card's page when it opens.
+  YouTube is free; Instagram, TikTok and Facebook cost a SocialCrawl credit
+  each, and a link read already this month is not read again;
+- refuses a link another card already has, since one account is one
+  creator;
+- gives a card with no photo the profile picture the reading brought
+  (`lib/team-card-photo.ts`), fetched only from the hosts such pictures
+  are served from.
+
+A superadmin can also remove such a card, after a confirmation. A card
+with an owner is the creator's: the editor does not open it.
 
 Every card is laid out the same way: the photo as a circle top left, then
 the name, the country and follower total, the links, and the line about

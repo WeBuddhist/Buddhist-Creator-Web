@@ -334,18 +334,40 @@ const optionalLink = z
    read from it. The link is checked and kept as it was written, never
    rewritten: a stored link must compare equal to itself on the next save,
    or an untouched card would be sent back for review. */
-const linkFor = (social: (typeof CARD_SOCIALS)[number]) =>
+const linkFor = (social: (typeof CARD_SOCIALS)[number], whose: "your" | "their" = "your") =>
   optionalLink.superRefine((value, ctx) => {
     if (value === null) return;
     if (!linkFitsPlace(social.value, value)) {
-      ctx.addIssue({ code: "custom", message: `This is not a ${social.label} link. Paste your ${social.label} address here.` });
+      ctx.addIssue({ code: "custom", message: `This is not a ${social.label} link. Paste ${whose} ${social.label} address here.` });
     } else if ("audience" in social && !socialAccount(social.value, value)) {
       ctx.addIssue({
         code: "custom",
-        message: `Paste the address of your ${social.label} ${social.value === "youtube" ? "channel" : "profile"}, like ${social.placeholder}`,
+        message: `Paste the address of ${whose} ${social.label} ${social.value === "youtube" ? "channel" : "profile"}, like ${social.placeholder}`,
       });
     }
   });
+
+/* The links, one for each place: every one checked, only the filled ones
+   kept, and at least one asked for. `whose` and `none` word the messages
+   for who is typing. */
+const linksFor = (whose: "your" | "their", none: string) =>
+  z
+    .object(
+      Object.fromEntries(CARD_SOCIALS.map((social) => [social.value, linkFor(social, whose)])) as Record<
+        CardSocial,
+        ReturnType<typeof linkFor>
+      >,
+    )
+    .transform((links) => {
+      // Only the filled ones are kept.
+      const filled: CardSocials = {};
+      for (const { value } of CARD_SOCIALS) {
+        const link = links[value];
+        if (link) filled[value] = link;
+      }
+      return filled;
+    })
+    .refine((links) => Object.keys(links).length > 0, none);
 
 const unique = <T>(list: T[]) => [...new Set(list)];
 const includesOther = (list: unknown) => Array.isArray(list) && list.includes("other");
@@ -364,23 +386,7 @@ export const cardSchema = z
     tagline: line.pipe(
       z.string().min(1, REQUIRED).max(CARD_TAGLINE_MAX, `Keep it to one line, under ${CARD_TAGLINE_MAX} characters`),
     ),
-    socials: z
-      .object(
-        Object.fromEntries(CARD_SOCIALS.map((social) => [social.value, linkFor(social)])) as Record<
-          CardSocial,
-          ReturnType<typeof linkFor>
-        >,
-      )
-      .transform((links) => {
-        // Only the filled ones are kept.
-        const filled: CardSocials = {};
-        for (const { value } of CARD_SOCIALS) {
-          const link = links[value];
-          if (link) filled[value] = link;
-        }
-        return filled;
-      })
-      .refine((links) => Object.keys(links).length > 0, "Add at least one link, so people can find your work"),
+    socials: linksFor("your", "Add at least one link, so people can find your work"),
   })
   /* An "other" needs its text. These two look across fields, and zod
      skips such a check once any single field has failed, which would hold
@@ -404,6 +410,40 @@ export const cardSchema = z
   }));
 
 export type CardValues = z.infer<typeof cardSchema>;
+
+/* A card our team makes, or keeps, for a creator it knows: what the
+   dashboard's editor sends (app/admin/creator-cards). The team often has
+   no more than a name and a channel, so only those are asked for; the
+   creator fills in the rest when they claim the card. A creator with no
+   link at all is not listed, which is why one is asked for. */
+export const teamCardSchema = z.object({
+  displayName: line.pipe(
+    z.string().min(1, REQUIRED).max(CARD_NAME_MAX, `Keep the name under ${CARD_NAME_MAX} characters`),
+  ),
+  country: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || isCountry(value), "Choose a country from the list")
+    .transform((value) => value || null),
+  tagline: optionalLine(CARD_TAGLINE_MAX),
+  socials: linksFor("their", "Add at least one link. A creator with no link is not listed."),
+});
+
+export type TeamCardValues = z.infer<typeof teamCardSchema>;
+
+/** The editor's FormData as the object teamCardSchema reads. */
+export function teamCardFormValues(formData: FormData) {
+  const text = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  return {
+    displayName: text("displayName"),
+    country: text("country"),
+    tagline: text("tagline"),
+    socials: Object.fromEntries(CARD_SOCIALS.map(({ value }) => [value, text(`socials.${value}`)])),
+  };
+}
 
 type CardField = Exclude<keyof CardValues, "socials">;
 export type CardFieldErrors = Partial<

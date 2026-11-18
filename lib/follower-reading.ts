@@ -5,9 +5,12 @@ import { CARD_FOLLOWERS_MAX } from "@/lib/creator-card";
    request is the same for every place. */
 
 /** One account's follower count as it was just read, or why there is none.
-    The statuses are those of creator_follower_checks (lib/db/schema.ts). */
+    The statuses are those of creator_follower_checks (lib/db/schema.ts).
+    `avatarUrl` is the account's own profile picture, where the service
+    gives one: nothing keeps it but a card the team is making, which has
+    no photo yet (app/admin/creator-cards/editor-actions.ts). */
 export type FollowerReading =
-  | { status: "ok"; followers: number; externalId: string | null; handle: string | null }
+  | { status: "ok"; followers: number; externalId: string | null; handle: string | null; avatarUrl?: string | null }
   | { status: "not_found" | "unreadable" | "error" };
 
 /** A service that can answer nothing more in this run: its key is missing

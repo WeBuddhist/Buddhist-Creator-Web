@@ -185,3 +185,60 @@ async function refresh(
 
   return result;
 }
+
+/** What came of reading one of a card's links now: the reading, or the
+    word of a service that could not be asked ("youtube: not-configured"). */
+export type CardLinkReading = {
+  platform: CountedLink["platform"];
+  link: string;
+  reading: FollowerReading | { status: "stopped"; reason: string };
+};
+
+/** Read the links of one approved card that have no figure for this month
+    yet: the ones just added or changed. It is what the dashboard does when
+    an admin saves a card, so a new channel has its count at once rather
+    than at the next daily run. A link read already this month is left
+    alone, so saving a card twice costs nothing more. */
+export async function readCardLinks(
+  cardId: string,
+  options: { now?: () => Date; sources?: FollowerSources } = {},
+): Promise<CardLinkReading[]> {
+  const now = options.now ?? (() => new Date());
+  const sources = options.sources ?? SOURCES;
+  const month = monthOf(now());
+  const [links, checks] = await Promise.all([listCountedLinks(), listMonthChecks(month)]);
+  const done = new Map(
+    checks.filter((check) => check.cardId === cardId).map((check) => [`${check.platform} ${check.linkKey}`, check]),
+  );
+  const due = links.filter((link) => {
+    if (link.cardId !== cardId) return false;
+    const check = done.get(`${link.platform} ${link.linkKey}`);
+    return !check || check.status === "error";
+  });
+
+  return Promise.all(
+    due.map(async (link): Promise<CardLinkReading> => {
+      const account = socialAccount(link.platform, link.link);
+      let reading: FollowerReading;
+      try {
+        if (!account) reading = { status: "unreadable" };
+        else if (link.platform !== "youtube") {
+          reading = await sources.socialProfile(link.platform as SocialCrawlPlace, account);
+        } else if (account.by === "channel") {
+          reading = (await sources.youtubeChannels([account.channelId])).get(account.channelId) ?? { status: "error" };
+        } else {
+          reading = await sources.youtubeChannel(account);
+        }
+      } catch (error) {
+        // A service with no key, or out of credits: nothing is saved, and
+        // the link stays due for the daily run.
+        if (error instanceof SourceStopped) {
+          return { platform: link.platform, link: link.link, reading: { status: "stopped", reason: error.message } };
+        }
+        throw error;
+      }
+      await saveFollowerCheck({ link, month, reading, at: now() });
+      return { platform: link.platform, link: link.link, reading };
+    }),
+  );
+}

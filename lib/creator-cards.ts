@@ -11,11 +11,13 @@ import type {
 } from "@/lib/db/schema";
 import {
   COUNTED_SOCIALS,
+  PROFILE_PICTURE_PREFIX,
   socialLinkKey,
   type CardFollowers,
   type CardSocials,
   type CardValues,
   type CountedSocial,
+  type TeamCardValues,
 } from "@/lib/creator-card";
 import {
   LEADERBOARD_PLACES,
@@ -618,9 +620,12 @@ export type CardListRow = {
 };
 
 /** One page of cards for the dashboard, newest first, with how many the
-    filter holds in all. */
-export async function listCards(filter: CardFilter, page = 1) {
-  const where = filter === "all" ? undefined : eq(creatorCards.status, filter);
+    filter holds in all. `q` narrows it to the names that contain it. */
+export async function listCards(filter: CardFilter, page = 1, q = "") {
+  const where = and(
+    filter === "all" ? undefined : eq(creatorCards.status, filter),
+    q ? sql`${creatorCards.displayName} ilike ${likePattern(q)}` : undefined,
+  );
   const offset = Math.max(0, page - 1) * CARDS_PAGE_SIZE;
   const [rows, [{ total }]] = await Promise.all([
     db()
@@ -694,6 +699,136 @@ export async function reviewCard(args: {
     columns: { id: true },
   });
   throw exists ? new CardChanged() : new CardNotFound();
+}
+
+/* ---------------------------------------------------------------------- */
+/* The team's own cards                                                    */
+/* ---------------------------------------------------------------------- */
+
+/* A card nobody owns is the team's to keep: an admin makes one for a
+   creator the team knows, puts right its name, country, line, links and
+   photo, and can take it off the list (app/admin/creator-cards). Such a
+   card is approved as it is made and stays approved through an edit: the
+   admin is the reviewer. A card with an owner is the creator's, and none
+   of this touches it.
+
+   As with a creator's own save, no count is written here. A link that is
+   changed or removed takes its count with it, and the new one is read
+   afterwards (readCardLinks in lib/follower-refresh.ts). */
+
+/** The card belongs to a creator, so the team does not edit or remove it. */
+export class CardOwned extends Error {
+  constructor() {
+    super("CARD_OWNED");
+    this.name = "CardOwned";
+  }
+}
+
+/** Where a picture the team gives a card is stored: beside the profile
+    pictures it took from creators' public profiles. */
+export function teamPhotoKey(extension: string) {
+  return `${PROFILE_PICTURE_PREFIX}${randomUUID()}.${extension}`;
+}
+
+/** The cards, other than `exceptId`, that already carry one of these
+    links, by the place: the same account is one creator, and a second
+    card for it would list them twice. */
+export async function cardsSharingLinks(
+  socials: CardSocials,
+  exceptId: string | null,
+): Promise<Partial<Record<CountedSocial, string>>> {
+  const wanted = new Map(
+    COUNTED_SOCIALS.flatMap(({ value }) => {
+      const key = linkKeyOf(socials, value);
+      return key ? [[`${value} ${key}`, value] as const] : [];
+    }),
+  );
+  if (wanted.size === 0) return {};
+  const rows = await db()
+    .select({ id: creatorCards.id, displayName: creatorCards.displayName, socials: creatorCards.socials })
+    .from(creatorCards);
+  const taken: Partial<Record<CountedSocial, string>> = {};
+  for (const row of rows) {
+    if (row.id === exceptId) continue;
+    for (const { value } of COUNTED_SOCIALS) {
+      const key = linkKeyOf(row.socials, value);
+      if (key && wanted.has(`${value} ${key}`)) taken[value] ??= row.displayName;
+    }
+  }
+  return taken;
+}
+
+/** Make a card for a creator the team knows: approved, and nobody's. */
+export async function createTeamCard(args: {
+  actorId: string;
+  values: TeamCardValues;
+  photoKey: string | null;
+}): Promise<CreatorCard> {
+  const now = new Date();
+  const [created] = await db()
+    .insert(creatorCards)
+    .values({
+      ...args.values,
+      photoKey: args.photoKey,
+      status: "approved",
+      reviewedBy: args.actorId,
+      reviewedAt: now,
+    })
+    .returning();
+  return created;
+}
+
+/** Change a card nobody owns. Its standing stays as it is; the revision
+    moves on, so a review opened on the older version is refused.
+    `replacedPhotoKey` is the object the card no longer points at, for the
+    caller to delete once this has committed. */
+export async function updateTeamCard(args: {
+  cardId: string;
+  values: TeamCardValues;
+  photo: PhotoChange;
+}): Promise<{ card: CreatorCard; replacedPhotoKey: string | null }> {
+  return db().transaction(async (tx) => {
+    const [current] = await tx.select().from(creatorCards).where(eq(creatorCards.id, args.cardId)).for("update");
+    if (!current) throw new CardNotFound();
+    if (current.userId) throw new CardOwned();
+    const photoKey =
+      args.photo.kind === "keep" ? current.photoKey : args.photo.kind === "replace" ? args.photo.key : null;
+    const [updated] = await tx
+      .update(creatorCards)
+      .set({
+        ...args.values,
+        ...staleCounts(current.socials, args.values.socials),
+        photoKey,
+        revision: current.revision + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(creatorCards.id, current.id))
+      .returning();
+    return { card: updated, replacedPhotoKey: photoKey === current.photoKey ? null : current.photoKey };
+  });
+}
+
+/** Give a card nobody owns the picture it does not have yet. False when
+    it has one by now, or an owner, or is gone. */
+export async function giveTeamCardPhoto(cardId: string, photoKey: string): Promise<boolean> {
+  const updated = await db()
+    .update(creatorCards)
+    .set({ photoKey })
+    .where(and(eq(creatorCards.id, cardId), isNull(creatorCards.userId), isNull(creatorCards.photoKey)))
+    .returning({ id: creatorCards.id });
+  return updated.length > 0;
+}
+
+/** Take a card nobody owns off the list for good, with its readings and
+    any claims on it. Returns the photo it had, for the caller to delete. */
+export async function deleteTeamCard(cardId: string): Promise<{ displayName: string; photoKey: string | null }> {
+  return db().transaction(async (tx) => {
+    const [current] = await tx.select().from(creatorCards).where(eq(creatorCards.id, cardId)).for("update");
+    if (!current) throw new CardNotFound();
+    if (current.userId) throw new CardOwned();
+    await tx.delete(creatorCards).where(eq(creatorCards.id, cardId));
+    return { displayName: current.displayName, photoKey: current.photoKey };
+  });
 }
 
 /* ---------------------------------------------------------------------- */

@@ -25,7 +25,12 @@ const reply = z.object({
     .array(
       z.object({
         id: z.string(),
-        snippet: z.object({ customUrl: z.string().nullish() }).nullish(),
+        snippet: z
+          .object({
+            customUrl: z.string().nullish(),
+            thumbnails: z.record(z.string(), z.object({ url: z.string().nullish() }).nullish()).nullish(),
+          })
+          .nullish(),
         statistics: z
           .object({ subscriberCount: z.unknown().optional(), hiddenSubscriberCount: z.boolean().nullish() })
           .nullish(),
@@ -43,7 +48,16 @@ type Item = NonNullable<z.infer<typeof reply>["items"]>[number];
 function reading(item: Item): FollowerReading {
   const followers = item.statistics?.hiddenSubscriberCount ? null : readCount(item.statistics?.subscriberCount);
   if (followers === null) return { status: "unreadable" };
-  return { status: "ok", followers, externalId: item.id, handle: item.snippet?.customUrl?.replace(/^@/, "") || null };
+  // The largest of the channel's pictures on offer.
+  const pictures = item.snippet?.thumbnails;
+  const avatarUrl = pictures?.high?.url ?? pictures?.medium?.url ?? pictures?.default?.url ?? null;
+  return {
+    status: "ok",
+    followers,
+    externalId: item.id,
+    handle: item.snippet?.customUrl?.replace(/^@/, "") || null,
+    avatarUrl,
+  };
 }
 
 /** The channels a request matched, or null when the request failed. */
