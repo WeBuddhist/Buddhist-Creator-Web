@@ -1,10 +1,24 @@
 import "server-only";
 import { randomInt, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
-import type { CardClaimStatus, CreatorCard, CreatorCardStatus } from "@/lib/db/schema";
-import { COUNTED_SOCIALS, type CardFollowers, type CardValues, type CountedSocial } from "@/lib/creator-card";
+import type {
+  CardClaimStatus,
+  CreatorCard,
+  CreatorCardStatus,
+  CreatorFollowerCheck,
+  FollowerCheckStatus,
+} from "@/lib/db/schema";
+import {
+  COUNTED_SOCIALS,
+  socialLinkKey,
+  type CardFollowers,
+  type CardSocials,
+  type CardValues,
+  type CountedSocial,
+} from "@/lib/creator-card";
 import type { CreatorsView } from "@/lib/creators";
+import type { FollowerReading } from "@/lib/follower-reading";
 
 /* Everything that reads or writes creator cards. Callers pass the current
    user in and check the role; the status rules live here, not in the UI.
@@ -17,15 +31,16 @@ import type { CreatorsView } from "@/lib/creators";
    The follower counts are the one part of a card that is not reviewed.
    The review is there to say that this is a creator and the card is
    theirs, and a number says nothing about that; it is kept to rank
-   creators by. So a changed count is saved where the card stands, and
-   neither the status nor the revision moves.
+   creators by. Nobody types one: each is read from the place itself every
+   month (lib/follower-refresh.ts) and saved where the card stands, and
+   neither the status nor the revision moves. See "Follower readings".
 
    The team also makes cards itself, for creators it knows. Those are
    approved from the start and belong to nobody. A signed-in person can
    claim one, and the team reads the claim before the card changes hands
    (see "Claiming a card the team made" below). */
 
-const { creatorCards, creatorCardClaims, users } = schema;
+const { creatorCards, creatorCardClaims, creatorFollowerChecks, users } = schema;
 
 export const CARD_STATUSES: readonly CreatorCardStatus[] = ["pending", "approved", "rejected"];
 
@@ -66,15 +81,23 @@ export function cardFollowers(card: FollowerColumns): CardFollowers {
   ) as CardFollowers;
 }
 
-function followerColumns(followers: CardFollowers): FollowerColumns {
-  return Object.fromEntries(
-    COUNTED_SOCIALS.map(({ value }) => [FOLLOWER_COLUMN[value], followers[value]]),
-  ) as FollowerColumns;
-}
+/** A counted link in the form links are compared in, or null for none. */
+const linkKeyOf = (socials: CardSocials, place: CountedSocial) => {
+  const link = socials[place]?.trim();
+  return link ? socialLinkKey(place, link) : null;
+};
 
-/** A card's content as the table's columns. */
-function cardColumns({ followers, ...content }: CardValues) {
-  return { ...content, ...followerColumns(followers) };
+/** The counts a save must drop: those of a counted place whose link the
+    save changes or takes away. The figure was the old account's, and
+    left in place it would stay in the card's total until the new account
+    had been read, or for good where there is no new one. */
+function staleCounts(stored: CardSocials, next: CardSocials): Partial<FollowerColumns> {
+  return Object.fromEntries(
+    COUNTED_SOCIALS.filter(({ value }) => linkKeyOf(stored, value) !== linkKeyOf(next, value)).map(({ value }) => [
+      FOLLOWER_COLUMN[value],
+      null,
+    ]),
+  );
 }
 
 /* ---------------------------------------------------------------------- */
@@ -92,7 +115,7 @@ const sameEntries = (a: object, b: object) =>
 /* What the team reviews: everything but the follower counts. Arrays
    compare in order, so both sides are in the order they are stored. */
 function sameContent(card: CreatorCard, values: CardValues) {
-  const stored: Omit<CardValues, "followers"> = {
+  const stored: CardValues = {
     displayName: card.displayName,
     country: card.country ?? "",
     creatorType: card.creatorType as CardValues["creatorType"],
@@ -112,8 +135,8 @@ function sameContent(card: CreatorCard, values: CardValues) {
 }
 
 /** What a save did: made the card, sent a changed one back for review,
-    kept new follower counts without a review ("counts"), or nothing. */
-export type SubmitOutcome = "created" | "resubmitted" | "counts" | "unchanged";
+    or nothing. */
+export type SubmitOutcome = "created" | "resubmitted" | "unchanged";
 
 /** What a save does about the card's photo: leave it, go back to the
     picture from the sign-in account, or take a newly uploaded one, whose
@@ -135,8 +158,8 @@ export function cardPhotoKey(userId: string, extension: string) {
     nothing, so an approved card is not put back in the queue by an idle
     press of the button; a rejected one may be sent again as it is.
 
-    The follower counts stand apart: when they are all that changed, they
-    are saved and the card stays as it was, approved or in review.
+    A save never carries a follower count. It only drops the count of a
+    place whose link it changes, which was another account's.
 
     The caller has validated `values` and, for a new photo, has already
     stored it. `replacedPhotoKey` is the object the card no longer points
@@ -155,7 +178,7 @@ export async function submitMyCard(
         .insert(creatorCards)
         .values({
           userId,
-          ...cardColumns(values),
+          ...values,
           photoKey: photo.kind === "replace" ? photo.key : null,
           status: "pending",
           submittedAt: now,
@@ -171,20 +194,13 @@ export async function submitMyCard(
     const photoKey = photo.kind === "keep" ? current.photoKey : photo.kind === "replace" ? photo.key : null;
     const samePhoto = photoKey === current.photoKey;
     if (current.status !== "rejected" && samePhoto && sameContent(current, values)) {
-      if (sameEntries(cardFollowers(current), values.followers)) {
-        return { card: current, outcome: "unchanged", replacedPhotoKey: null };
-      }
-      const [counted] = await tx
-        .update(creatorCards)
-        .set({ ...followerColumns(values.followers), updatedAt: now })
-        .where(eq(creatorCards.id, current.id))
-        .returning();
-      return { card: counted, outcome: "counts", replacedPhotoKey: null };
+      return { card: current, outcome: "unchanged", replacedPhotoKey: null };
     }
     const [updated] = await tx
       .update(creatorCards)
       .set({
-        ...cardColumns(values),
+        ...values,
+        ...staleCounts(current.socials, values.socials),
         photoKey,
         status: "pending",
         revision: current.revision + 1,
@@ -672,4 +688,174 @@ export async function reviewCard(args: {
     columns: { id: true },
   });
   throw exists ? new CardChanged() : new CardNotFound();
+}
+
+/* ---------------------------------------------------------------------- */
+/* Follower readings                                                       */
+/* ---------------------------------------------------------------------- */
+
+/* The counts are read from each place every month by
+   lib/follower-refresh.ts, which decides what is due and asks the
+   services; what is here is its reading and writing of the tables, and
+   what the pages show of it. */
+
+/** One counted link of one card. */
+export type CountedLink = { cardId: string; platform: CountedSocial; link: string; linkKey: string };
+
+/** Every counted link there is to read: those of the cards in the
+    directory and of the ones waiting for a review, so that a card has its
+    figure by the time it is approved and an edited one keeps its history.
+    A rejected card is left alone. */
+export async function listCountedLinks(): Promise<CountedLink[]> {
+  const rows = await db()
+    .select({ id: creatorCards.id, socials: creatorCards.socials })
+    .from(creatorCards)
+    .where(inArray(creatorCards.status, ["approved", "pending"]))
+    .orderBy(asc(creatorCards.id));
+  return rows.flatMap(({ id, socials }) =>
+    COUNTED_SOCIALS.flatMap(({ value }) => {
+      const link = socials[value]?.trim();
+      return link ? [{ cardId: id, platform: value, link, linkKey: socialLinkKey(value, link) }] : [];
+    }),
+  );
+}
+
+/** The readings made in one month. */
+export async function listMonthChecks(month: string): Promise<CreatorFollowerCheck[]> {
+  return db().select().from(creatorFollowerChecks).where(eq(creatorFollowerChecks.month, month));
+}
+
+/** The id each account of one place was last read under, keyed as
+    accountKey keys it. */
+export async function knownAccountIds(platform: CountedSocial): Promise<Map<string, string>> {
+  const rows = await db()
+    .selectDistinctOn([creatorFollowerChecks.cardId, creatorFollowerChecks.linkKey], {
+      cardId: creatorFollowerChecks.cardId,
+      linkKey: creatorFollowerChecks.linkKey,
+      externalId: creatorFollowerChecks.externalId,
+    })
+    .from(creatorFollowerChecks)
+    .where(
+      and(
+        eq(creatorFollowerChecks.platform, platform),
+        eq(creatorFollowerChecks.status, "ok"),
+        sql`${creatorFollowerChecks.externalId} is not null`,
+      ),
+    )
+    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.linkKey, desc(creatorFollowerChecks.month));
+  return new Map(rows.map((row) => [accountKey(row), row.externalId!]));
+}
+
+export const accountKey = ({ cardId, linkKey }: { cardId: string; linkKey: string }) => `${cardId} ${linkKey}`;
+
+/** Keep one reading: the month's row for that card and place, and, when
+    there is a figure, the card's own count. Nothing else on the card
+    moves: not its status, its revision, or the dates that say when a
+    person last changed or sent it.
+
+    The card is locked and its link looked at again first. If the creator
+    changed the link while the service was being asked, the reading is for
+    an account the card no longer names, and is dropped ("moved"). */
+export async function saveFollowerCheck(args: {
+  link: CountedLink;
+  month: string;
+  reading: FollowerReading;
+  at: Date;
+}): Promise<"saved" | "moved"> {
+  const { link, month, reading, at } = args;
+  return db().transaction(async (tx) => {
+    const [card] = await tx
+      .select({ socials: creatorCards.socials })
+      .from(creatorCards)
+      .where(eq(creatorCards.id, link.cardId))
+      .for("update");
+    if (!card || card.socials[link.platform]?.trim() !== link.link) return "moved";
+    const ok = reading.status === "ok";
+    const row = {
+      linkKey: link.linkKey,
+      status: reading.status,
+      followers: ok ? reading.followers : null,
+      externalId: ok ? reading.externalId : null,
+      handle: ok ? reading.handle : null,
+      checkedAt: at,
+    };
+    await tx
+      .insert(creatorFollowerChecks)
+      .values({ cardId: link.cardId, platform: link.platform, month, ...row })
+      .onConflictDoUpdate({
+        target: [creatorFollowerChecks.cardId, creatorFollowerChecks.platform, creatorFollowerChecks.month],
+        set: row,
+      });
+    if (ok) {
+      await tx
+        .update(creatorCards)
+        .set({ [FOLLOWER_COLUMN[link.platform]]: reading.followers })
+        .where(eq(creatorCards.id, link.cardId));
+    }
+    return "saved";
+  });
+}
+
+/** Where the reading of one link stands, for a page to say. */
+export type LinkCheck = { status: FollowerCheckStatus; checkedAt: Date };
+
+/** The latest reading of each counted link a card has now. A place whose
+    link has not been read yet, or has changed since it was, has none. */
+export async function cardLinkChecks(card: {
+  id: string;
+  socials: CardSocials;
+}): Promise<Partial<Record<CountedSocial, LinkCheck>>> {
+  const rows = await db()
+    .selectDistinctOn([creatorFollowerChecks.platform])
+    .from(creatorFollowerChecks)
+    .where(eq(creatorFollowerChecks.cardId, card.id))
+    .orderBy(creatorFollowerChecks.platform, desc(creatorFollowerChecks.month));
+  return Object.fromEntries(
+    rows
+      .filter((row) => row.linkKey === linkKeyOf(card.socials, row.platform))
+      .map((row) => [row.platform, { status: row.status, checkedAt: row.checkedAt }]),
+  );
+}
+
+export type UnreadLink = {
+  cardId: string;
+  displayName: string;
+  platform: CountedSocial;
+  link: string;
+  status: Exclude<FollowerCheckStatus, "ok">;
+  checkedAt: Date;
+  /** The count the card still shows for it, from before. */
+  followers: number | null;
+};
+
+/** The links whose latest reading gave no figure, for the team to look
+    at: a mistyped address, an account that is gone, a personal profile.
+    By creator name. */
+export async function listUnreadLinks(): Promise<UnreadLink[]> {
+  const rows = await db()
+    .selectDistinctOn([creatorFollowerChecks.cardId, creatorFollowerChecks.platform], {
+      check: creatorFollowerChecks,
+      card: creatorCards,
+    })
+    .from(creatorFollowerChecks)
+    .innerJoin(creatorCards, eq(creatorCards.id, creatorFollowerChecks.cardId))
+    .where(inArray(creatorCards.status, ["approved", "pending"]))
+    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.platform, desc(creatorFollowerChecks.month));
+  return rows
+    .flatMap(({ check, card }) => {
+      const link = card.socials[check.platform]?.trim();
+      if (check.status === "ok" || !link || socialLinkKey(check.platform, link) !== check.linkKey) return [];
+      return [
+        {
+          cardId: card.id,
+          displayName: card.displayName,
+          platform: check.platform,
+          link,
+          status: check.status,
+          checkedAt: check.checkedAt,
+          followers: card[FOLLOWER_COLUMN[check.platform]],
+        },
+      ];
+    })
+    .sort((a, b) => a.displayName.localeCompare(b.displayName) || a.platform.localeCompare(b.platform));
 }

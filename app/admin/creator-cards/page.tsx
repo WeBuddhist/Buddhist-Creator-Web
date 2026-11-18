@@ -13,6 +13,7 @@ import {
   countCardsByStatus,
   countClaimsByStatus,
   listCards,
+  listUnreadLinks,
   type CardFilter,
 } from "@/lib/creator-cards";
 import { formatDateTime } from "@/lib/format";
@@ -67,10 +68,11 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
   const filter = FILTERS.find((value) => value === asked) ?? DEFAULT_FILTER;
   const page = Math.max(1, Number(params.page) || 1);
 
-  const [list, counts, claims] = await Promise.all([
+  const [list, counts, claims, unread] = await Promise.all([
     listCards(filter, page),
     countCardsByStatus(),
     countClaimsByStatus(),
+    listUnreadLinks(),
   ]);
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
   // A page past the end (a stale link, or a review that emptied the last
@@ -92,6 +94,19 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
             {claims.pending === 1 ? "1 claim is waiting" : `${claims.pending} claims are waiting`}
           </Link>{" "}
           for a decision.
+        </p>
+      )}
+      {/* The monthly reading of follower counts says here when a link gave
+          it nothing, which is most often a link that is wrong. */}
+      {unread.length > 0 && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          <Link
+            href={`${PATH}/followers`}
+            className="font-medium text-foreground underline decoration-foreground/20 underline-offset-4 hover:decoration-foreground"
+          >
+            {unread.length === 1 ? "1 link gave no follower count" : `${unread.length} links gave no follower count`}
+          </Link>{" "}
+          at the last reading.
         </p>
       )}
       <nav aria-label="Filter by status" className="mb-6 flex flex-wrap gap-2">

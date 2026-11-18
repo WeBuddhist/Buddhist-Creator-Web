@@ -2,17 +2,19 @@ import { relations, sql, type SQL } from "drizzle-orm";
 import {
   bigint,
   check,
+  date,
   index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { CardSocials } from "@/lib/creator-card";
+import type { CardSocials, CountedSocial } from "@/lib/creator-card";
 import type { PlatformLinks } from "@/lib/registration-2027";
 
 /* Who may do what. `member` is everyone who has signed in; `admin` reviews
@@ -53,6 +55,13 @@ export const creatorCardStatus = pgEnum("creator_card_status", ["pending", "appr
    changes hands: pending → approved | rejected. A decision is final; a
    person whose claim was rejected may send another. */
 export const cardClaimStatus = pgEnum("card_claim_status", ["pending", "approved", "rejected"]);
+
+/* What came of reading one account's follower count. `ok` has a figure.
+   `not_found`: there is no account at the link. `unreadable`: there is
+   one, or may be, but no figure can be had for it (a hidden count, a
+   private account, a link that does not name an account). `error`: the
+   attempt failed and is made again the next day. */
+export const followerCheckStatus = pgEnum("follower_check_status", ["ok", "not_found", "unreadable", "error"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -280,11 +289,13 @@ export const creatorCards = pgTable(
     /** The link for each place the creator publishes, keyed by its slug. */
     socials: jsonb("socials").$type<CardSocials>().default({}).notNull(),
     /* How many people follow the creator in each place a count is kept
-       for (COUNTED_SOCIALS in lib/creator-card.ts). The creator types
-       them in for now; null is a figure the card does not have. They are
-       columns rather than keys of `socials` so creators can be ranked in
-       SQL, on one place or on all of them. They are not part of what a
-       review reads: changing one moves neither `status` nor `revision`. */
+       for (COUNTED_SOCIALS in lib/creator-card.ts): the latest figure
+       read from the place itself (creator_follower_checks below), or, on
+       a card not read yet, the one the team or the creator once gave.
+       Null is a figure the card does not have. They are columns rather
+       than keys of `socials` so creators can be ranked in SQL, on one
+       place or on all of them. They are not part of what a review reads:
+       changing one moves neither `status` nor `revision`. */
     youtubeFollowers: integer("youtube_followers"),
     instagramFollowers: integer("instagram_followers"),
     tiktokFollowers: integer("tiktok_followers"),
@@ -361,6 +372,55 @@ export const creatorCardClaims = pgTable(
   ],
 );
 
+/* A follower count as it was read from the place itself: one row for each
+   card, counted place and month (lib/follower-refresh.ts). The rows are
+   three things at once. They are the history a ranking by growth is worked
+   out from; they say what became of the latest attempt; and a row for this
+   month is what marks an account as done for the month.
+
+   `month` is the first day of the month, in UTC, so a second attempt
+   later in the month writes to the same row. `link_key` is the card's link
+   as it is compared (socialLinkKey in lib/creator-card.ts): when a card's
+   link changes, its earlier rows are another account's, and two figures
+   are only ever set beside each other when their keys match.
+
+   The card's own *_followers column holds the latest figure, which is
+   what the directory sorts on. */
+export const creatorFollowerChecks = pgTable(
+  "creator_follower_checks",
+  {
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => creatorCards.id, { onDelete: "cascade" }),
+    /** A COUNTED_SOCIALS slug. */
+    platform: text("platform").$type<CountedSocial>().notNull(),
+    month: date("month", { mode: "string" }).notNull(),
+    linkKey: text("link_key").notNull(),
+    status: followerCheckStatus("status").notNull(),
+    /** Null unless the status is ok. */
+    followers: integer("followers"),
+    // The account as the place itself names it. The id outlasts a change
+    // of handle; for YouTube it is also what the monthly reading asks by.
+    externalId: text("external_id"),
+    handle: text("handle"),
+    /** The latest attempt, whatever came of it. */
+    checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ name: "creator_follower_checks_pk", columns: [table.cardId, table.platform, table.month] }),
+    index("creator_follower_checks_month_idx").on(table.month),
+    check(
+      "creator_follower_checks_platform_check",
+      sql`${table.platform} in ('youtube', 'instagram', 'tiktok', 'facebook')`,
+    ),
+    check("creator_follower_checks_month_check", sql`extract(day from ${table.month}) = 1`),
+    check(
+      "creator_follower_checks_followers_check",
+      sql`(${table.status} = 'ok') = (${table.followers} is not null) and ${table.followers} >= 0`,
+    ),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one }) => ({
   application: one(applications, {
     fields: [users.id],
@@ -416,3 +476,5 @@ export type CreatorCard = typeof creatorCards.$inferSelect;
 export type CreatorCardStatus = CreatorCard["status"];
 export type CreatorCardClaim = typeof creatorCardClaims.$inferSelect;
 export type CardClaimStatus = CreatorCardClaim["status"];
+export type CreatorFollowerCheck = typeof creatorFollowerChecks.$inferSelect;
+export type FollowerCheckStatus = CreatorFollowerCheck["status"];

@@ -369,26 +369,24 @@ export function TaglineField({
    URL check would refuse "instagram.com/name" before the form was sent.
 
    A place a follower count is kept for takes the full row, the link with
-   its count beside it (under it on a phone): the two are one answer, and
-   the count is asked for as soon as there is a link. */
+   its count beside it (under it on a phone). The count is not an answer:
+   nobody types it. It is read from the link every month, and shown here
+   with a line saying where that reading stands. */
 export function LinkField({
   social,
   value,
   onChange,
   error,
-  followers,
-  onFollowersChange,
-  followersError,
+  audience,
   readOnly,
 }: {
   social: (typeof CARD_SOCIALS)[number];
   value: string;
   onChange: (value: string) => void;
   error?: string;
-  /** The count as typed. Only read for a place that keeps one. */
-  followers?: string;
-  onFollowersChange?: (value: string) => void;
-  followersError?: string;
+  /** For a counted place that has a link: the figure read there, if any
+      has been, and the line under it. */
+  audience?: { count: string | null; note: string };
   readOnly?: boolean;
 }) {
   const id = `socials-${social.value}`;
@@ -425,7 +423,6 @@ export function LinkField({
   if (!("audience" in social)) return link;
 
   const countId = `followers-${social.value}`;
-  const linked = value.trim() !== "";
   return (
     <div
       role="group"
@@ -438,33 +435,20 @@ export function LinkField({
         <Label htmlFor={countId} className="min-h-4">
           <span className="sr-only">{`${social.label} `}</span>
           {social.audience}
-          {linked && !readOnly && (
-            <>
-              <RequiredMark />
-              <span className="sr-only">(required)</span>
-            </>
-          )}
         </Label>
-        {/* Text, not type="number": a count is typed as "12,500" or pasted
-            as the "12.5K" the app shows, and the server reads either. */}
+        {/* Always read-only and without a name: it shows a figure, and is
+            no part of what the form sends. */}
         <Input
           id={countId}
-          name={`followers.${social.value}`}
-          value={followers ?? ""}
-          onChange={(event) => onFollowersChange?.(event.target.value)}
-          inputMode="numeric"
-          autoComplete="off"
-          maxLength={20}
-          aria-required={(linked && !readOnly) || undefined}
-          aria-invalid={!!followersError}
-          aria-describedby={followersError ? `${countId}-error` : undefined}
-          placeholder="e.g. 12,500"
-          readOnly={readOnly}
-          className={cn(field, "tabular-nums", readOnly && readOnlyField)}
+          value={audience?.count ?? ""}
+          readOnly
+          aria-describedby={audience ? `${countId}-note` : undefined}
+          placeholder="—"
+          className={cn(field, readOnlyField, "tabular-nums")}
         />
-        {followersError && (
-          <p id={`${countId}-error`} className={errorText}>
-            {followersError}
+        {audience && (
+          <p id={`${countId}-note`} className="text-xs leading-[1.4] text-muted-foreground">
+            {audience.note}
           </p>
         )}
       </div>

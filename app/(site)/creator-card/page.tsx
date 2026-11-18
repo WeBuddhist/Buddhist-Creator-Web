@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { requireUser } from "@/lib/auth";
 import { CARD_FORM, CARD_PATH, type CardContent } from "@/lib/creator-card";
-import { cardFollowers, getClaimableCard, getMyCard, getMyClaim } from "@/lib/creator-cards";
+import { cardFollowers, cardLinkChecks, getClaimableCard, getMyCard, getMyClaim } from "@/lib/creator-cards";
 import { claimHref } from "@/lib/creators";
 import type { CreatorCard } from "@/lib/db/schema";
 import { presignedGetUrl } from "@/lib/s3";
@@ -177,9 +177,10 @@ function Notice({ children }: { children: ReactNode }) {
 }
 
 async function fromRow(row: CreatorCard): Promise<FormCard> {
+  const [photoUrl, checks] = await Promise.all([presignedGetUrl(row.photoKey), cardLinkChecks(row)]);
   return {
     // Only an uploaded photo; the form falls back to the account's picture.
-    photoUrl: await presignedGetUrl(row.photoKey),
+    photoUrl,
     status: row.status,
     // The note is written for a rejection; it is not shown otherwise.
     reviewNote: row.status === "rejected" ? row.reviewNote : null,
@@ -193,7 +194,14 @@ async function fromRow(row: CreatorCard): Promise<FormCard> {
     contentTypesOther: row.contentTypesOther,
     tagline: row.tagline,
     socials: row.socials,
+    totalFollowers: row.totalFollowers,
     followers: cardFollowers(row),
+    checks: Object.fromEntries(
+      Object.entries(checks).map(([place, check]) => [
+        place,
+        { status: check.status, checkedAt: check.checkedAt.toISOString() },
+      ]),
+    ),
   };
 }
 

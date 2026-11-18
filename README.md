@@ -126,9 +126,11 @@ and the database does the narrowing, since the list is paged.
 One table, `creator_cards`. Only `display_name` is required and `user_id`
 may be null: the team also makes cards itself, for creators it knows, from
 details it only partly has. Migration `0009` holds the first of them, taken
-from the team's shared sheet. Such a card is approved as it is made, has no
-owner, and shows its creator's public profile picture (stored under
-`creator-cards/profile-pictures/`) or, without one, their initials.
+from the team's shared sheet, and `0017` the team's final sheet of November
+2026, which brought the list to 353 creators. Such a card is approved as it
+is made, has no owner, and shows its creator's public profile picture
+(stored under `creator-cards/profile-pictures/`) or, without one, their
+initials.
 
 Every card is laid out the same way: the photo as a circle top left, then
 the name, the country and follower total, the links, and the line about
@@ -171,9 +173,48 @@ channel on the card, so nothing changes hands until an admin has approved:
 Several people may claim one card; a person has one claim waiting at a
 time and none while they have a card. Nothing is emailed at any step.
 
+### Follower counts
+
 Follower counts are kept for YouTube, Instagram, TikTok and Facebook and
 added up by the database (`total_followers`); they order the directory and
-are never part of a review.
+are never part of a review. Nobody types them. Each counted link is read
+from the place itself once a month: YouTube from its own Data API v3,
+the other three through [SocialCrawl](https://www.socialcrawl.dev)'s
+profile endpoints (one credit per account read).
+
+| Piece | Where |
+| --- | --- |
+| What is due, and the run | `lib/follower-refresh.ts` |
+| The two services | `lib/youtube.ts`, `lib/socialcrawl.ts` |
+| The address the schedule calls | `app/api/cron/follower-refresh/route.ts` |
+| The schedule | `.github/workflows/follower-refresh.yml` |
+| Links that gave no count | `/admin/creator-cards/followers` |
+
+- **One row per card, place and month** in `creator_follower_checks`: the
+  figure, what came of the attempt, and the account's own id and handle.
+  It is the history a ranking by growth is worked out from. The card's
+  `*_followers` column holds the latest figure. November 2026 is the first
+  month: its rows are the counts on the team's sheet (migration `0017`),
+  not readings of ours.
+- **The schedule runs every day.** On the first of the month (UTC) every
+  link is due; on the other days only links added since and attempts that
+  failed. One call
+  works for about a minute and says how many links are left; the workflow
+  calls again until none are.
+- **A reading belongs to a link.** Rows carry the link in the form links
+  are compared in (`socialLinkKey`), and a card whose link changes loses
+  that place's count until the new account is read, within a day.
+- **A link that cannot be read keeps the count it had** and shows on the
+  admin page above: an account that is gone, a hidden count, a personal
+  Facebook profile.
+- **YouTube rounds** the subscriber count it gives out to three figures
+  (2,970,000; 24,900), so a large channel's count moves in steps.
+
+It needs `YOUTUBE_API_KEY`, `SOCIALCRAWL_API_KEY` and `CRON_SECRET` on the
+site, and two secrets on the GitHub repository: `CRON_SECRET` (the same
+value) and `FOLLOWER_REFRESH_URL` (the full address of
+`/api/cron/follower-refresh`). The workflow's logs are public, so the
+address answers with totals only.
 
 ## Registration and the admin dashboard
 
@@ -329,6 +370,7 @@ so the history outlives the admin who made it.
 | `notification_kind` | `decision`, `resend` |
 | `creator_card_status` | `pending`, `approved`, `rejected` |
 | `card_claim_status` | `pending`, `approved`, `rejected` |
+| `follower_check_status` | `ok`, `not_found`, `unreadable`, `error` |
 
 ### Setting it up
 

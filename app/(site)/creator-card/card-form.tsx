@@ -32,15 +32,14 @@ import {
   CARD_SOCIALS,
   COUNTED_SOCIALS,
   CREATOR_TYPES,
-  readFollowerCount,
-  totalFollowers,
+  socialLinkKey,
   type CardContent,
   type CardFieldErrors,
   type CardFollowers,
   type CardSocial,
   type CountedSocial,
 } from "@/lib/creator-card";
-import type { CreatorCardStatus } from "@/lib/db/schema";
+import type { CreatorCardStatus, FollowerCheckStatus } from "@/lib/db/schema";
 import { formatCount, formatDate } from "@/lib/format";
 import { loginUrl } from "@/lib/login-url";
 import { sessionEnded } from "@/lib/session-ended";
@@ -48,18 +47,34 @@ import { cn } from "@/lib/utils";
 import { submitCardAction, type CardSaveResult } from "./actions";
 import { ChipGroup, LinkField, PhotoField, Section, TaglineField } from "./card-fields";
 
-/** What the form keeps of a card: what the card shows, and the follower
-    counts, which it does not. */
-type StoredCard = CardContent & { followers: CardFollowers };
-
 /** The creator's card as the page hands it over: what it says and where it
     stands. The reviewer's note comes only with a rejection. `photoUrl` is
-    set only for a photo the creator uploaded. */
-export type FormCard = StoredCard & {
+    set only for a photo the creator uploaded.
+
+    The follower counts come with it to be shown, never to be changed
+    here: `followers` is the figure the card has for each counted place,
+    and `checks` where the latest reading of its link stands. */
+export type FormCard = CardContent & {
   status: CreatorCardStatus;
   reviewNote: string | null;
   submittedAt: string | null;
+  followers: CardFollowers;
+  checks: Partial<Record<CountedSocial, { status: FollowerCheckStatus; checkedAt: string }>>;
 };
+
+/** What the fields are filled from: a stored card, or one just saved. */
+type FieldSource = Pick<
+  CardContent,
+  | "displayName"
+  | "country"
+  | "creatorType"
+  | "languages"
+  | "languagesOther"
+  | "contentTypes"
+  | "contentTypesOther"
+  | "tagline"
+  | "socials"
+>;
 
 type Values = {
   displayName: string;
@@ -71,8 +86,6 @@ type Values = {
   contentTypesOther: string;
   tagline: string;
   socials: Record<CardSocial, string>;
-  /** Each count as typed; a stored one shows with its thousands grouped. */
-  followers: Record<CountedSocial, string>;
 };
 
 /** "YouTube, Instagram and TikTok". */
@@ -80,7 +93,7 @@ const COUNTED_PLACES = new Intl.ListFormat("en-GB", { type: "conjunction" }).for
   COUNTED_SOCIALS.map(({ label }) => label),
 );
 
-function toValues(card: StoredCard | null, accountName: string | null): Values {
+function toValues(card: FieldSource | null, accountName: string | null): Values {
   // A country that is not on the list cannot be shown by the field: it
   // reads as unanswered, to be picked again.
   const country = card?.country && isCountry(card.country) ? card.country : "";
@@ -98,13 +111,31 @@ function toValues(card: StoredCard | null, accountName: string | null): Values {
       CardSocial,
       string
     >,
-    followers: Object.fromEntries(
-      COUNTED_SOCIALS.map(({ value }) => {
-        const count = card?.followers[value];
-        return [value, count == null ? "" : formatCount(count)];
-      }),
-    ) as Record<CountedSocial, string>,
   };
+}
+
+/** What stands beside a counted link: the figure read from it, and a line
+    saying where that reading stands. Nothing for a place with no link. A
+    link that is not the stored one, new or changed in this visit, has no
+    figure yet: the stored one was read from another account. */
+function audienceOf(card: FormCard | null, place: CountedSocial, typed: string) {
+  const link = typed.trim();
+  if (!link) return undefined;
+  const stored = card?.socials[place]?.trim();
+  const same =
+    !!stored &&
+    socialLinkKey(place, /^https?:\/\//i.test(link) ? link : `https://${link}`) === socialLinkKey(place, stored);
+  if (!card || !same) return { count: null, note: "We read this from your link once your card is saved." };
+
+  const figure = card.followers[place];
+  const count = figure == null ? null : formatCount(figure);
+  const check = card.checks[place];
+  if (check?.status === "ok") return { count, note: `Updated every month. Last read ${formatDate(check.checkedAt)}.` };
+  if (check?.status === "not_found" || check?.status === "unreadable") {
+    return { count, note: "We could not read this account. Check that the link is your public profile." };
+  }
+  if (card.status === "rejected") return { count, note: "We read this once your card is sent again." };
+  return { count, note: count ? "Updated every month." : "We will read this within a day." };
 }
 
 /* What this visit has done about the photo and not yet sent: nothing, a
@@ -120,7 +151,7 @@ const TOAST_ID = "creator-card";
 
 /* Each answer that can be refused, in the order of the form, with the
    element to go to for it. A group of chips or links is reached through
-   its first input; a link is followed by its follower count. */
+   its first input. */
 const PROBLEM_FIELDS: readonly (readonly [keyof CardFieldErrors, string])[] = [
   ["photo", "[data-photo-button]"],
   ["displayName", "#displayName"],
@@ -131,10 +162,9 @@ const PROBLEM_FIELDS: readonly (readonly [keyof CardFieldErrors, string])[] = [
   ["languagesOther", "#languagesOther"],
   ["contentTypes", 'input[name="contentTypes"]'],
   ["contentTypesOther", "#contentTypesOther"],
-  ...CARD_SOCIALS.flatMap((social): (readonly [keyof CardFieldErrors, string])[] => [
-    [`socials.${social.value}`, `#socials-${social.value}`],
-    ...("audience" in social ? [[`followers.${social.value}`, `#followers-${social.value}`] as const] : []),
-  ]),
+  ...CARD_SOCIALS.map(
+    (social): readonly [keyof CardFieldErrors, string] => [`socials.${social.value}`, `#socials-${social.value}`],
+  ),
   ["socials", `#socials-${CARD_SOCIALS[0].value}`],
 ];
 
@@ -167,15 +197,6 @@ function showSignedOut() {
 function showSaved(outcome: SaveOutcome, from: CreatorCardStatus | null, banner: HTMLElement | null) {
   if (outcome === "unchanged") {
     toast("No changes to save", { id: TOAST_ID, description: "Your card is as it was." });
-    return;
-  }
-  // New follower counts alone are kept without a review, so the card
-  // stands where it stood and the banner has nothing new to say.
-  if (outcome === "counts") {
-    toast.success("Follower counts updated", {
-      id: TOAST_ID,
-      description: from === "approved" ? "Your card stays approved." : "Your card is still in review.",
-    });
     return;
   }
   // A rejected card that was sent again is a resubmission, changed or not.
@@ -297,15 +318,8 @@ export function CardForm({
   const uploadedUrl = card?.photoUrl ?? null;
   const photoUrl =
     photo.kind === "chosen" ? photo.url : photo.kind === "removed" ? accountPicture : (uploadedUrl ?? accountPicture);
-  // The counts that read as numbers so far, added up as the table will.
-  const total = totalFollowers(
-    Object.fromEntries(
-      COUNTED_SOCIALS.map(({ value }) => {
-        const count = readFollowerCount(values.followers[value]);
-        return [value, typeof count === "number" ? count : null];
-      }),
-    ),
-  );
+  // The figure the card is ranked on, as the table has it.
+  const total = card?.totalFollowers ?? 0;
   const preview: CardContent = {
     ...values,
     photoUrl,
@@ -450,10 +464,7 @@ export function CardForm({
           title="Where to find you"
           description={
             editable
-              ? `Add the link for each place you publish. One is enough; add as many as you use. For ${COUNTED_PLACES}, also tell us how many people follow you there.${
-                  // Only worth saying once there is a review to send it back to.
-                  exists ? " You can update these numbers at any time; that does not send your card back for review." : ""
-                }`
+              ? `Add the link for each place you publish. One is enough; add as many as you use. For ${COUNTED_PLACES}, we read how many people follow you from the link itself, every month, so there is no number to type.`
               : undefined
           }
           required
@@ -478,24 +489,9 @@ export function CardForm({
                   social={social}
                   readOnly={!editable}
                   value={values.socials[social.value]}
-                  // A count's message can be about its link, so a changed
-                  // link answers both.
-                  onChange={(v) =>
-                    set(
-                      "socials",
-                      { ...values.socials, [social.value]: v },
-                      `socials.${social.value}`,
-                      `followers.${social.value}`,
-                    )
-                  }
+                  onChange={(v) => set("socials", { ...values.socials, [social.value]: v }, `socials.${social.value}`)}
                   error={errors[`socials.${social.value}`]?.[0]}
-                  followers={counted ? values.followers[counted] : undefined}
-                  onFollowersChange={
-                    counted
-                      ? (v) => set("followers", { ...values.followers, [counted]: v }, `followers.${counted}`)
-                      : undefined
-                  }
-                  followersError={counted ? errors[`followers.${counted}`]?.[0] : undefined}
+                  audience={counted ? audienceOf(card, counted, values.socials[counted]) : undefined}
                 />
               );
             })}
@@ -505,8 +501,8 @@ export function CardForm({
               {errors.socials[0]}
             </p>
           )}
-          {/* The figure creators are ranked on, added up as it is typed. */}
-          {total !== null && (
+          {/* The figure creators are ranked on. */}
+          {total > 0 && (
             <p className="flex items-baseline justify-between gap-4 border-t border-border pt-5 text-sm">
               <span className="min-w-0">
                 <span className="font-medium">Total followers</span>
