@@ -89,6 +89,21 @@ export function EventCard({ event, layout = "grid" }: { event: EventEntry; layou
             {title}
           </h3>
 
+          {/* The figures sit under the title as one row of equal columns,
+              so they never wrap and line up from card to card. */}
+          {stats && stats.length > 0 && (
+            <dl className="mt-4 grid auto-cols-fr grid-flow-col gap-x-3">
+              {stats.map(({ value, label: name }) => (
+                <div key={name} className="flex min-w-0 flex-col-reverse">
+                  <dt className="mt-1 truncate text-xs text-muted-foreground">{name}</dt>
+                  <dd className="font-display text-xl tabular-nums leading-none text-brand-cyan sm:text-2xl">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
           {description && (
             <p
               className={cn(
@@ -98,17 +113,6 @@ export function EventCard({ event, layout = "grid" }: { event: EventEntry; layou
             >
               {description}
             </p>
-          )}
-
-          {stats && (
-            <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
-              {stats.map(({ value, label: name }) => (
-                <div key={name} className="flex flex-col-reverse">
-                  <dt className="mt-1 text-xs text-muted-foreground">{name}</dt>
-                  <dd className="font-display text-2xl tabular-nums leading-none text-brand-cyan">{value}</dd>
-                </div>
-              ))}
-            </dl>
           )}
 
           {href && (

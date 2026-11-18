@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 import { EventCard } from "@/components/events/event-card";
-import { PastEventList } from "@/components/events/past-event-list";
 import { PageIntro } from "@/components/page-intro";
 import { FigureBand } from "@/components/figure-band";
 import { EVENTS_PAGE, ONGOING_EVENTS, PAST_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
@@ -67,8 +66,6 @@ export default function EventsPage() {
               <p className="mt-8 rounded-2xl bg-paper-deep px-6 py-8 text-pretty text-base leading-[1.6] text-muted-foreground">
                 {empty}
               </p>
-            ) : id === "past" ? (
-              <PastEventList events={events} />
             ) : (
               <ul className={cn("mt-8 lg:mt-10", gridFor(events.length))}>
                 {events.map((event) => (
