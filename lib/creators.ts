@@ -18,6 +18,20 @@ export const CREATORS_PAGE = {
     "Monastics, teachers, lay practitioners and organizations who carry the Dharma on their own channels. Find them, follow them, and add your own card.",
 } as const;
 
+/* The leaderboard: the creators with the largest audiences, in all their
+   counted places together and in each one. `updated` is the line that
+   says when the counts were last read. */
+export const CREATORS_LEADERBOARD = {
+  eyebrow: "Leaderboard",
+  title: "The most followed creators",
+  description:
+    "The ten creators with the largest audience, across all their channels and on each one. We read every count from the channel itself, once a month.",
+  all: "All channels",
+  updated: "Last updated",
+  empty: "The leaderboard appears here after our first monthly reading of the counts.",
+  change: "The arrows show how far a count has moved since last month's reading.",
+} as const;
+
 export const CREATORS_DIRECTORY = {
   title: "Find a creator",
   /* The invitation to make a creator card (app/(site)/creator-card). */

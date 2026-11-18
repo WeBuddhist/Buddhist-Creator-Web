@@ -2,22 +2,27 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { connection } from "next/server";
+import { ArrowRightIcon, ArrowsClockwiseIcon } from "@phosphor-icons/react/dist/ssr";
+import { SectionHeading } from "@/components/convention/section-heading";
 import { CreatorCard } from "@/components/creator-card/creator-card";
 import { CreatorFilters } from "@/components/creators/creator-filters";
+import { Leaderboard, type Board } from "@/components/creators/leaderboard";
 import { PageIntro } from "@/components/page-intro";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
-import { CARD_PATH } from "@/lib/creator-card";
-import { listPublicCards, type PublicCard } from "@/lib/creator-cards";
+import { CARD_PATH, COUNTED_SOCIALS } from "@/lib/creator-card";
+import { creatorLeaderboard, listPublicCards, type LeaderboardPlace, type PublicCard } from "@/lib/creator-cards";
 import {
   CREATORS_DIRECTORY,
+  CREATORS_LEADERBOARD,
   CREATORS_PAGE,
   DIRECTORY_ID,
   claimHref,
   creatorsHref,
   creatorsView,
 } from "@/lib/creators";
+import { formatDate } from "@/lib/format";
 import { forLog } from "@/lib/log-error";
 import { presignedGetUrl } from "@/lib/s3";
 import crowdSelfie from "@/public/photos/crowd-selfie.webp";
@@ -27,10 +32,11 @@ export const metadata: Metadata = {
   description: CREATORS_PAGE.description,
 };
 
-/* The creators directory: every approved creator card, the most followed
-   first, thirty to a page. The intro and the heading are static and
-   prerender; the cards depend on the URL's search, country and page, so
-   they stream in behind the boundary.
+/* The creators page: the leaderboard, then the directory, which is every
+   approved creator card, the most followed first, thirty to a page. The
+   intro and the headings are static and prerender. The leaderboard is
+   read from the database on each visit, and the cards depend on the URL's
+   search, country and page, so both stream in behind their boundaries.
 
    A card the team made and nobody owns yet carries a way to claim it. */
 export default function CreatorsPage(props: PageProps<"/creators">) {
@@ -47,6 +53,21 @@ export default function CreatorsPage(props: PageProps<"/creators">) {
           position: "50% 45%",
         }}
       />
+
+      <section aria-labelledby="leaderboard-title" className="bg-background">
+        <div className="mx-auto w-full max-w-6xl px-5 pt-20 sm:px-6 lg:pt-28">
+          <SectionHeading
+            id="leaderboard-title"
+            eyebrow={CREATORS_LEADERBOARD.eyebrow}
+            title={CREATORS_LEADERBOARD.title}
+            description={CREATORS_LEADERBOARD.description}
+            size="h3"
+          />
+          <Suspense fallback={<LeaderboardFallback />}>
+            <LeaderboardBoards />
+          </Suspense>
+        </div>
+      </section>
 
       <section id={DIRECTORY_ID} aria-labelledby="directory-title" className="bg-background">
         <div className="mx-auto w-full max-w-6xl px-5 pt-20 pb-24 sm:px-6 lg:pt-28 lg:pb-32">
@@ -76,13 +97,94 @@ export default function CreatorsPage(props: PageProps<"/creators">) {
 /* A card's photo: its own, or failing that its owner's sign-in picture. A
    picture that cannot be signed for (storage not set up, say) leaves the
    card with the stand-in rather than taking the directory down. */
-async function photoUrl(card: PublicCard) {
+async function photoUrl(card: Pick<PublicCard, "photoKey" | "ownerPicture">) {
   try {
     return await presignedGetUrl(card.photoKey ?? card.ownerPicture);
   } catch (error) {
     console.error("[creators] could not sign a card photo", forLog(error));
     return null;
   }
+}
+
+/* What each board's figures count, said once above its rows. */
+const BOARD_CAPTION: Record<LeaderboardPlace, string> = {
+  all: `Followers across ${new Intl.ListFormat("en-GB", { type: "conjunction" }).format(COUNTED_SOCIALS.map(({ label }) => label))}`,
+  youtube: "Subscribers on YouTube",
+  instagram: "Followers on Instagram",
+  tiktok: "Followers on TikTok",
+  facebook: "Followers on Facebook",
+};
+
+/* The leaderboard's boards and the day the counts were last read. A
+   board nobody is on yet (a place no count has been read for) has no
+   tab. */
+async function LeaderboardBoards() {
+  // The counts change with every reading: read them at request time.
+  await connection();
+  const { boards, readAt } = await creatorLeaderboard();
+
+  const places: LeaderboardPlace[] = ["all", ...COUNTED_SOCIALS.map(({ value }) => value)];
+  const label = (place: LeaderboardPlace) =>
+    place === "all" ? CREATORS_LEADERBOARD.all : (COUNTED_SOCIALS.find(({ value }) => value === place)?.label ?? place);
+  // One signature for a creator who is on several boards.
+  const photos = new Map<string, Promise<string | null>>();
+  const photoOf = (row: (typeof boards)["all"][number]) => {
+    if (!photos.has(row.id)) photos.set(row.id, photoUrl(row));
+    return photos.get(row.id)!;
+  };
+  const shown: Board[] = await Promise.all(
+    places
+      .filter((place) => boards[place].length > 0)
+      .map(async (place) => ({
+        value: place,
+        label: label(place),
+        caption: BOARD_CAPTION[place],
+        rows: await Promise.all(
+          boards[place].map(async (row) => ({
+            id: row.id,
+            displayName: row.displayName,
+            country: row.country,
+            photoUrl: await photoOf(row),
+            followers: row.followers,
+            gain: row.gain,
+            link: row.link,
+            linkLabel: row.linkPlace && label(row.linkPlace),
+          })),
+        ),
+      })),
+  );
+
+  if (shown.length === 0) {
+    return (
+      <p className="mt-8 rounded-2xl bg-paper-deep px-6 py-8 text-base leading-[1.6] text-muted-foreground">
+        {CREATORS_LEADERBOARD.empty}
+      </p>
+    );
+  }
+  return (
+    <div className="mt-8">
+      {readAt && (
+        <p className="mb-5 flex items-center gap-2 text-sm text-muted-foreground">
+          <ArrowsClockwiseIcon aria-hidden weight="bold" className="size-4 shrink-0 text-brand-cyan" />
+          <span>
+            {CREATORS_LEADERBOARD.updated}{" "}
+            <time dateTime={readAt.toISOString()} className="font-medium text-foreground">
+              {formatDate(readAt)}
+            </time>
+          </span>
+        </p>
+      )}
+      <Leaderboard boards={shown} />
+    </div>
+  );
+}
+
+function LeaderboardFallback() {
+  return (
+    <p className="mt-8 border-y border-border py-5 text-sm text-muted-foreground" aria-busy="true">
+      Loading the leaderboard…
+    </p>
+  );
 }
 
 async function Directory({ searchParams }: { searchParams: PageProps<"/creators">["searchParams"] }) {

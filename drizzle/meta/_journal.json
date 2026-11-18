@@ -148,6 +148,13 @@
       "when": 1794994764847,
       "tag": "0020_unreadable_facebook_links",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794995998437,
+      "tag": "0021_links_with_no_figure",
+      "breakpoints": true
     }
   ]
 }

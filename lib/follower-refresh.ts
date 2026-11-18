@@ -29,7 +29,11 @@ import { fetchYoutubeChannel, fetchYoutubeChannels, YOUTUBE_IDS_PER_REQUEST } fr
    A link is due when the month has no row for it under its current key,
    or has one that failed more than RETRY_AFTER_MS ago. A missing account
    and an unreadable one are answers, not failures: they wait for next
-   month. */
+   month.
+
+   A person can also ask for every link to be read again now, outside the
+   monthly reading (`rereadBefore`). The month's rows are then written
+   over, so a month still has one figure for each link: the latest. */
 
 const RETRY_AFTER_MS = 20 * 60 * 60 * 1000;
 const AT_ONCE = 4;
@@ -72,17 +76,32 @@ export async function refreshDueAccounts(options: {
   budgetMs: number;
   now?: () => Date;
   sources?: FollowerSources;
+  /** Read again every link last read before this moment, whatever the
+      month holds for it. The caller gives the moment the full reading was
+      asked for and repeats it on every call of that reading, so a link
+      read by an earlier call is not read twice. */
+  rereadBefore?: Date;
 }): Promise<RefreshResult | null> {
   if (running.__followerRefresh) return null;
   running.__followerRefresh = true;
   try {
-    return await refresh(options.budgetMs, options.now ?? (() => new Date()), options.sources ?? SOURCES);
+    return await refresh(
+      options.budgetMs,
+      options.now ?? (() => new Date()),
+      options.sources ?? SOURCES,
+      options.rereadBefore,
+    );
   } finally {
     running.__followerRefresh = false;
   }
 }
 
-async function refresh(budgetMs: number, now: () => Date, sources: FollowerSources): Promise<RefreshResult> {
+async function refresh(
+  budgetMs: number,
+  now: () => Date,
+  sources: FollowerSources,
+  rereadBefore: Date | undefined,
+): Promise<RefreshResult> {
   const started = now();
   const month = monthOf(started);
   const deadline = started.getTime() + budgetMs;
@@ -97,6 +116,7 @@ async function refresh(budgetMs: number, now: () => Date, sources: FollowerSourc
   const due = links.filter((link) => {
     const check = done.get(`${link.cardId} ${link.platform}`);
     if (!check || check.linkKey !== link.linkKey) return true;
+    if (rereadBefore && check.checkedAt.getTime() < rereadBefore.getTime()) return true;
     return check.status === "error" && started.getTime() - check.checkedAt.getTime() > RETRY_AFTER_MS;
   });
 

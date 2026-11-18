@@ -859,3 +859,154 @@ export async function listUnreadLinks(): Promise<UnreadLink[]> {
     })
     .sort((a, b) => a.displayName.localeCompare(b.displayName) || a.platform.localeCompare(b.platform));
 }
+
+/* ---------------------------------------------------------------------- */
+/* Leaderboard                                                             */
+/* ---------------------------------------------------------------------- */
+
+/* The creators with the largest audiences: in all their counted places
+   together, and in each place by itself. It is made of what the monthly
+   reading keeps (lib/follower-refresh.ts): the card's own counts rank
+   it, and two months of readings set beside each other say how far a
+   creator has moved since the last one. */
+
+/** How many creators a board lists. */
+export const LEADERBOARD_SIZE = 10;
+
+export type LeaderboardPlace = "all" | CountedSocial;
+
+export type LeaderboardRow = {
+  id: string;
+  displayName: string;
+  country: string | null;
+  photoKey: string | null;
+  ownerPicture: string | null;
+  /** The audience the board ranks on: in that place, or in all of them. */
+  followers: number;
+  /** How far that figure has moved since last month's reading. Null
+      until there are two readings of the same account to compare. */
+  gain: number | null;
+  /** Where the creator is found: in that place, or, on the board of all
+      places, in the one where most people follow them. */
+  link: string | null;
+  linkPlace: CountedSocial | null;
+};
+
+export type Leaderboard = {
+  boards: Record<LeaderboardPlace, LeaderboardRow[]>;
+  /** When the counts were last read: the day most of the latest month's
+      readings were taken, which is the day the reading ran. Null before
+      the first one. */
+  readAt: Date | null;
+};
+
+/** The first day of the month before `month` ("2026-12-01" → "2026-11-01"). */
+function monthBefore(month: string) {
+  const [year, index] = month.split("-").map(Number);
+  return new Date(Date.UTC(year, index - 2, 1)).toISOString().slice(0, 10);
+}
+
+export async function creatorLeaderboard(): Promise<Leaderboard> {
+  const places: LeaderboardPlace[] = ["all", ...COUNTED_SOCIALS.map(({ value }) => value)];
+  const top = (place: LeaderboardPlace) => {
+    const figure = place === "all" ? creatorCards.totalFollowers : creatorCards[FOLLOWER_COLUMN[place]];
+    return db()
+      .select({
+        id: creatorCards.id,
+        displayName: creatorCards.displayName,
+        country: creatorCards.country,
+        photoKey: creatorCards.photoKey,
+        socials: creatorCards.socials,
+        youtubeFollowers: creatorCards.youtubeFollowers,
+        instagramFollowers: creatorCards.instagramFollowers,
+        tiktokFollowers: creatorCards.tiktokFollowers,
+        facebookFollowers: creatorCards.facebookFollowers,
+        totalFollowers: creatorCards.totalFollowers,
+        ownerPicture: users.picture,
+      })
+      .from(creatorCards)
+      .leftJoin(users, eq(users.id, creatorCards.userId))
+      .where(and(eq(creatorCards.status, "approved"), sql`${figure} > 0`))
+      // As the directory orders: the name and the id settle a tie.
+      .orderBy(desc(figure), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
+      .limit(LEADERBOARD_SIZE);
+  };
+  const [lists, [{ month }]] = await Promise.all([
+    Promise.all(places.map(top)),
+    db().select({ month: sql<string | null>`max(${creatorFollowerChecks.month})::text` }).from(creatorFollowerChecks),
+  ]);
+
+  const ids = [...new Set(lists.flat().map((card) => card.id))];
+  const [readings, [day]] =
+    month && ids.length > 0
+      ? await Promise.all([
+          db()
+            .select({
+              cardId: creatorFollowerChecks.cardId,
+              platform: creatorFollowerChecks.platform,
+              month: creatorFollowerChecks.month,
+              linkKey: creatorFollowerChecks.linkKey,
+              followers: creatorFollowerChecks.followers,
+            })
+            .from(creatorFollowerChecks)
+            .where(
+              and(
+                inArray(creatorFollowerChecks.cardId, ids),
+                inArray(creatorFollowerChecks.month, [month, monthBefore(month)]),
+                eq(creatorFollowerChecks.status, "ok"),
+              ),
+            ),
+          db()
+            .select({ at: sql<Date>`max(${creatorFollowerChecks.checkedAt})`.mapWith(creatorFollowerChecks.checkedAt) })
+            .from(creatorFollowerChecks)
+            .where(eq(creatorFollowerChecks.month, month))
+            .groupBy(sql`(${creatorFollowerChecks.checkedAt} at time zone 'UTC')::date`)
+            .orderBy(desc(sql`count(*)`), desc(sql`max(${creatorFollowerChecks.checkedAt})`))
+            .limit(1),
+        ])
+      : [[], []];
+
+  /* A place's gain: this month's figure less last month's, when both are
+     readings of the link the card has now. */
+  const figures = new Map(readings.map((row) => [`${row.cardId} ${row.platform} ${row.month} ${row.linkKey}`, row.followers]));
+  const gainIn = (card: (typeof lists)[number][number], place: CountedSocial) => {
+    const key = linkKeyOf(card.socials, place);
+    if (!month || !key) return null;
+    const now = figures.get(`${card.id} ${place} ${month} ${key}`);
+    const before = figures.get(`${card.id} ${place} ${monthBefore(month)} ${key}`);
+    return now == null || before == null ? null : now - before;
+  };
+
+  const boards = Object.fromEntries(
+    places.map((place, index) => [
+      place,
+      lists[index].map((card): LeaderboardRow => {
+        const counted = COUNTED_SOCIALS.map(({ value }) => ({
+          place: value,
+          followers: card[FOLLOWER_COLUMN[value]] ?? 0,
+          link: card.socials[value]?.trim() || null,
+          gain: gainIn(card, value),
+        }));
+        const gains = counted.flatMap(({ gain }) => (gain === null ? [] : [gain]));
+        // On the board of all places, the place most people follow them in.
+        const lead =
+          place === "all"
+            ? counted.filter(({ link }) => link).sort((a, b) => b.followers - a.followers)[0]
+            : counted.find((entry) => entry.place === place);
+        return {
+          id: card.id,
+          displayName: card.displayName,
+          country: card.country,
+          photoKey: card.photoKey,
+          ownerPicture: card.ownerPicture,
+          followers: place === "all" ? Number(card.totalFollowers) : (card[FOLLOWER_COLUMN[place]] ?? 0),
+          gain: place === "all" ? (gains.length > 0 ? gains.reduce((sum, gain) => sum + gain, 0) : null) : (lead?.gain ?? null),
+          link: lead?.link ?? null,
+          linkPlace: lead?.link ? lead.place : null,
+        };
+      }),
+    ]),
+  ) as Record<LeaderboardPlace, LeaderboardRow[]>;
+
+  return { boards, readAt: day?.at ?? null };
+}

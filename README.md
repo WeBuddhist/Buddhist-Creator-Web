@@ -15,7 +15,7 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global netw
 | `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/convention/2027/register` | The convention application form (sign-in required) |
 | `/admin` | The selection committee's dashboard (admin role required) |
-| `/creators` | The creators directory: every approved creator card, searchable and paged |
+| `/creators` | The leaderboard of the most followed creators, and the creators directory: every approved creator card, searchable and paged |
 | `/creator-card` | A creator's own card: make it, edit it, or claim one the team made (sign-in required) |
 | `/team` | The team, and the invitation to join it |
 
@@ -194,13 +194,16 @@ profile endpoints (one credit per account read).
   figure, what came of the attempt, and the account's own id and handle.
   It is the history a ranking by growth is worked out from. The card's
   `*_followers` column holds the latest figure. November 2026 is the first
-  month: its rows are the counts on the team's sheet (migration `0017`),
-  not readings of ours.
+  month. Its rows began as the counts on the team's sheet (migration
+  `0017`) and were written over by the first full reading, on 18 November.
 - **The schedule runs every day.** On the first of the month (UTC) every
   link is due; on the other days only links added since and attempts that
-  failed. One call
-  works for about a minute and says how many links are left; the workflow
-  calls again until none are.
+  failed. One call works for about a minute and says how many links are
+  left; the workflow calls again until none are.
+- **A full reading can be asked for by hand**: "Run workflow" on the
+  Actions tab, with its box ticked, reads every link again now and writes
+  over the month's rows. It costs a SocialCrawl credit for each Instagram,
+  TikTok and Facebook link.
 - **A reading belongs to a link.** Rows carry the link in the form links
   are compared in (`socialLinkKey`), and a card whose link changes loses
   that place's count until the new account is read, within a day.
@@ -209,6 +212,13 @@ profile endpoints (one credit per account read).
   Facebook profile.
 - **YouTube rounds** the subscriber count it gives out to three figures
   (2,970,000; 24,900), so a large channel's count moves in steps.
+
+**The leaderboard** at the top of `/creators` is made of the same rows
+(`creatorLeaderboard` in `lib/creator-cards.ts`,
+`components/creators/leaderboard.tsx`): the ten most followed creators in
+all their counted places together and in each place, the day the counts
+were last read, and, once two months of readings exist, how far each count
+has moved since the month before.
 
 It needs `YOUTUBE_API_KEY`, `SOCIALCRAWL_API_KEY` and `CRON_SECRET` on the
 site, and two secrets on the GitHub repository: `CRON_SECRET` (the same
