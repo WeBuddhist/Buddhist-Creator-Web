@@ -263,7 +263,7 @@ day the counts were last read.
   or "New" for a creator last month has no reading of. Up is green, down
   is red, each with its own sign.
 - **The mission's progress bar** on the home page (`components/mission.tsx`)
-  is the same counts added up, `networkAudience`, against the hundred
+  is the same counts added up, `networkAudience`, against the two hundred
   million the mission names. It counts followers, so somebody who follows
   two creators is in it twice.
 

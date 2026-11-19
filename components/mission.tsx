@@ -28,7 +28,7 @@ const STATS = [
 ];
 
 /** The mission's figure: the audience the sentence sets out to reach. */
-const GOAL = 100_000_000;
+const GOAL = 200_000_000;
 
 /* The mission, as a split sheet in two tones of the brand's cyan.
 
@@ -64,7 +64,7 @@ export function Mission() {
             className="mt-5 text-balance font-display text-[clamp(2.5rem,4.5vw,4.5rem)] leading-[1.06]"
           >
             Let’s spread Buddhist wisdom and compassion to{" "}
-            <em className="italic text-saffron">100 million people by 2030</em>
+            <em className="italic text-saffron">200 million people by 2030</em>
           </h2>
           <p className="mt-8 max-w-xl text-pretty text-lg leading-[1.6] text-white/85 sm:text-xl sm:leading-[1.55]">
             Every gathering, award, and campaign we run is one step toward that
@@ -122,7 +122,7 @@ export function Mission() {
 }
 
 /* How far along the mission's figure we are: the followers of every
-   creator in the directory, added up, against the hundred million, with
+   creator in the directory, added up, against the two hundred million, with
    what is left to go. It is the same count the leaderboard is made of
    (networkAudience in lib/creator-cards.ts), read on each visit, so it
    moves with every monthly reading.
@@ -197,7 +197,7 @@ function ProgressFrame({
   return (
     <div className="mt-10 max-w-xl lg:mt-12" aria-busy={loading || undefined}>
       <p id="mission-progress" className={cn(label, "text-gold-soft")}>
-        Progress to 100 million
+        Progress to 200 million
       </p>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
         <p className="min-h-[clamp(2.75rem,5vw,4rem)]">{reached}</p>
