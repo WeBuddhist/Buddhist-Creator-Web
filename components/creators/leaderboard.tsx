@@ -441,7 +441,7 @@ function LeadCard({
           className="podium-surface absolute inset-0 rounded-[1.25rem] transition-opacity duration-300 ease-out group-data-[live]/lead:opacity-0"
         />
         <div className="relative flex justify-center pt-4">
-          <p className="absolute top-0.5 left-1.5 font-display text-[3.25rem] leading-[0.8] text-ink tabular-nums [text-shadow:0_1px_0_rgb(255_255_255/0.45)]">
+          <p className="absolute top-0.5 left-1.5 font-display text-[3.25rem] leading-[0.8] tabular-nums podium-numeral">
             <span className="sr-only">Rank </span>
             {rank}
             <span className="sr-only">, {metal.metal}</span>

@@ -383,6 +383,18 @@ body:has([data-admin]) {
   }
 }
 
+/* The place's numeral on a podium card, raised out of the crown's metal:
+   the metal's own shade, darkened until it reads (3.5:1 or more on each
+   crown's `mid`, 5.6:1 on its `light`), with a lit upper edge and a
+   shadowed lower one. Uses the card's --metal-* colours. */
+@utility podium-numeral {
+  color: color-mix(in srgb, var(--metal-deep) 65%, black);
+  text-shadow:
+    0 -0.0625rem 0 color-mix(in srgb, var(--metal-pale) 85%, transparent),
+    0 0.0625rem 0 color-mix(in srgb, var(--metal-deep) 70%, black),
+    0 0.125rem 0.1875rem rgb(0 0 0 / 0.18);
+}
+
 @utility font-display {
   font-family: var(--font-newsreader), ui-serif, Georgia, serif;
   font-weight: 400;
