@@ -20,6 +20,9 @@ import {
 } from "@phosphor-icons/react";
 import { CardPhoto } from "@/components/creator-card/card-photo";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
+import { Flag } from "@/components/creators/flag";
+import { PodiumStage, usePodiumCard } from "@/components/creators/podium/stage";
+import type { Tier } from "@/components/creators/podium/tiers";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { CARD_PATH, COUNTED_SOCIALS, type CountedSocial } from "@/lib/creator-card";
@@ -58,8 +61,9 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
    rest of the board, up to its first hundred, is brought in a stretch at
    a time as the window is scrolled.
 
-   The first three stand apart as cards, with the photo, the figure set
-   large and each channel's own share of it. The rest are rows: rank,
+   The first three stand apart as cards made to be kept: gold, silver and
+   bronze, each with the photo, the flag, the figure set large and each
+   channel's own share of it (LeadCard). The rest are rows: rank,
    photo, name and country, the figure, and the channels it was read
    from. A channel is a link to the creator there, so the board says
    where every number comes from. From the second monthly reading on, a
@@ -88,6 +92,7 @@ export function Leaderboard({
   updated: { iso: string; text: string } | null;
 }) {
   const [place, setPlace] = useState<LeaderboardPlace>(boards[0].place);
+  const board = boards.find((entry) => entry.place === place) ?? boards[0];
 
   return (
     <Tabs value={place} onValueChange={(value) => setPlace(value as LeaderboardPlace)}>
@@ -115,11 +120,12 @@ export function Leaderboard({
           </p>
         )}
       </div>
-      {boards.map((board) => (
-        <TabsPanel key={board.place} value={board.place} className="mt-6">
-          <BoardPanel board={board} viewer={viewer} />
-        </TabsPanel>
-      ))}
+      {/* One panel, which follows the tab: the boards share it, so the
+          canvas behind the first three cards is made once and kept as the
+          visitor moves between them. */}
+      <TabsPanel value={board.place} className="mt-6">
+        <BoardPanel board={board} viewer={viewer} />
+      </TabsPanel>
     </Tabs>
   );
 }
@@ -148,8 +154,8 @@ const endButton = cn(
 function BoardPanel({ board, viewer }: { board: Board; viewer: BoardViewer }) {
   /* The board past what the page was sent. Nothing is asked for until the
      list is scrolled (or its last button pressed), so the query never
-     runs by itself. Only the visible board is mounted, so only it asks;
-     a board gone back to still has what it had brought in. */
+     runs by itself. Only the board being looked at asks; a board gone
+     back to still has what it had brought in. */
   const further = useInfiniteQuery({
     queryKey: ["leaderboard", board.place, board.rows.length],
     queryFn: ({ pageParam }) => fetchStretch(board.place, pageParam),
@@ -186,15 +192,31 @@ function BoardPanel({ board, viewer }: { board: Board; viewer: BoardViewer }) {
 
   return (
     <>
-      {/* The three cards share their rows (who, the figure, the channels),
-          so the figures stand on one line however long a name runs. */}
-      <ol role="list" className="grid gap-4 lg:grid-cols-3 lg:gap-x-5">
-        {first.map((row, index) => (
-          <LeadCard key={row.id} row={row} rank={index + 1} unit={unit} board={board.place} own={row.id === mine} />
-        ))}
-      </ol>
+      {/* The three cards share their rows (the photo, who, the figure, the
+          channels), so the figures stand on one line however long a name
+          runs. Below lg they are a row that scrolls sideways,
+          each a card's width; from lg they share the page's. */}
+      <PodiumStage>
+        <ol
+          role="list"
+          className="grid auto-cols-[min(16.5rem,78vw)] grid-flow-col grid-rows-[repeat(4,auto)] gap-x-4 lg:auto-cols-auto lg:grid-flow-row lg:grid-cols-3 lg:grid-rows-none lg:gap-x-5"
+        >
+          {first.map((row, index) => (
+            <LeadCard
+              // A card belongs to its board: on another one it is a new card.
+              key={`${board.place}:${row.id}`}
+              row={row}
+              rank={index + 1}
+              unit={unit}
+              board={board.place}
+              own={row.id === mine}
+            />
+          ))}
+        </ol>
+      </PodiumStage>
 
-      <div className={cn(framedCard, "mt-4 lg:mt-5")}>
+      {/* Keyed by its board, so a board opens with its list at the top. */}
+      <div key={board.place} className={cn(framedCard, "lg:mt-5")}>
         <div className={cn(framedCardInner, "overflow-hidden")}>
           {rest.length > 0 && (
             /* The window the rows scroll in. Its height is not a whole
@@ -372,34 +394,20 @@ function BoardRowCells({
   );
 }
 
-/* What each of the first three places wears: gold, silver, bronze (the
-   rank tokens in app/globals.css). The medal is the place's number on its
-   metal; the card's frame is ringed and filled with it, and the top of
-   the card carries a wash of it that fades out under the name. */
-const PLACE_STYLE = [
-  {
-    metal: "gold",
-    medal: "bg-rank-first",
-    frame: "bg-rank-first/30 shadow-[0_0_0_1.5px_var(--color-rank-first)]",
-    wash: "from-rank-first/22",
-  },
-  {
-    metal: "silver",
-    medal: "bg-rank-second",
-    frame: "bg-rank-second/30 shadow-[0_0_0_1.5px_var(--color-rank-second)]",
-    wash: "from-rank-second/22",
-  },
-  {
-    metal: "bronze",
-    medal: "bg-rank-third",
-    frame: "bg-rank-third/30 shadow-[0_0_0_1.5px_var(--color-rank-third)]",
-    wash: "from-rank-third/22",
-  },
-] as const;
+/* One of the first three: a card to be kept, as a player's card is. Its
+   place is the large numeral at its head, with the country's flag across
+   from it, on a crown of the place's metal (gold, silver, bronze) that
+   the photo stands over, which carries the place's own pattern (a lotus
+   for the first, clouds for the second, the endless knot's weave for the
+   third); under the crown, on
+   the metal's satin, are who, the figure and each channel's share of it.
+   The numeral says the place; the metal only dresses it.
 
-/* One of the first three: a card in its place's metal, with the place's
-   number on a medal at the photo's corner. The number says the place; the
-   metal only dresses it. */
+   What is here is the whole card for a reader: markup and a surface in
+   CSS (`podium-surface` in app/globals.css). Where the browser can, the
+   stage (components/creators/podium) draws the card's body behind the
+   markup instead, a frame of real metal and a face that catches the
+   light, and turns the two together toward the pointer. */
 function LeadCard({
   row,
   rank,
@@ -414,79 +422,78 @@ function LeadCard({
   /** The visitor's own card. */
   own: boolean;
 }) {
-  const place = PLACE_STYLE[rank - 1];
+  const { attach, handlers, style, metal } = usePodiumCard(`${board}:${row.id}`, (rank - 1) as Tier);
   return (
-    <li className={cn(framedCard, "row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0", place.frame)}>
+    <li
+      ref={attach}
+      {...handlers}
+      style={style}
+      className="group/lead row-span-4 grid min-w-0 snap-start grid-rows-subgrid gap-y-0"
+    >
+      {/* What turns. Its children keep their own depth (the photo stands
+          a little off the face), so it must not clip or fade them. */}
       <div
-        className={cn(
-          framedCardInner,
-          "row-span-3 grid grid-rows-subgrid gap-y-0 bg-linear-to-b to-card to-45% p-5 sm:p-6",
-          place.wash,
-        )}
+        data-podium-body
+        className="relative row-span-4 grid grid-rows-subgrid gap-y-0 rounded-[1.25rem] px-5 pt-5 pb-6 text-center [transform-style:preserve-3d]"
       >
-        <div className="flex items-center gap-4 lg:flex-col lg:items-start">
-          <div className="relative shrink-0">
-            <CardPhoto src={row.photoUrl} size="field" name={row.displayName} className="lg:size-26" />
-            <span
-              className={cn(
-                "absolute -top-2 -left-2 flex size-11 items-center justify-center rounded-full font-display text-2xl leading-none text-ink tabular-nums",
-                // A rim of the card's white sets the medal off the photo;
-                // the inner line is the metal's own highlight.
-                "shadow-[0_0_0_3px_var(--card),inset_0_1px_0_rgb(255_255_255/0.55)]",
-                place.medal,
-              )}
-            >
-              <span className="sr-only">Rank </span>
-              {rank}
-              <span className="sr-only">, {place.metal}</span>
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-balance wrap-anywhere font-display text-[1.375rem] leading-[1.2] text-foreground">
-              <bdi>{row.displayName}</bdi>
-              {own && <YouTag />}
-            </p>
-            {row.country && <p className="mt-1 text-sm leading-[1.4] text-muted-foreground">{row.country}</p>}
+        <div
+          aria-hidden
+          className="podium-surface absolute inset-0 rounded-[1.25rem] transition-opacity duration-300 ease-out group-data-[live]/lead:opacity-0"
+        />
+        <div className="relative flex justify-center pt-4">
+          <p className="absolute top-0.5 left-1.5 font-display text-[3.25rem] leading-[0.8] text-ink tabular-nums [text-shadow:0_1px_0_rgb(255_255_255/0.45)]">
+            <span className="sr-only">Rank </span>
+            {rank}
+            <span className="sr-only">, {metal.metal}</span>
+          </p>
+          {row.countryCode && <Flag code={row.countryCode} className="absolute top-1.5 right-1.5" />}
+          <div data-podium-photo className="rounded-full [transform:translateZ(0.625rem)]">
+            <CardPhoto src={row.photoUrl} size="card" name={row.displayName} />
           </div>
         </div>
-        <div className="mt-5">
-          <p className="font-display text-[2.25rem] leading-none text-foreground tabular-nums">
+        <div className="relative mt-3.5 min-w-0">
+          <p className="text-balance wrap-anywhere font-display text-[1.3125rem] leading-[1.2] text-ink">
+            <bdi>{row.displayName}</bdi>
+            {own && <YouTag />}
+          </p>
+          {row.country && <p className="mt-1 text-sm leading-[1.4] text-ink/75">{row.country}</p>}
+        </div>
+        <div className="relative mt-4">
+          <p className="font-display text-[2.375rem] leading-none text-ink tabular-nums">
             {formatCount(row.followers)}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <p className="text-sm text-muted-foreground">{unit}</p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <p className={cn(label, "text-[0.6875rem] text-ink/75")}>{unit}</p>
             {!!row.gain && <Change gain={row.gain} />}
             <RankMove row={row} words />
           </div>
         </div>
-        <div className="mt-4">
-          <ul className="flex flex-wrap gap-2">
-            {row.sources.map((source) => {
-              const PlaceIcon = PLACE_ICON[source.place];
-              return (
-                <li key={source.place}>
-                  <a
-                    href={source.link}
-                    target="_blank"
-                    // The address came from the creator or the team's sheet, not from us.
-                    rel="noopener noreferrer nofollow"
-                    aria-label={sourceName(row, source)}
-                    className={cn(
-                      "inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm font-medium text-foreground tabular-nums",
-                      "transition-[border-color,color] duration-150 ease-hover hover:border-brand-cyan hover:text-brand-cyan",
-                      focusRing,
-                    )}
-                  >
-                    <PlaceIcon aria-hidden className="size-[1.125rem]" />
-                    {/* Each channel's share on the board of all channels;
-                        on a channel's own board the figure is above. */}
-                    {board === "all" ? formatCompact(source.followers) : placeOf(source.place).label}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ul className="relative mt-4 flex flex-wrap content-start justify-center gap-1.5">
+          {row.sources.map((source) => {
+            const PlaceIcon = PLACE_ICON[source.place];
+            return (
+              <li key={source.place}>
+                <a
+                  href={source.link}
+                  target="_blank"
+                  // The address came from the creator or the team's sheet, not from us.
+                  rel="noopener noreferrer nofollow"
+                  aria-label={sourceName(row, source)}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-full border border-ink/15 bg-white/60 px-2.5 text-[0.8125rem] font-medium text-ink tabular-nums",
+                    "transition-[border-color,color,background-color] duration-150 ease-hover hover:border-brand-cyan hover:bg-white hover:text-brand-cyan",
+                    focusRing,
+                  )}
+                >
+                  <PlaceIcon aria-hidden className="size-4" />
+                  {/* Each channel's share on the board of all channels;
+                      on a channel's own board the figure is above. */}
+                  {board === "all" ? formatCompact(source.followers) : placeOf(source.place).label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </li>
   );

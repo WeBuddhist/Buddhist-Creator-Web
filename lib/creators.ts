@@ -111,6 +111,8 @@ export type BoardRow = {
   id: string;
   displayName: string;
   country: string | null;
+  /** The country's ISO code, for its flag; null when it has none we know. */
+  countryCode: string | null;
   photoUrl: string | null;
   /** The audience the board ranks on. */
   followers: number;

@@ -64,9 +64,11 @@ const place = (name: string, aliases: readonly string[] = []): Place => ({ name,
 
 const COUNTRY_INDEX: Place[] = [];
 const STATE_INDEX = new Map<string, Place[]>();
+const CODES = new Map<string, string>();
 for (const [listed, code, regions] of allCountries) {
   const name = NAMES[code] ?? listed;
   COUNTRY_INDEX.push(place(name, ALIASES[code]));
+  CODES.set(name, code);
   STATE_INDEX.set(
     name,
     regions.map(([region]) => place(region)).sort((a, b) => byName(a.name, b.name)),
@@ -88,6 +90,12 @@ export function statesOf(country: string): readonly string[] {
 
 export function isCountry(country: string) {
   return STATES.has(country);
+}
+
+/** A listed country's ISO 3166-1 code, "India" → "IN", which is the name
+    of its flag in public/flags; null for anything else. */
+export function countryCode(country: string | null | undefined): string | null {
+  return (country && CODES.get(country)) || null;
 }
 
 export function isStateOf(country: string, state: string) {

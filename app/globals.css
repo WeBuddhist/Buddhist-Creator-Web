@@ -342,6 +342,47 @@ body:has([data-admin]) {
     0 0 1.25rem rgb(4 20 27 / 0.55);
 }
 
+/* The surface of one of the leaderboard's first three cards, in CSS: what
+   the card wears as it arrives from the server, and for good where the
+   WebGL scene that draws its lit body is not run (components/creators/
+   podium). It is the same card laid flat: the satin of the place's metal,
+   the crown at its head and a flat frame of the metal. The four
+   --metal-* colours come from the card (TIERS in podium/tiers.ts).
+
+   The crown's lower edge is an arc of 2.6 card-widths' radius that passes
+   6.3125rem down the card's middle, a quarter of the photo's radius under
+   the photo's centre; the scene works the same arc out from the photo it
+   measures (CARD in podium/tiers.ts), so the two agree. The transparent
+   border is what a forced-colours theme paints in place of the frame. */
+@utility podium-surface {
+  container-type: size;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: linear-gradient(
+    to bottom,
+    var(--metal-pale) 40%,
+    color-mix(in srgb, var(--metal-light) 42%, var(--metal-pale))
+  );
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    clip-path: circle(260cqw at 50% calc(6.3125rem - 260cqw));
+    background:
+      radial-gradient(circle 11rem at 50% 5.5rem, var(--metal-light), transparent),
+      linear-gradient(to bottom, color-mix(in srgb, var(--metal-deep) 20%, var(--metal-mid)), var(--metal-mid) 5.5rem);
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 0.4375rem var(--metal-mid),
+      inset 0 0 0 calc(0.4375rem + 1px) color-mix(in srgb, var(--metal-deep) 50%, transparent);
+  }
+}
+
 @utility font-display {
   font-family: var(--font-newsreader), ui-serif, Georgia, serif;
   font-weight: 400;

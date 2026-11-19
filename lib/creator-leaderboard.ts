@@ -1,4 +1,5 @@
 import "server-only";
+import { countryCode } from "@/lib/countries";
 import { COUNTED_SOCIALS } from "@/lib/creator-card";
 import { creatorLeaderboard, getMyCard, getMyClaim, type LeaderboardRow } from "@/lib/creator-cards";
 import {
@@ -31,7 +32,11 @@ export async function cardPhotoUrl(card: { photoKey: string | null; ownerPicture
 }
 
 async function boardRow({ photoKey, ownerPicture, ...row }: LeaderboardRow): Promise<BoardRow> {
-  return { ...row, photoUrl: await cardPhotoUrl({ photoKey, ownerPicture }) };
+  return {
+    ...row,
+    countryCode: countryCode(row.country),
+    photoUrl: await cardPhotoUrl({ photoKey, ownerPicture }),
+  };
 }
 
 const boardRows = (rows: LeaderboardRow[]) => Promise.all(rows.map(boardRow));
