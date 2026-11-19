@@ -1043,6 +1043,19 @@ export type Leaderboard = {
   sizes: Record<LeaderboardPlace, number>;
   /** When the counts were last read (lastReadingDay). */
   readAt: Date | null;
+  /** Where the card named by `standingOf` stands on each board asked for
+      that it has a figure on. Empty when no card was named, or it is not
+      an approved one. */
+  standings: Partial<Record<LeaderboardPlace, LeaderboardStanding>>;
+};
+
+/** One card's place on one board: among everybody with a figure there,
+    not only the hundred a board shows. */
+export type LeaderboardStanding = {
+  rank: number;
+  /** How many creators have a figure there. */
+  outOf: number;
+  row: LeaderboardRow;
 };
 
 /** The first day of the month before `month` ("2026-12-01" → "2026-11-01"). */
@@ -1157,37 +1170,60 @@ async function ranksBefore(
 const boardFigure = (place: LeaderboardPlace) =>
   place === "all" ? creatorCards.totalFollowers : creatorCards[FOLLOWER_COLUMN[place]];
 
+/* What a board needs of a card. */
+const boardCard = {
+  id: creatorCards.id,
+  displayName: creatorCards.displayName,
+  country: creatorCards.country,
+  photoKey: creatorCards.photoKey,
+  socials: creatorCards.socials,
+  youtubeFollowers: creatorCards.youtubeFollowers,
+  instagramFollowers: creatorCards.instagramFollowers,
+  tiktokFollowers: creatorCards.tiktokFollowers,
+  facebookFollowers: creatorCards.facebookFollowers,
+  totalFollowers: creatorCards.totalFollowers,
+  ownerPicture: users.picture,
+};
+
+type BoardCard = {
+  id: string;
+  displayName: string;
+  country: string | null;
+  photoKey: string | null;
+  socials: CardSocials;
+  totalFollowers: number;
+  ownerPicture: string | null;
+} & FollowerColumns;
+
+/** The figure a board ranks a card on. */
+const figureOf = (card: BoardCard, place: LeaderboardPlace) =>
+  place === "all" ? Number(card.totalFollowers) : (card[FOLLOWER_COLUMN[place]] ?? 0);
+
+/** The boards, and with `standingOf` the place one card has on them: a
+    creator's own, which may be far below the hundred a board shows.
+    `offset` and `limit` take a stretch of each board, for the list that
+    grows as it is scrolled; nothing past the hundredth place is given. */
 export async function creatorLeaderboard(
-  options: { places?: readonly LeaderboardPlace[]; limit?: number } = {},
+  options: { places?: readonly LeaderboardPlace[]; limit?: number; offset?: number; standingOf?: string } = {},
 ): Promise<Leaderboard> {
   const places = options.places ?? LEADERBOARD_PLACES;
-  const limit = Math.min(options.limit ?? LEADERBOARD_SIZE, LEADERBOARD_SIZE);
+  const offset = Math.min(Math.max(0, options.offset ?? 0), LEADERBOARD_SIZE);
+  const limit = Math.max(0, Math.min(options.limit ?? LEADERBOARD_SIZE, LEADERBOARD_SIZE - offset));
   const approved = eq(creatorCards.status, "approved");
-  const top = (place: LeaderboardPlace) => {
+  const cards = () => db().select(boardCard).from(creatorCards).leftJoin(users, eq(users.id, creatorCards.userId));
+  const top = (place: LeaderboardPlace): Promise<BoardCard[]> => {
     const figure = boardFigure(place);
-    return db()
-      .select({
-        id: creatorCards.id,
-        displayName: creatorCards.displayName,
-        country: creatorCards.country,
-        photoKey: creatorCards.photoKey,
-        socials: creatorCards.socials,
-        youtubeFollowers: creatorCards.youtubeFollowers,
-        instagramFollowers: creatorCards.instagramFollowers,
-        tiktokFollowers: creatorCards.tiktokFollowers,
-        facebookFollowers: creatorCards.facebookFollowers,
-        totalFollowers: creatorCards.totalFollowers,
-        ownerPicture: users.picture,
-      })
-      .from(creatorCards)
-      .leftJoin(users, eq(users.id, creatorCards.userId))
-      .where(and(approved, sql`${figure} > 0`))
-      // As the directory orders: the name and the id settle a tie.
-      .orderBy(desc(figure), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
-      .limit(limit);
+    return (
+      cards()
+        .where(and(approved, sql`${figure} > 0`))
+        // As the directory orders: the name and the id settle a tie.
+        .orderBy(desc(figure), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
+        .limit(limit)
+        .offset(offset)
+    );
   };
   const onBoard = (place: LeaderboardPlace) => sql<number>`count(*) filter (where ${boardFigure(place)} > 0)::int`;
-  const [lists, [counts], [{ month }]] = await Promise.all([
+  const [lists, [counts], [{ month }], [own = null]] = await Promise.all([
     Promise.all(places.map(top)),
     db()
       .select({
@@ -1200,10 +1236,23 @@ export async function creatorLeaderboard(
       .from(creatorCards)
       .where(approved),
     db().select({ month: sql<string | null>`max(${creatorFollowerChecks.month})::text` }).from(creatorFollowerChecks),
+    // A card that is not approved is on no board, so it has no standing.
+    options.standingOf
+      ? (cards().where(and(approved, eq(creatorCards.id, options.standingOf))).limit(1) as Promise<BoardCard[]>)
+      : [],
   ]);
 
-  const ids = [...new Set(lists.flat().map((card) => card.id))];
-  const [readings, readAt, before] = await Promise.all([
+  /* How many cards a board puts before the one asked about: those with a
+     larger figure, and those level with it that the board's order (the
+     name, then the id) lists first. */
+  const ahead = (card: BoardCard, place: LeaderboardPlace) => {
+    const figure = boardFigure(place);
+    const mine = figureOf(card, place);
+    return sql<number>`count(*) filter (where ${figure} > ${mine} or (${figure} = ${mine} and (lower(${creatorCards.displayName}), ${creatorCards.id}) < (lower(${card.displayName}), ${card.id}::uuid)))::int`;
+  };
+
+  const ids = [...new Set([...lists.flat(), ...(own ? [own] : [])].map((card) => card.id))];
+  const [readings, readAt, before, [placesAhead = null]] = await Promise.all([
     month && ids.length > 0
       ? db()
             .select({
@@ -1224,12 +1273,24 @@ export async function creatorLeaderboard(
       : [],
     lastReadingDay(),
     month && ids.length > 0 ? ranksBefore(monthBefore(month), places) : null,
+    own
+      ? db()
+          .select({
+            all: ahead(own, "all"),
+            youtube: ahead(own, "youtube"),
+            instagram: ahead(own, "instagram"),
+            tiktok: ahead(own, "tiktok"),
+            facebook: ahead(own, "facebook"),
+          })
+          .from(creatorCards)
+          .where(approved)
+      : [],
   ]);
 
   /* A place's gain: this month's figure less last month's, when both are
      readings of the link the card has now. */
   const figures = new Map(readings.map((row) => [`${row.cardId} ${row.platform} ${row.month} ${row.linkKey}`, row.followers]));
-  const gainIn = (card: (typeof lists)[number][number], place: CountedSocial) => {
+  const gainIn = (card: BoardCard, place: CountedSocial) => {
     const key = linkKeyOf(card.socials, place);
     if (!month || !key) return null;
     const now = figures.get(`${card.id} ${place} ${month} ${key}`);
@@ -1237,33 +1298,36 @@ export async function creatorLeaderboard(
     return now == null || before == null ? null : now - before;
   };
 
+  /** A card as a board's row, at the rank it holds there. */
+  const toRow = (place: LeaderboardPlace, card: BoardCard, rank: number): LeaderboardRow => {
+    const stoodAt = before?.rank.get(`${place} ${card.id}`);
+    // The channels with a figure, in the order the places are listed.
+    const counted = COUNTED_SOCIALS.flatMap(({ value }) => {
+      const link = card.socials[value]?.trim();
+      const followers = card[FOLLOWER_COLUMN[value]] ?? 0;
+      return link && followers > 0 ? [{ place: value, link, followers, gain: gainIn(card, value) }] : [];
+    });
+    const channels = place === "all" ? counted : counted.filter((entry) => entry.place === place);
+    const gains = channels.flatMap(({ gain }) => (gain === null ? [] : [gain]));
+    return {
+      id: card.id,
+      displayName: card.displayName,
+      country: card.country,
+      photoKey: card.photoKey,
+      ownerPicture: card.ownerPicture,
+      followers: figureOf(card, place),
+      gain: gains.length > 0 ? gains.reduce((sum, gain) => sum + gain, 0) : null,
+      climbed: stoodAt === undefined ? null : stoodAt - rank,
+      fresh: !!before && !before.known.has(card.id),
+      sources: channels.map(({ place: source, link, followers }) => ({ place: source, link, followers })),
+    };
+  };
+
   const boards = Object.fromEntries(
     places.map((place, index) => [
       place,
-      lists[index].map((card, position): LeaderboardRow => {
-        const stoodAt = before?.rank.get(`${place} ${card.id}`);
-        // The channels with a figure, in the order the places are listed.
-        const counted = COUNTED_SOCIALS.flatMap(({ value }) => {
-          const link = card.socials[value]?.trim();
-          const followers = card[FOLLOWER_COLUMN[value]] ?? 0;
-          return link && followers > 0 ? [{ place: value, link, followers, gain: gainIn(card, value) }] : [];
-        });
-        const own = place === "all" ? counted : counted.filter((entry) => entry.place === place);
-        const gains = own.flatMap(({ gain }) => (gain === null ? [] : [gain]));
-        return {
-          id: card.id,
-          displayName: card.displayName,
-          country: card.country,
-          photoKey: card.photoKey,
-          ownerPicture: card.ownerPicture,
-          followers: place === "all" ? Number(card.totalFollowers) : (card[FOLLOWER_COLUMN[place]] ?? 0),
-          gain: gains.length > 0 ? gains.reduce((sum, gain) => sum + gain, 0) : null,
-          // The list starts at the first place, so a row's place is its position.
-          climbed: stoodAt === undefined ? null : stoodAt - (position + 1),
-          fresh: !!before && !before.known.has(card.id),
-          sources: own.map(({ place: source, link, followers }) => ({ place: source, link, followers })),
-        };
-      }),
+      // A row's rank is its position on the board, counted from the first place.
+      lists[index].map((card, position) => toRow(place, card, offset + position + 1)),
     ]),
   ) as Partial<Record<LeaderboardPlace, LeaderboardRow[]>>;
 
@@ -1271,5 +1335,13 @@ export async function creatorLeaderboard(
     LEADERBOARD_PLACES.map((place) => [place, Math.min(counts[place], LEADERBOARD_SIZE)]),
   ) as Record<LeaderboardPlace, number>;
 
-  return { boards, sizes, readAt };
+  const standings = Object.fromEntries(
+    places.flatMap((place) => {
+      if (!own || !placesAhead || figureOf(own, place) <= 0) return [];
+      const rank = placesAhead[place] + 1;
+      return [[place, { rank, outOf: counts[place], row: toRow(place, own, rank) }]];
+    }),
+  ) as Partial<Record<LeaderboardPlace, LeaderboardStanding>>;
+
+  return { boards, sizes, readAt, standings };
 }

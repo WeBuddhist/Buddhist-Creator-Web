@@ -1,20 +1,25 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { SectionHeading, accentButton, ghostButton } from "@/components/convention/section-heading";
 import { Leaderboard } from "@/components/creators/leaderboard";
 import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/auth";
 import { CARD_PATH } from "@/lib/creator-card";
 import { openingBoards } from "@/lib/creator-leaderboard";
 import { CREATORS_LEADERBOARD, CREATORS_PATH, DIRECTORY_ID } from "@/lib/creators";
 import { formatDate } from "@/lib/format";
+import { forLog } from "@/lib/log-error";
 import { cn } from "@/lib/utils";
 
 /* The leaderboard as a section of a page: on the home page, right under
    its opening photograph, and at the top of the creators page. The
    heading is static and prerenders; the boards are read from the database
-   on each visit and stream in behind the boundary.
+   on each visit and stream in behind the boundary. They are made for the
+   person looking: each board's list ends on their own place, which is
+   their rank, their card's review, or an invitation to make a card.
 
    `invite` closes the section with a sheet of brand cyan, for the home
    page: a creator who is not on the board is asked to make a card, the
@@ -93,8 +98,18 @@ export function LeaderboardSection({
 
 async function Boards() {
   // The counts change with every reading: read them at request time.
+  // Outside the try, as in components/user-menu.tsx: a render Next
+  // abandons must not be caught and logged as a failure below.
   await connection();
-  const { boards, readAt } = await openingBoards();
+  let user: Awaited<ReturnType<typeof getCurrentUser>> = null;
+  try {
+    user = await getCurrentUser();
+  } catch (error) {
+    unstable_rethrow(error);
+    // The board is public: without a session it is shown as to a visitor.
+    console.error("[leaderboard] could not read the session", forLog(error));
+  }
+  const { boards, readAt, viewer } = await openingBoards(user);
   if (boards.length === 0) {
     return (
       <p className="rounded-2xl bg-paper-deep px-6 py-8 text-base leading-[1.6] text-muted-foreground">
@@ -102,14 +117,20 @@ async function Boards() {
       </p>
     );
   }
-  return <Leaderboard boards={boards} updated={readAt && { iso: readAt.toISOString(), text: formatDate(readAt) }} />;
+  return (
+    <Leaderboard
+      boards={boards}
+      viewer={viewer}
+      updated={readAt && { iso: readAt.toISOString(), text: formatDate(readAt) }}
+    />
+  );
 }
 
 /* Holds about the height the board takes on a desktop, so the page under
    it does not jump far when the board arrives. */
 function LeaderboardFallback() {
   return (
-    <div className="min-h-[36rem]" aria-busy="true">
+    <div className="min-h-[43rem]" aria-busy="true">
       <p className="border-y border-border py-5 text-sm text-muted-foreground">Loading the leaderboard…</p>
     </div>
   );

@@ -19,9 +19,9 @@ export const CREATORS_PAGE = {
 } as const;
 
 /* The leaderboard: the creators with the largest audiences, in all their
-   counted places together and in each one. It opens on its first ten and
-   can be opened to a hundred. It is on the home page and at the top of
-   this one. */
+   counted places together and in each one. It opens on its first ten, and
+   the list brings in the rest, up to a hundred, as it is scrolled. It is
+   on the home page and at the top of this one. */
 export const CREATORS_LEADERBOARD = {
   eyebrow: "Leaderboard",
   title: "The most followed creators",
@@ -32,7 +32,11 @@ export const CREATORS_LEADERBOARD = {
   empty: "The leaderboard appears here after our first monthly reading of the counts.",
   change:
     "Changes are since last month's reading: the triangle by a rank is places gained or lost on the board, and the arrow by a count is followers gained or lost.",
+  /* The end of the list while there is more of the board to bring in. */
+  more: "Load more creators",
+  loading: "Loading more creators…",
   failed: "We could not load the rest of the leaderboard. Check your connection and try again.",
+  retry: "Try again",
   /* Under the home page's board: the way in for a creator who is not on
      it, and the way on to everybody who is. */
   invite: {
@@ -43,13 +47,55 @@ export const CREATORS_LEADERBOARD = {
     create: "Create your creator card",
     browse: "Browse all Buddhist creators",
   },
+  /* The visitor's own place, held at the foot of every board's list
+     (BoardViewer below): their rank, or where their card stands on the
+     way to one. */
+  yours: {
+    label: "Your place",
+    you: "You",
+    outOf: (creators: string) => `of ${creators}`,
+    /* No card yet, or nobody signed in. */
+    none: {
+      title: "Where do you rank?",
+      description: "Create your creator card to see your place on the leaderboard.",
+      action: "Create your creator card",
+    },
+    pending: {
+      status: "In review",
+      description: "Our team is reading your card. Your rank shows here once it is approved.",
+      action: "View your card",
+    },
+    rejected: {
+      status: "Not approved",
+      description: "Your card was not approved yet. Open it to see what to change, then resubmit it.",
+      action: "Open your card",
+    },
+    claim: {
+      status: "Claim in review",
+      description: "Our team is checking your claim. Once it is approved, this card and its rank are yours.",
+      action: "View your claim",
+    },
+    /* An approved card with no figure on the board being looked at. */
+    approved: {
+      status: "Not ranked yet",
+      action: "Edit your card",
+      uncounted: "Your followers have not been counted yet. Your rank shows here after our next reading.",
+      unlinked: "Add a YouTube, Instagram, TikTok or Facebook link to your card to be ranked.",
+      uncountedOn: (site: string) =>
+        `Your ${site} followers have not been counted yet. Your rank shows here after our next reading.`,
+      unlinkedOn: (site: string) => `Your card has no ${site} link. Add one to be ranked on this board.`,
+    },
+  },
 } as const;
 
-/** How many creators a board shows before it is opened, and at most. */
+/** How many creators a board opens on, how many each further stretch
+    brings in, and how many it shows at most. */
 export const LEADERBOARD_OPENING = 10;
+export const LEADERBOARD_PAGE = 30;
 export const LEADERBOARD_SIZE = 100;
 
-/** Where the browser asks for a whole board: `?place=youtube`. */
+/** Where the browser asks for the next stretch of a board:
+    `?place=youtube&offset=10`. */
 export const LEADERBOARD_API = "/api/creators/leaderboard";
 
 /** A board: every counted place together, or one of them. */
@@ -86,6 +132,45 @@ export type Board = {
   /** How many creators the whole board has, LEADERBOARD_SIZE at most. */
   size: number;
 };
+
+/** Where one creator stands on one board, however far down it they are. */
+export type Standing = {
+  rank: number;
+  /** How many creators the board ranks in all, past the hundred it shows. */
+  outOf: number;
+  row: BoardRow;
+};
+
+/* The visitor, as the leaderboard knows them. It is made on the server
+   for the person the session names and is sent to nobody else, so it may
+   carry a card that is not public yet.
+
+   - "none": nobody is signed in, or the person has no card and no claim
+     waiting. `photoUrl` is their sign-in picture, when there is one.
+   - "pending", "rejected": their card, which is not on any board.
+   - "claim": a card the team made that they have asked for; it is theirs
+     only once an admin approves the claim.
+   - "approved": their card and its standing on each board it has a figure
+     for. `links` are the counted places the card has a link to, so a
+     board they are missing from can say whether the link or its count is
+     what is wanting. */
+export type BoardViewer =
+  | { state: "none"; photoUrl: string | null }
+  | {
+      state: "pending" | "rejected" | "claim";
+      displayName: string;
+      country: string | null;
+      photoUrl: string | null;
+    }
+  | {
+      state: "approved";
+      id: string;
+      displayName: string;
+      country: string | null;
+      photoUrl: string | null;
+      links: CountedSocial[];
+      standings: Partial<Record<LeaderboardPlace, Standing>>;
+    };
 
 export const CREATORS_DIRECTORY = {
   title: "Find a creator",
