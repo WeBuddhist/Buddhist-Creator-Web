@@ -10,6 +10,10 @@ export type NavItem = {
   label: string;
   href: string;
   children?: NavChild[];
+  /** The one item the site most wants a visitor to open. On wider screens
+      the header shows it as its gold button instead of a plain link; the
+      phone drawer lists it with the rest. */
+  featured?: true;
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -31,9 +35,11 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
   },
-  { label: "Creators", href: "/creators" },
+  { label: "Creators", href: "/creators", featured: true },
   { label: "Team", href: "/team" },
 ];
+
+export const FEATURED_NAV_ITEM = NAV_ITEMS.find((item) => item.featured);
 
 export const SITE_NAME = "Buddhist Creators";
 

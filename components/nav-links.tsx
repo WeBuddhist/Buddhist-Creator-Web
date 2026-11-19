@@ -47,7 +47,8 @@ export function NavLinks() {
       onValueChange={setValue}
     >
       <NavigationMenu.List className="flex items-center gap-1">
-        {NAV_ITEMS.map((item) => {
+        {/* The featured item is the header's gold button, not a link here. */}
+        {NAV_ITEMS.filter((item) => !item.featured).map((item) => {
           const active = isActive(pathname, item.href);
 
           if (!item.children) {

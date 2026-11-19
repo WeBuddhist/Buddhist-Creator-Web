@@ -5,8 +5,7 @@ import { NavLinks } from "@/components/nav-links";
 import { MobileNav } from "@/components/mobile-nav";
 import { UserMenu } from "@/components/user-menu";
 import { HeaderTone } from "@/components/header-tone";
-import { REGISTRATION } from "@/lib/convention-2027";
-import { SITE_NAME } from "@/lib/navigation";
+import { FEATURED_NAV_ITEM, SITE_NAME } from "@/lib/navigation";
 import logoMark from "@/public/logo-mark.png";
 
 /* A frosted bar, floating a little below the top edge and narrower than the
@@ -38,9 +37,10 @@ export function SiteHeader() {
             preload
             className="size-9 [filter:var(--header-logo-filter)] transition-[filter] duration-200 ease-hover"
           />
-          {/* On a phone the bar shows the mark alone; the link keeps its
-              name through aria-label. */}
-          <span className="hidden font-display text-[1.375rem] leading-none text-(--header-fg) transition-[color] duration-200 ease-hover sm:inline">
+          {/* On a phone, and between md and lg where the nav and the
+              Creators button need the room, the bar shows the mark alone;
+              the link keeps its name through aria-label. */}
+          <span className="hidden font-display text-[1.375rem] leading-none text-(--header-fg) transition-[color] duration-200 ease-hover sm:inline md:max-lg:hidden">
             {SITE_NAME}
           </span>
         </Link>
@@ -56,18 +56,18 @@ export function SiteHeader() {
             <UserMenu />
           </Suspense>
 
-          {/* The one thing the site most wants a visitor to do. Between md
-              and lg the nav needs the room, so it steps aside there. */}
-          {REGISTRATION.open && (
+          {/* The one thing the site most wants a visitor to open. Below sm
+              the bar has no room, and the drawer lists it instead. */}
+          {FEATURED_NAV_ITEM && (
             <Link
-              href="/convention/2027"
+              href={FEATURED_NAV_ITEM.href}
               className={[
-                "hidden h-10 select-none items-center rounded-full bg-(--header-cta) px-4 text-sm font-medium text-(--header-cta-fg) sm:inline-flex md:hidden lg:inline-flex",
+                "hidden h-10 select-none items-center rounded-full bg-(--header-cta) px-4 text-sm font-medium text-(--header-cta-fg) sm:inline-flex",
                 "transition-[background-color,color,transform] duration-150 ease-hover hover:bg-(--header-cta-hover) active:scale-[0.97]",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--header-ring)",
               ].join(" ")}
             >
-              {REGISTRATION.label}
+              {FEATURED_NAV_ITEM.label}
             </Link>
           )}
 

@@ -56,17 +56,17 @@ export function Mission() {
       data-header-tone="dark"
       className={cn(panel, "@container overflow-hidden bg-brand-cyan text-white")}
     >
-      <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <div className="px-5 pt-20 pb-14 sm:px-6 lg:py-28 lg:ps-[max(1.5rem,calc((100cqw-72rem)/2+1.5rem))] lg:pe-14">
+      <div className="grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="px-5 pt-16 pb-12 sm:px-6 lg:py-20 lg:ps-[max(1.5rem,calc((100cqw-72rem)/2+1.5rem))] lg:pe-14">
           <p className={cn(label, "text-gold-soft")}>Our mission</p>
           <h2
             id="mission-title"
-            className="mt-5 text-balance font-display text-[clamp(2.5rem,4.5vw,4.5rem)] leading-[1.06]"
+            className="mt-4 text-balance font-display text-[clamp(2rem,3.2vw,3rem)] leading-[1.08]"
           >
             Let’s spread Buddhist wisdom and compassion to{" "}
             <em className="italic text-saffron">200 million people by 2030</em>
           </h2>
-          <p className="mt-8 max-w-xl text-pretty text-lg leading-[1.6] text-white/85 sm:text-xl sm:leading-[1.55]">
+          <p className="mt-6 max-w-xl text-pretty text-lg leading-[1.6] text-white/85">
             Every gathering, award, and campaign we run is one step toward that
             goal: helping creators turn practice into content the world can find.
           </p>
@@ -75,13 +75,13 @@ export function Mission() {
           </Suspense>
         </div>
 
-        <figure className="relative min-h-[20rem] sm:min-h-[26rem] lg:min-h-0">
+        <figure className="relative min-h-[16rem] sm:min-h-[22rem] lg:min-h-0">
           <Image
             src={crowdSelfie}
             alt="A hall full of convention participants, monastics among them, throwing their arms up for a selfie taken from the stage."
             fill
             placeholder="blur"
-            sizes="(min-width: 1024px) 44vw, 100vw"
+            sizes="(min-width: 1024px) 39vw, 100vw"
             className="object-cover object-[72%_50%]"
           />
           <figcaption className="absolute start-4 bottom-4 rounded-full bg-white px-3 py-1.5 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.1em] text-brand-cyan">
@@ -99,17 +99,17 @@ export function Mission() {
                 data-animate
                 style={{ animationDelay: `${index * 100}ms` }}
                 className={cn(
-                  "reveal py-10 sm:py-14 lg:py-16",
+                  "reveal py-8 sm:py-10",
                   index > 0 && "border-t border-white/15 sm:border-t-0 sm:border-s sm:ps-8 lg:ps-12",
                   index < STATS.length - 1 && "sm:pe-8 lg:pe-12",
                 )}
               >
                 <dt className={cn(label, "text-gold-soft")}>{name}</dt>
-                <dd className="mt-5 font-display text-[clamp(4rem,7vw,6rem)] leading-[0.95] tracking-[-0.03em]">
+                <dd className="mt-3 font-display text-4xl leading-none tracking-[-0.02em] sm:text-5xl sm:leading-none">
                   {value}
                   <span className="text-saffron">+</span>
                 </dd>
-                <dd className="mt-4 max-w-[34ch] text-pretty text-[0.9375rem] leading-[1.6] text-white/75">
+                <dd className="mt-2 max-w-[34ch] text-pretty text-[0.9375rem] leading-[1.6] text-white/75">
                   {description}
                 </dd>
               </div>
@@ -152,10 +152,10 @@ async function MissionProgress() {
       text={`${formatCount(followers)} of ${formatCount(GOAL)} followers`}
       reached={
         <>
-          <span className="font-display text-[clamp(2.75rem,5vw,4rem)] leading-none tabular-nums">
+          <span className="font-display text-4xl leading-none tabular-nums sm:text-5xl sm:leading-none">
             {formatCompact(Math.min(followers, GOAL))}
           </span>
-          <span className="ms-2 text-lg text-white/85">of {formatCompact(GOAL)}</span>
+          <span className="ms-2 text-base text-white/85">of {formatCompact(GOAL)}</span>
         </>
       }
       toGo={left > 0 ? `${formatCompact(left)} to go` : "Goal reached"}
@@ -174,8 +174,10 @@ async function MissionProgress() {
   );
 }
 
-/* The progress block, and its own stand-in while the count is read: the
-   same label and an empty bar, so the sheet keeps its height. */
+/* The progress block, and its own stand-in while the count is read: an
+   empty bar under a row as tall as the figure, so the sheet keeps its
+   height. The figures name the bar to the eye; the meter carries its own
+   name for a screen reader. */
 function ProgressFrame({
   share,
   value,
@@ -195,22 +197,19 @@ function ProgressFrame({
 }) {
   const loading = share === undefined;
   return (
-    <div className="mt-10 max-w-xl lg:mt-12" aria-busy={loading || undefined}>
-      <p id="mission-progress" className={cn(label, "text-gold-soft")}>
-        Progress to 200 million
-      </p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
-        <p className="min-h-[clamp(2.75rem,5vw,4rem)]">{reached}</p>
-        {toGo && <p className="pb-1 text-lg font-medium text-gold-soft">{toGo}</p>}
+    <div className="mt-9 max-w-xl" aria-busy={loading || undefined}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <p className="min-h-9 sm:min-h-12">{reached}</p>
+        {toGo && <p className="font-medium text-gold-soft">{toGo}</p>}
       </div>
       <div
         role="meter"
-        aria-labelledby="mission-progress"
+        aria-label="Progress to 200 million"
         aria-valuemin={0}
         aria-valuemax={GOAL}
         aria-valuenow={value ?? 0}
         aria-valuetext={loading ? "Counting" : `${text}, ${toGo}`}
-        className="mt-4 h-3 overflow-hidden rounded-full bg-white/20"
+        className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/20"
       >
         {/* The transparent border is what forced-colors mode paints. */}
         <div
@@ -218,7 +217,7 @@ function ProgressFrame({
           style={{ width: `${(share ?? 0) * 100}%`, borderWidth: share ? undefined : 0 }}
         />
       </div>
-      <p className="mt-4 min-h-[1.6em] text-pretty text-[0.9375rem] leading-[1.6] text-white/85">
+      <p className="mt-3 min-h-[1.6em] text-pretty text-[0.9375rem] leading-[1.6] text-white/85">
         {loading ? "Counting our creators' followers…" : note}
       </p>
     </div>
