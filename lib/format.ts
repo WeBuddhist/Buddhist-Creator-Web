@@ -36,3 +36,10 @@ const wholeNumber = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
 export function formatCount(value: number) {
   return wholeNumber.format(value);
 }
+
+const shortNumber = new Intl.NumberFormat("en-US", { notation: "compact", maximumSignificantDigits: 3 });
+
+/** A count cut short for a tight place: 2.97M, 948K, 1.34K. */
+export function formatCompact(value: number) {
+  return shortNumber.format(value);
+}

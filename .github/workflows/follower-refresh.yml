@@ -1,0 +1,59 @@
+name: Follower refresh
+
+# Reads the creators' follower counts (lib/follower-refresh.ts). It runs
+# every day: on the first of the month every account is due, on the other
+# days only new links and the ones that failed.
+#
+# Run by hand ("Run workflow"), it can read every account again now, with
+# the box ticked. That spends a SocialCrawl credit for each Instagram,
+# TikTok and Facebook link, so it is off unless asked for.
+#
+# Two repository secrets:
+#   FOLLOWER_REFRESH_URL  the full address of /api/cron/follower-refresh
+#   CRON_SECRET           the same value as the site's CRON_SECRET
+#
+# This repository is public and so are these logs. The site's reply holds
+# totals only, and nothing else is printed here.
+
+on:
+  schedule:
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+    inputs:
+      all:
+        description: "Read every account again now (one SocialCrawl credit per Instagram, TikTok and Facebook link)"
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: follower-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Read follower counts
+        env:
+          URL: ${{ secrets.FOLLOWER_REFRESH_URL }}
+          SECRET: ${{ secrets.CRON_SECRET }}
+          ALL: ${{ inputs.all }}
+        run: |
+          # A full reading names the moment it began, the same on every
+          # call, so what one call has read the next leaves alone.
+          body='{}'
+          if [ "$ALL" = "true" ]; then body="{\"rereadBefore\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"; fi
+          # One call works for about a minute and says how much is left.
+          for call in $(seq 1 10); do
+            reply=$(curl --silent --show-error --fail-with-body --max-time 120 \
+              --request POST --header "Authorization: Bearer $SECRET" \
+              --header "Content-Type: application/json" --data "$body" "$URL") || { echo "$reply"; exit 1; }
+            echo "$reply"
+            remaining=$(echo "$reply" | jq --raw-output '.remaining')
+            if [ "$remaining" = "0" ]; then exit 0; fi
+          done
+          echo "Still $remaining to read after 10 calls."
+          exit 1

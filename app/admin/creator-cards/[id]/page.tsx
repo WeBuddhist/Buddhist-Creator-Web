@@ -1,23 +1,27 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRightIcon, PencilSimpleIcon } from "@phosphor-icons/react/dist/ssr";
+import { CardDetailSkeleton } from "@/components/admin/card-skeleton";
 import { CardStatusBadge, CARD_STATUS_LABEL } from "@/components/admin/card-status-badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { Chips, Facts, Section, type Fact } from "@/components/admin/section";
 import { CreatorCard } from "@/components/creator-card/creator-card";
+import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth";
 import {
   CARD_CONTENT_TYPES,
   CARD_LANGUAGES,
-  cardAudiences,
+  COUNTED_SOCIALS,
   cardLabels,
   cardLinks,
   cardPhotoSrc,
   isProfilePicture,
   creatorTypeLabel,
 } from "@/lib/creator-card";
-import { cardFollowers, getCard, listCardClaims } from "@/lib/creator-cards";
+import { cardFollowers, cardLinkChecks, getCard, listCardClaims } from "@/lib/creator-cards";
+import type { FollowerCheckStatus } from "@/lib/db/schema";
 import { formatCount, formatDateTime } from "@/lib/format";
 import { presignedGetUrl } from "@/lib/s3";
 import { ClaimReview } from "./claim-review";
@@ -28,7 +32,7 @@ export const metadata: Metadata = { title: "Creator card" };
 
 export default function CreatorCardPage(props: PageProps<"/admin/creator-cards/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading creator card…</p>}>
+    <Suspense fallback={<CardDetailSkeleton />}>
       <Loaded params={props.params} />
     </Suspense>
   );
@@ -39,9 +43,16 @@ const link =
 
 /* One card, for review: what it says, how it will look, and the decision.
    The links are the part most worth opening before approving, so each is
-   spelled out in full rather than hidden behind an icon. The follower
-   counts are the creator's own figures, each listed under the link it can
-   be checked against. */
+   spelled out in full rather than hidden behind an icon. Under each link
+   a count is kept for is its follower count, which is read from that link
+   every month, and what came of the latest reading. */
+const CHECK_NOTE: Record<FollowerCheckStatus, string> = {
+  ok: "Read from the link",
+  not_found: "No account was found at this link. Tried",
+  unreadable: "No figure could be read for this account. Tried",
+  error: "The last attempt failed and will be made again. Tried",
+};
+
 async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]">["params"] }) {
   const viewer = await requireRole("admin", "/admin/creator-cards");
   const { id } = await params;
@@ -52,7 +63,8 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
   const languages = cardLabels(CARD_LANGUAGES, card.languages, card.languagesOther);
   const content = cardLabels(CARD_CONTENT_TYPES, card.contentTypes, card.contentTypesOther);
   const links = cardLinks(card.socials);
-  const audiences = cardAudiences(cardFollowers(card));
+  const followers = cardFollowers(card);
+  const checks = await cardLinkChecks(card);
 
   // The card's own photo (the creator's upload, or the profile picture the
   // team took for a card it made), or failing that the picture from the
@@ -87,7 +99,9 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
     { label: "Content", value: content.length > 0 ? <Chips items={content} /> : null },
     { label: "One line", value: card.tagline },
     ...links.flatMap(({ value: place, label, url }) => {
-      const audience = audiences.find((counted) => counted.value === place);
+      const counted = COUNTED_SOCIALS.find((social) => social.value === place);
+      const count = counted && followers[counted.value];
+      const check = counted && checks[counted.value];
       return [
         {
           label,
@@ -103,12 +117,30 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
             </a>
           ),
         },
-        ...(audience ? [{ label: audience.label, value: <span className="tabular-nums">{audience.count}</span> }] : []),
+        ...(counted
+          ? [
+              {
+                label: `${label} ${counted.audience.toLowerCase()}`,
+                value: (
+                  <>
+                    <span className="tabular-nums">{count == null ? "—" : formatCount(count)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {check
+                        ? `${CHECK_NOTE[check.status]} ${formatDateTime(check.checkedAt)}.`
+                        : count == null
+                          ? "Not read yet."
+                          : "Not read yet. This is the figure the card was given."}
+                    </span>
+                  </>
+                ),
+              },
+            ]
+          : []),
       ];
     }),
   ];
   if (links.length === 0) answers.push({ label: "Links", value: null });
-  if (audiences.length > 0) {
+  if (card.totalFollowers > 0) {
     answers.push({
       label: "Total followers",
       value: <span className="font-medium tabular-nums">{formatCount(card.totalFollowers)}</span>,
@@ -153,6 +185,21 @@ async function Loaded({ params }: { params: PageProps<"/admin/creator-cards/[id]
         eyebrow="Creator card"
         title={<span className="wrap-anywhere">{card.displayName}</span>}
         badge={<CardStatusBadge status={card.status} />}
+        // A card nobody owns is the team's to keep right.
+        actions={
+          !card.userId && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="px-3"
+              nativeButton={false}
+              render={<Link href={`/admin/creator-cards/${card.id}/edit`} />}
+            >
+              <PencilSimpleIcon data-icon="inline-start" aria-hidden />
+              Edit card
+            </Button>
+          )
+        }
         className="mb-6"
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">

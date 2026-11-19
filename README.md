@@ -15,7 +15,7 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global netw
 | `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/convention/2027/register` | The convention application form (sign-in required) |
 | `/admin` | The selection committee's dashboard (admin role required) |
-| `/creators` | The creators directory: every approved creator card, searchable and paged |
+| `/creators` | The leaderboard of the most followed creators (also on the home page), and the creators directory: every approved creator card, searchable and paged |
 | `/creator-card` | A creator's own card: make it, edit it, or claim one the team made (sign-in required) |
 | `/team` | The team, and the invitation to join it |
 
@@ -118,6 +118,7 @@ and is refused if the creator has changed the card since.
 | The public directory | `app/(site)/creators/`, `components/creators/` |
 | Claiming a card | `app/(site)/creator-card/claim-card.tsx` |
 | Deciding claims | `app/admin/creator-cards/claims/`, `app/admin/creator-cards/[id]/claim-review.tsx` |
+| Adding and keeping the team's own cards | `app/admin/creator-cards/new/`, `app/admin/creator-cards/[id]/edit/`, `card-editor.tsx`, `editor-actions.ts` |
 
 Approved cards are public at `/creators`, the most followed first, thirty to
 a page, with a search by name and a filter by country. Both live in the URL
@@ -126,9 +127,30 @@ and the database does the narrowing, since the list is paged.
 One table, `creator_cards`. Only `display_name` is required and `user_id`
 may be null: the team also makes cards itself, for creators it knows, from
 details it only partly has. Migration `0009` holds the first of them, taken
-from the team's shared sheet. Such a card is approved as it is made, has no
-owner, and shows its creator's public profile picture (stored under
-`creator-cards/profile-pictures/`) or, without one, their initials.
+from the team's shared sheet, and `0017` the team's final sheet of November
+2026, 353 creators (a few have been taken off since). Such a card is approved as it
+is made, has no owner, and shows its creator's public profile picture
+(stored under `creator-cards/profile-pictures/`) or, without one, their
+initials.
+
+The dashboard keeps these cards without a migration. "Add a creator" on
+`/admin/creator-cards` makes one from a name and at least one link, and
+"Edit card" on a card nobody owns changes its name, country, line, links
+and photo; the list there is searched by name. Saving keeps the card
+approved, since the admin is the reviewer, and then:
+
+- reads the follower count of each link that is new or changed, at once
+  (`readCardLinks`), so the count is on the card's page when it opens.
+  YouTube is free; Instagram, TikTok and Facebook cost a SocialCrawl credit
+  each, and a link read already this month is not read again;
+- refuses a link another card already has, since one account is one
+  creator;
+- gives a card with no photo the profile picture the reading brought
+  (`lib/team-card-photo.ts`), fetched only from the hosts such pictures
+  are served from.
+
+A superadmin can also remove such a card, after a confirmation. A card
+with an owner is the creator's: the editor does not open it.
 
 Every card is laid out the same way: the photo as a circle top left, then
 the name, the country and follower total, the links, and the line about
@@ -171,9 +193,85 @@ channel on the card, so nothing changes hands until an admin has approved:
 Several people may claim one card; a person has one claim waiting at a
 time and none while they have a card. Nothing is emailed at any step.
 
+### Follower counts
+
 Follower counts are kept for YouTube, Instagram, TikTok and Facebook and
 added up by the database (`total_followers`); they order the directory and
-are never part of a review.
+are never part of a review. Nobody types them. Each counted link is read
+from the place itself once a month: YouTube from its own Data API v3,
+the other three through [SocialCrawl](https://www.socialcrawl.dev)'s
+profile endpoints (one credit per account read).
+
+| Piece | Where |
+| --- | --- |
+| What is due, and the run | `lib/follower-refresh.ts` |
+| The two services | `lib/youtube.ts`, `lib/socialcrawl.ts` |
+| The address the schedule calls | `app/api/cron/follower-refresh/route.ts` |
+| The schedule | `.github/workflows/follower-refresh.yml` |
+| Links that gave no count | `/admin/creator-cards/followers` |
+
+- **One row per card, place and month** in `creator_follower_checks`: the
+  figure, what came of the attempt, and the account's own id and handle.
+  It is the history a ranking by growth is worked out from. The card's
+  `*_followers` column holds the latest figure. November 2026 is the first
+  month. Its rows began as the counts on the team's sheet (migration
+  `0017`) and were written over by the first full reading, on 18 November.
+- **The schedule runs every day.** On the first of the month (UTC) every
+  link is due; on the other days only links added since and attempts that
+  failed. One call works for about a minute and says how many links are
+  left; the workflow calls again until none are.
+- **A full reading can be asked for by hand**: "Run workflow" on the
+  Actions tab, with its box ticked, reads every link again now and writes
+  over the month's rows. It costs a SocialCrawl credit for each Instagram,
+  TikTok and Facebook link.
+- **Only approved cards are read.** A reading costs a credit, so a card
+  waiting for a review is not read; its links are read within a day of
+  its approval.
+- **A reading belongs to a link.** Rows carry the link in the form links
+  are compared in (`socialLinkKey`), and a card whose link changes loses
+  that place's count until the card is approved again and the new account
+  is read.
+- **A link that cannot be read keeps the count it had** and shows on the
+  admin page above: an account that is gone, a hidden count, a personal
+  Facebook profile.
+- **YouTube rounds** the subscriber count it gives out to three figures
+  (2,970,000; 24,900), so a large channel's count moves in steps.
+
+**The leaderboard** is made of the same rows. It is the first thing under
+the home page's opening photograph and the first thing on `/creators`
+(`components/creators/leaderboard-section.tsx`): the most followed
+creators in all their counted places together and in each place, with the
+day the counts were last read.
+
+| Piece | Where |
+| --- | --- |
+| The ranking and the month-on-month change | `creatorLeaderboard` in `lib/creator-cards.ts` |
+| The boards as a page gets them, with photos | `lib/creator-leaderboard.ts` |
+| Tabs, the first three as cards, the rows | `components/creators/leaderboard.tsx` |
+| A whole board, for the browser | `GET /api/creators/leaderboard?place=youtube` |
+
+- **Ten, then a hundred.** A page carries each board's first ten. "Show the
+  top 100" asks the address above for that one board, so the home page
+  stays light.
+- **Every figure names its channels.** A row shows the icon of each channel
+  its figure was read from, and each icon is the link to the creator
+  there. On the board of all channels the first three also show each
+  channel's own share.
+- **Change** appears once two months of readings exist. Beside a count:
+  this month's figure less last month's, for the same account. Beside a
+  rank: the places gained or lost against last month's order (`ranksBefore`),
+  or "New" for a creator last month has no reading of. Up is green, down
+  is red, each with its own sign.
+- **The mission's progress bar** on the home page (`components/mission.tsx`)
+  is the same counts added up, `networkAudience`, against the hundred
+  million the mission names. It counts followers, so somebody who follows
+  two creators is in it twice.
+
+It needs `YOUTUBE_API_KEY`, `SOCIALCRAWL_API_KEY` and `CRON_SECRET` on the
+site, and two secrets on the GitHub repository: `CRON_SECRET` (the same
+value) and `FOLLOWER_REFRESH_URL` (the full address of
+`/api/cron/follower-refresh`). The workflow's logs are public, so the
+address answers with totals only.
 
 ## Registration and the admin dashboard
 
@@ -329,6 +427,7 @@ so the history outlives the admin who made it.
 | `notification_kind` | `decision`, `resend` |
 | `creator_card_status` | `pending`, `approved`, `rejected` |
 | `card_claim_status` | `pending`, `approved`, `rejected` |
+| `follower_check_status` | `ok`, `not_found`, `unreadable`, `error` |
 
 ### Setting it up
 

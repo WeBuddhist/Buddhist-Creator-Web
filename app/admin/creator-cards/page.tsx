@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PlusIcon } from "@phosphor-icons/react/dist/ssr";
+import { CardsFilterSkeleton, CardsTableSkeleton } from "@/components/admin/card-skeleton";
 import { CardStatusBadge, CARD_STATUS_LABEL } from "@/components/admin/card-status-badge";
+import { CardsFilter, type CardsTabOption } from "@/components/admin/cards-filter";
 import { PageHeader } from "@/components/admin/page-header";
 import { Pagination } from "@/components/pagination";
 import { panel } from "@/components/admin/panel";
+import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth";
 import { creatorTypeLabel } from "@/lib/creator-card";
 import {
@@ -13,47 +17,48 @@ import {
   countCardsByStatus,
   countClaimsByStatus,
   listCards,
-  type CardFilter,
+  listUnreadLinks,
 } from "@/lib/creator-cards";
+import { CARDS_PATH as PATH, CARDS_TABS, cardsHref, cardsView, type CardsTab } from "@/lib/creator-cards-view";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Creator cards" };
 
-const PATH = "/admin/creator-cards";
-
-/* The page opens on the cards waiting for a review, since that is the work
-   to be done here; the other tabs are a click away. */
-const FILTERS: CardFilter[] = ["pending", "approved", "rejected", "all"];
-const DEFAULT_FILTER: CardFilter = "pending";
-
-const filterLabel = (filter: CardFilter) =>
-  filter === "all" ? "All" : filter === "pending" ? "Pending" : CARD_STATUS_LABEL[filter];
-
-function listHref(filter: CardFilter, page = 1) {
-  const search = new URLSearchParams();
-  if (filter !== DEFAULT_FILTER) search.set("status", filter);
-  if (page > 1) search.set("page", String(page));
-  const query = search.toString();
-  return query ? `${PATH}?${query}` : PATH;
-}
+const tabLabel = (tab: CardsTab) => (tab === "all" ? "All" : tab === "pending" ? "Pending" : CARD_STATUS_LABEL[tab]);
 
 export default function CreatorCardsPage(props: PageProps<"/admin/creator-cards">) {
   return (
     <>
       <PageHeader
         title="Creator cards"
-        description="Cards creators have sent in, and the ones our team made for creators it knows, newest first. Open one to read it and approve or reject it. A card a creator changes comes back here as pending."
+        description="Cards creators have sent in, and the ones our team made for creators it knows, newest first. Open one to read it and approve or reject it, or to change a card our team keeps. A card a creator changes comes back here as pending."
+        actions={
+          <Button variant="emphasis" size="lg" className="px-3" nativeButton={false} render={<Link href={`${PATH}/new`} />}>
+            <PlusIcon data-icon="inline-start" weight="bold" aria-hidden />
+            Add a creator
+          </Button>
+        }
         className="mb-6"
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading creator cards…</p>}>
+      {/* The page's first load: the search, the tabs and the table as
+          shapes. After that a search or a tab swaps only the table
+          (CardsFilter). */}
+      <Suspense
+        fallback={
+          <>
+            <CardsFilterSkeleton labels={CARDS_TABS.map(tabLabel)} />
+            <CardsTableSkeleton rows={4} />
+          </>
+        }
+      >
         <CardsList searchParams={props.searchParams} />
       </Suspense>
     </>
   );
 }
 
-const EMPTY: Record<CardFilter, string> = {
+const EMPTY: Record<CardsTab, string> = {
   pending: "No cards are waiting for a review.",
   approved: "No cards have been approved yet.",
   rejected: "No cards have been rejected.",
@@ -63,21 +68,27 @@ const EMPTY: Record<CardFilter, string> = {
 async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/creator-cards">["searchParams"] }) {
   await requireRole("admin", PATH);
   const params = await searchParams;
-  const asked = Array.isArray(params.status) ? params.status[0] : params.status;
-  const filter = FILTERS.find((value) => value === asked) ?? DEFAULT_FILTER;
+  const view = cardsView(params);
+  const { status: filter, q } = view;
   const page = Math.max(1, Number(params.page) || 1);
 
-  const [list, counts, claims] = await Promise.all([
-    listCards(filter, page),
+  const [list, counts, claims, unread] = await Promise.all([
+    listCards(filter, page, q),
     countCardsByStatus(),
     countClaimsByStatus(),
+    listUnreadLinks(),
   ]);
   const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
   // A page past the end (a stale link, or a review that emptied the last
   // page) lands on the last real page rather than an empty table.
-  if (page > pages) redirect(listHref(filter, pages));
+  if (page > pages) redirect(cardsHref(view, pages));
 
   const everything = CARD_STATUSES.reduce((sum, status) => sum + counts[status], 0);
+  const options: CardsTabOption[] = CARDS_TABS.map((value) => ({
+    value,
+    label: tabLabel(value),
+    count: value === "all" ? everything : counts[value],
+  }));
 
   return (
     <>
@@ -94,33 +105,25 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
           for a decision.
         </p>
       )}
-      <nav aria-label="Filter by status" className="mb-6 flex flex-wrap gap-2">
-        {FILTERS.map((value) => {
-          const active = value === filter;
-          return (
-            <Link
-              key={value}
-              href={listHref(value)}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "inline-flex h-9 select-none items-center gap-1.5 rounded-full border border-transparent bg-card px-3.5 text-sm font-medium text-foreground shadow-ring",
-                "transition-[color,background-color] duration-150 ease-hover hover:bg-muted",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                active && "bg-brand-cyan text-white shadow-none hover:bg-brand-cyan",
-              )}
-            >
-              {filterLabel(value)}
-              <span className={cn("text-xs tabular-nums", active ? "text-white/80" : "text-muted-foreground")}>
-                {value === "all" ? everything : counts[value]}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-
+      {/* The monthly reading of follower counts says here when a link gave
+          it nothing, which is most often a link that is wrong. */}
+      {unread.length > 0 && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          <Link
+            href={`${PATH}/followers`}
+            className="font-medium text-foreground underline decoration-foreground/20 underline-offset-4 hover:decoration-foreground"
+          >
+            {unread.length === 1 ? "1 link gave no follower count" : `${unread.length} links gave no follower count`}
+          </Link>{" "}
+          at the last reading.
+        </p>
+      )}
+      <CardsFilter view={view} options={options} matching={list.total} pageSize={list.pageSize}>
       <div className={cn(panel, "overflow-x-auto")}>
         {list.rows.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-muted-foreground">{EMPTY[filter]}</p>
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            {q ? "No card matches that search. Try part of the name, or another tab." : EMPTY[filter]}
+          </p>
         ) : (
           <table className="w-full min-w-[44rem] text-sm">
             <thead>
@@ -164,9 +167,10 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
         pages={pages}
         total={list.total}
         pageSize={list.pageSize}
-        href={(n) => listHref(filter, n)}
+        href={(n) => cardsHref(view, n)}
         className="mt-4"
       />
+      </CardsFilter>
     </>
   );
 }

@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { CreatorCard } from "@/components/creator-card/creator-card";
 import { CreatorFilters } from "@/components/creators/creator-filters";
+import { LeaderboardSection } from "@/components/creators/leaderboard-section";
 import { PageIntro } from "@/components/page-intro";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
 import { CARD_PATH } from "@/lib/creator-card";
-import { listPublicCards, type PublicCard } from "@/lib/creator-cards";
+import { listPublicCards } from "@/lib/creator-cards";
+import { cardPhotoUrl } from "@/lib/creator-leaderboard";
 import {
   CREATORS_DIRECTORY,
   CREATORS_PAGE,
@@ -18,8 +20,6 @@ import {
   creatorsHref,
   creatorsView,
 } from "@/lib/creators";
-import { forLog } from "@/lib/log-error";
-import { presignedGetUrl } from "@/lib/s3";
 import crowdSelfie from "@/public/photos/crowd-selfie.webp";
 
 export const metadata: Metadata = {
@@ -27,10 +27,11 @@ export const metadata: Metadata = {
   description: CREATORS_PAGE.description,
 };
 
-/* The creators directory: every approved creator card, the most followed
-   first, thirty to a page. The intro and the heading are static and
-   prerender; the cards depend on the URL's search, country and page, so
-   they stream in behind the boundary.
+/* The creators page: the leaderboard, then the directory, which is every
+   approved creator card, the most followed first, thirty to a page. The
+   intro and the headings are static and prerender. The leaderboard is
+   read from the database on each visit, and the cards depend on the URL's
+   search, country and page, so both stream in behind their boundaries.
 
    A card the team made and nobody owns yet carries a way to claim it. */
 export default function CreatorsPage(props: PageProps<"/creators">) {
@@ -47,6 +48,8 @@ export default function CreatorsPage(props: PageProps<"/creators">) {
           position: "50% 45%",
         }}
       />
+
+      <LeaderboardSection size="h3" className="pt-20 lg:pt-28" />
 
       <section id={DIRECTORY_ID} aria-labelledby="directory-title" className="bg-background">
         <div className="mx-auto w-full max-w-6xl px-5 pt-20 pb-24 sm:px-6 lg:pt-28 lg:pb-32">
@@ -73,18 +76,6 @@ export default function CreatorsPage(props: PageProps<"/creators">) {
   );
 }
 
-/* A card's photo: its own, or failing that its owner's sign-in picture. A
-   picture that cannot be signed for (storage not set up, say) leaves the
-   card with the stand-in rather than taking the directory down. */
-async function photoUrl(card: PublicCard) {
-  try {
-    return await presignedGetUrl(card.photoKey ?? card.ownerPicture);
-  } catch (error) {
-    console.error("[creators] could not sign a card photo", forLog(error));
-    return null;
-  }
-}
-
 async function Directory({ searchParams }: { searchParams: PageProps<"/creators">["searchParams"] }) {
   const params = await searchParams;
   const view = creatorsView(params);
@@ -97,7 +88,7 @@ async function Directory({ searchParams }: { searchParams: PageProps<"/creators"
   // on the last real page rather than an empty one.
   if (page > pages) redirect(creatorsHref(view, pages, false));
 
-  const cards = await Promise.all(list.rows.map(async (row) => ({ row, photo: await photoUrl(row) })));
+  const cards = await Promise.all(list.rows.map(async (row) => ({ row, photo: await cardPhotoUrl(row) })));
 
   return (
     <CreatorFilters view={view} total={list.total} matching={list.matching} countries={list.countries}>

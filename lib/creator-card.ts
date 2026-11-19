@@ -61,7 +61,8 @@ export const CARD_CONTENT_TYPES = CONTENT_TOPICS;
 /* Where a creator publishes. The places with an `audience` come first: for
    those the card also keeps how many people follow the creator there,
    under the name the place itself gives them. Creators are ranked on those
-   numbers added together. */
+   numbers added together. Nobody types them: they are read from the place
+   itself every month (lib/follower-refresh.ts). */
 export const CARD_SOCIALS = [
   {
     value: "youtube",
@@ -102,29 +103,95 @@ export type CountedSocial = CountedSocialOption["value"];
     the card has no figure. */
 export type CardFollowers = Record<CountedSocial, number | null>;
 
-/** No real account is near this; it only keeps a slip of the hand out. */
+/** No real account is near this; a figure past it is not taken. */
 export const CARD_FOLLOWERS_MAX = 1_000_000_000;
 
-const COUNT_UNITS: Record<string, number> = { k: 1_000, m: 1_000_000 };
+/* The site each place's link has to be on. A website can be anywhere. */
+const SOCIAL_SITES: Partial<Record<CardSocial, readonly string[]>> = {
+  youtube: ["youtube.com"],
+  instagram: ["instagram.com"],
+  tiktok: ["tiktok.com"],
+  facebook: ["facebook.com", "fb.com"],
+  x: ["x.com", "twitter.com"],
+};
 
-/** A follower count as people write it: "12500", "12,500", or the short
-    form the apps themselves show, "12.5K" and "1.2M". Null for an empty
-    field, "unreadable" for anything that is not a count. */
-export function readFollowerCount(text: string): number | null | "unreadable" {
-  const value = text.replace(/\s+/g, "").toLowerCase();
-  if (!value) return null;
-  const short = /^(\d+(?:[.,]\d+)?)([km])$/.exec(value);
-  if (short) return Math.round(Number(short[1].replace(",", ".")) * COUNT_UNITS[short[2]]);
-  // Digits, alone or in groups of three.
-  if (/^\d+$/.test(value) || /^\d{1,3}(?:[.,']\d{3})+$/.test(value)) return Number(value.replace(/\D/g, ""));
-  return "unreadable";
+/** The host as people mean it: "m.facebook.com" is facebook.com. */
+const siteOf = (url: URL) => url.hostname.toLowerCase().replace(/^(?:www|m|mobile|web)\./, "");
+
+/** Whether a link is on the site its place names. */
+export function linkFitsPlace(slug: CardSocial, link: string) {
+  const sites = SOCIAL_SITES[slug];
+  if (!sites) return true;
+  return URL.canParse(link) && sites.includes(siteOf(new URL(link)));
 }
 
-/** The counts added together: the figure creators are ranked on. Null
-    when the card has no count at all. */
-export function totalFollowers(followers: Partial<Record<CountedSocial, number | null>> | null | undefined) {
-  const counts = COUNTED_SOCIALS.flatMap(({ value }) => followers?.[value] ?? []);
-  return counts.length > 0 ? counts.reduce((sum, count) => sum + count, 0) : null;
+/** A link in the form two links are compared in: the same account written
+    two ways ("https://instagram.com/Name" and
+    "https://www.instagram.com/name/?hl=en") gives the same key. Follower
+    readings are kept under it, so one account's figures are never set
+    beside another's. A YouTube channel id and a Facebook share code keep
+    their capitals, which are part of them. */
+export function socialLinkKey(slug: CardSocial, link: string) {
+  const text = link.trim();
+  if (!URL.canParse(text)) return text.toLowerCase();
+  const url = new URL(text);
+  const path = url.pathname.replace(/\/+$/, "");
+  const exact = (slug === "youtube" && /^\/channel\//i.test(path)) || (slug === "facebook" && /^\/share\//i.test(path));
+  const id = slug === "facebook" ? url.searchParams.get("id") : null;
+  return `${siteOf(url)}${exact ? path : path.toLowerCase()}${id ? `?id=${id}` : ""}`;
+}
+
+/** How a counted link names its account to the service that reads it. */
+export type SocialAccount =
+  | { by: "handle"; handle: string }
+  /** A YouTube channel id, "UC…". */
+  | { by: "channel"; channelId: string }
+  /** A YouTube name from before handles: youtube.com/user/name. */
+  | { by: "user"; username: string }
+  /** Facebook is read by the page's address. */
+  | { by: "url"; url: string };
+
+function safeDecode(part: string) {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    return part;
+  }
+}
+
+/* The first parts of an Instagram address that are not an account. */
+const INSTAGRAM_PAGES = new Set(["p", "reel", "reels", "tv", "stories", "explore", "accounts", "direct"]);
+
+/** The account a counted link is for, or null when the link does not name
+    one: a post, a search, or a YouTube address of the old "/c/name" kind,
+    which YouTube's own API cannot look up. */
+export function socialAccount(slug: CountedSocial, link: string): SocialAccount | null {
+  if (!linkFitsPlace(slug, link)) return null;
+  const url = new URL(link);
+  const [first = "", second = ""] = url.pathname.split("/").filter(Boolean);
+  switch (slug) {
+    case "youtube": {
+      // A handle may be in any script, which the address percent-encodes.
+      const handle = /^@/.test(first) && safeDecode(first).slice(1);
+      if (handle && /^[^\s/@]+$/.test(handle)) return { by: "handle", handle };
+      if (first === "channel" && /^UC[\w-]{22}$/.test(second)) return { by: "channel", channelId: second };
+      if (first === "user" && second) return { by: "user", username: safeDecode(second) };
+      return null;
+    }
+    case "instagram":
+      return /^[\w.]{1,30}$/.test(first) && !INSTAGRAM_PAGES.has(first.toLowerCase())
+        ? { by: "handle", handle: first.toLowerCase() }
+        : null;
+    case "tiktok":
+      return /^@[\w.]{2,}$/.test(first) ? { by: "handle", handle: first.slice(1).toLowerCase() } : null;
+    case "facebook": {
+      if (!first) return null;
+      // The address without what a share adds to it; a profile.php
+      // address keeps its id, which is the account.
+      const id = url.searchParams.get("id");
+      return { by: "url", url: `https://www.facebook.com${url.pathname}${id ? `?id=${encodeURIComponent(id)}` : ""}` };
+    }
+  }
 }
 
 /** The counts a card has, in the list's order, as the review page prints
@@ -262,19 +329,45 @@ const optionalLink = z
     message: "This is not a link we can open. Paste the full address of the page.",
   });
 
-/* A follower count, read as readFollowerCount reads it. */
-const optionalCount = z.string().transform((value, ctx) => {
-  const count = readFollowerCount(value);
-  const problem =
-    count === "unreadable"
-      ? "Enter a number, like 12,500 or 12.5K"
-      : count !== null && count > CARD_FOLLOWERS_MAX
-        ? "That number is too large. Check it and try again."
-        : null;
-  if (!problem) return count as number | null;
-  ctx.issues.push({ code: "custom", message: problem, input: value });
-  return z.NEVER;
-});
+/* The link for one place. It has to be on that place's site, and where a
+   follower count is kept it has to name the account, since the count is
+   read from it. The link is checked and kept as it was written, never
+   rewritten: a stored link must compare equal to itself on the next save,
+   or an untouched card would be sent back for review. */
+const linkFor = (social: (typeof CARD_SOCIALS)[number], whose: "your" | "their" = "your") =>
+  optionalLink.superRefine((value, ctx) => {
+    if (value === null) return;
+    if (!linkFitsPlace(social.value, value)) {
+      ctx.addIssue({ code: "custom", message: `This is not a ${social.label} link. Paste ${whose} ${social.label} address here.` });
+    } else if ("audience" in social && !socialAccount(social.value, value)) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Paste the address of ${whose} ${social.label} ${social.value === "youtube" ? "channel" : "profile"}, like ${social.placeholder}`,
+      });
+    }
+  });
+
+/* The links, one for each place: every one checked, only the filled ones
+   kept, and at least one asked for. `whose` and `none` word the messages
+   for who is typing. */
+const linksFor = (whose: "your" | "their", none: string) =>
+  z
+    .object(
+      Object.fromEntries(CARD_SOCIALS.map((social) => [social.value, linkFor(social, whose)])) as Record<
+        CardSocial,
+        ReturnType<typeof linkFor>
+      >,
+    )
+    .transform((links) => {
+      // Only the filled ones are kept.
+      const filled: CardSocials = {};
+      for (const { value } of CARD_SOCIALS) {
+        const link = links[value];
+        if (link) filled[value] = link;
+      }
+      return filled;
+    })
+    .refine((links) => Object.keys(links).length > 0, none);
 
 const unique = <T>(list: T[]) => [...new Set(list)];
 const includesOther = (list: unknown) => Array.isArray(list) && list.includes("other");
@@ -293,29 +386,7 @@ export const cardSchema = z
     tagline: line.pipe(
       z.string().min(1, REQUIRED).max(CARD_TAGLINE_MAX, `Keep it to one line, under ${CARD_TAGLINE_MAX} characters`),
     ),
-    socials: z
-      .object(
-        Object.fromEntries(CARD_SOCIALS.map(({ value }) => [value, optionalLink])) as Record<
-          CardSocial,
-          typeof optionalLink
-        >,
-      )
-      .transform((links) => {
-        // Only the filled ones are kept.
-        const filled: CardSocials = {};
-        for (const { value } of CARD_SOCIALS) {
-          const link = links[value];
-          if (link) filled[value] = link;
-        }
-        return filled;
-      })
-      .refine((links) => Object.keys(links).length > 0, "Add at least one link, so people can find your work"),
-    followers: z.object(
-      Object.fromEntries(COUNTED_SOCIALS.map(({ value }) => [value, optionalCount])) as Record<
-        CountedSocial,
-        typeof optionalCount
-      >,
-    ),
+    socials: linksFor("your", "Add at least one link, so people can find your work"),
   })
   /* An "other" needs its text. These two look across fields, and zod
      skips such a check once any single field has failed, which would hold
@@ -331,34 +402,6 @@ export const cardSchema = z
     message: "Tell us what “Other” is",
     when: () => true,
   })
-  /* A link and its count go together: the count is what the creator is
-     ranked on, so a counted place that is linked needs one, and a count
-     with no link has nothing to be checked against. A count that could
-     not be read has its own message already and is left alone here. */
-  .superRefine(
-    (data, ctx) => {
-      const socials: Record<string, unknown> = data.socials ?? {};
-      const followers: Record<string, unknown> = data.followers ?? {};
-      for (const { value, label, audience } of COUNTED_SOCIALS) {
-        const linked = typeof socials[value] === "string" && socials[value] !== "";
-        const count = followers[value];
-        if (linked && count === null) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["followers", value],
-            message: `Add how many ${audience.toLowerCase()} you have on ${label}`,
-          });
-        } else if (!linked && typeof count === "number") {
-          ctx.addIssue({
-            code: "custom",
-            path: ["followers", value],
-            message: `Add your ${label} link, or clear this number`,
-          });
-        }
-      }
-    },
-    { when: () => true },
-  )
   // An "other" that is no longer ticked takes its text with it.
   .transform((data) => ({
     ...data,
@@ -368,25 +411,52 @@ export const cardSchema = z
 
 export type CardValues = z.infer<typeof cardSchema>;
 
-type CardField = Exclude<keyof CardValues, "socials" | "followers">;
+/* A card our team makes, or keeps, for a creator it knows: what the
+   dashboard's editor sends (app/admin/creator-cards). The team often has
+   no more than a name and a channel, so only those are asked for; the
+   creator fills in the rest when they claim the card. A creator with no
+   link at all is not listed, which is why one is asked for. */
+export const teamCardSchema = z.object({
+  displayName: line.pipe(
+    z.string().min(1, REQUIRED).max(CARD_NAME_MAX, `Keep the name under ${CARD_NAME_MAX} characters`),
+  ),
+  country: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || isCountry(value), "Choose a country from the list")
+    .transform((value) => value || null),
+  tagline: optionalLine(CARD_TAGLINE_MAX),
+  socials: linksFor("their", "Add at least one link. A creator with no link is not listed."),
+});
+
+export type TeamCardValues = z.infer<typeof teamCardSchema>;
+
+/** The editor's FormData as the object teamCardSchema reads. */
+export function teamCardFormValues(formData: FormData) {
+  const text = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  return {
+    displayName: text("displayName"),
+    country: text("country"),
+    tagline: text("tagline"),
+    socials: Object.fromEntries(CARD_SOCIALS.map(({ value }) => [value, text(`socials.${value}`)])),
+  };
+}
+
+type CardField = Exclude<keyof CardValues, "socials">;
 export type CardFieldErrors = Partial<
-  Record<
-    CardField | "socials" | `socials.${CardSocial}` | `followers.${CountedSocial}` | "photo" | "form",
-    string[]
-  >
+  Record<CardField | "socials" | `socials.${CardSocial}` | "photo" | "form", string[]>
 >;
 
-/** A failed parse as messages per field. A link and a count keep their
-    own keys, "socials.youtube" and "followers.youtube", so the message
-    lands under that field. */
+/** A failed parse as messages per field. A link keeps its own key,
+    "socials.youtube", so the message lands under that field. */
 export function cardFieldErrors(error: z.ZodError): CardFieldErrors {
   const errors: Record<string, string[]> = {};
   for (const issue of error.issues) {
     const [field, sub] = issue.path;
-    const key =
-      (field === "socials" || field === "followers") && typeof sub === "string"
-        ? `${field}.${sub}`
-        : String(field ?? "form");
+    const key = field === "socials" && typeof sub === "string" ? `${field}.${sub}` : String(field ?? "form");
     (errors[key] ??= []).push(issue.message);
   }
   return errors as CardFieldErrors;
@@ -409,6 +479,5 @@ export function cardFormValues(formData: FormData) {
     contentTypesOther: text("contentTypesOther"),
     tagline: text("tagline"),
     socials: Object.fromEntries(CARD_SOCIALS.map(({ value }) => [value, text(`socials.${value}`)])),
-    followers: Object.fromEntries(COUNTED_SOCIALS.map(({ value }) => [value, text(`followers.${value}`)])),
   };
 }

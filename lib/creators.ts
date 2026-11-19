@@ -1,4 +1,4 @@
-import { CARD_PATH } from "@/lib/creator-card";
+import { CARD_PATH, COUNTED_SOCIALS, type CountedSocial } from "@/lib/creator-card";
 
 /* The creators page: its copy, and how the directory is being looked at.
    The search and the country live in the URL, so a view can be shared,
@@ -17,6 +17,75 @@ export const CREATORS_PAGE = {
   description:
     "Monastics, teachers, lay practitioners and organizations who carry the Dharma on their own channels. Find them, follow them, and add your own card.",
 } as const;
+
+/* The leaderboard: the creators with the largest audiences, in all their
+   counted places together and in each one. It opens on its first ten and
+   can be opened to a hundred. It is on the home page and at the top of
+   this one. */
+export const CREATORS_LEADERBOARD = {
+  eyebrow: "Leaderboard",
+  title: "The most followed creators",
+  description:
+    "The creators with the largest audience, across all their channels and on each one. We read every count from the channel itself, once a month.",
+  all: "All channels",
+  updated: "Last updated",
+  empty: "The leaderboard appears here after our first monthly reading of the counts.",
+  change:
+    "Changes are since last month's reading: the triangle by a rank is places gained or lost on the board, and the arrow by a count is followers gained or lost.",
+  failed: "We could not load the rest of the leaderboard. Check your connection and try again.",
+  /* Under the home page's board: the way in for a creator who is not on
+     it, and the way on to everybody who is. */
+  invite: {
+    eyebrow: "For creators",
+    title: "Not on the list yet?",
+    description:
+      "If you share the Dharma on your own channel, create your creator card. Our team reads every card. Once yours is approved you are in the directory, and your channels are counted for the leaderboard.",
+    create: "Create your creator card",
+    browse: "Browse all Buddhist creators",
+  },
+} as const;
+
+/** How many creators a board shows before it is opened, and at most. */
+export const LEADERBOARD_OPENING = 10;
+export const LEADERBOARD_SIZE = 100;
+
+/** Where the browser asks for a whole board: `?place=youtube`. */
+export const LEADERBOARD_API = "/api/creators/leaderboard";
+
+/** A board: every counted place together, or one of them. */
+export type LeaderboardPlace = "all" | CountedSocial;
+
+export const LEADERBOARD_PLACES: readonly LeaderboardPlace[] = ["all", ...COUNTED_SOCIALS.map(({ value }) => value)];
+
+/** One of a creator's channels a figure on the board was read from. */
+export type BoardSource = { place: CountedSocial; link: string; followers: number };
+
+/** A creator on a board, as the browser gets it. */
+export type BoardRow = {
+  id: string;
+  displayName: string;
+  country: string | null;
+  photoUrl: string | null;
+  /** The audience the board ranks on. */
+  followers: number;
+  /** Since last month's reading; null when there is nothing to compare. */
+  gain: number | null;
+  /** Places gained on the board since last month's reading, less than
+      nothing for places lost; null when there is nothing to compare. */
+  climbed: number | null;
+  /** On the board for the first time this month. */
+  fresh: boolean;
+  /** The channels that figure is made of, each with its own. */
+  sources: BoardSource[];
+};
+
+export type Board = {
+  place: LeaderboardPlace;
+  /** Its first creators, LEADERBOARD_OPENING at most. */
+  rows: BoardRow[];
+  /** How many creators the whole board has, LEADERBOARD_SIZE at most. */
+  size: number;
+};
 
 export const CREATORS_DIRECTORY = {
   title: "Find a creator",
