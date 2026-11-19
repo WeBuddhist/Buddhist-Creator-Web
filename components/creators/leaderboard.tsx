@@ -434,7 +434,7 @@ function LeadCard({
           a little off the face), so it must not clip or fade them. */}
       <div
         data-podium-body
-        className="relative row-span-4 grid grid-rows-subgrid gap-y-0 rounded-[1.25rem] px-5 pt-5 pb-6 text-center [transform-style:preserve-3d]"
+        className="relative row-span-4 grid grid-rows-subgrid gap-y-0 rounded-[1.25rem] px-5 pt-5 pb-6 text-center [transform-style:preserve-3d] lg:pb-10"
       >
         <div
           aria-hidden
@@ -451,15 +451,19 @@ function LeadCard({
             <CardPhoto src={row.photoUrl} size="card" name={row.displayName} />
           </div>
         </div>
-        <div className="relative mt-3.5 min-w-0">
+        {/* From lg, where the three stand side by side, a card is given
+            more room under its photo, so it is the upright shape of a card
+            to be kept; the head is the same at every width, since the
+            crown's arc is measured from it. */}
+        <div className="relative mt-3.5 min-w-0 lg:mt-5">
           <p className="text-balance wrap-anywhere font-display text-[1.3125rem] leading-[1.2] text-ink">
             <bdi>{row.displayName}</bdi>
             {own && <YouTag />}
           </p>
           {row.country && <p className="mt-1 text-sm leading-[1.4] text-ink/75">{row.country}</p>}
         </div>
-        <div className="relative mt-4">
-          <p className="font-display text-[2.375rem] leading-none text-ink tabular-nums">
+        <div className="relative mt-4 lg:mt-7">
+          <p className="font-display text-[2.375rem] leading-none text-ink tabular-nums lg:text-[2.75rem]">
             {formatCount(row.followers)}
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
@@ -468,7 +472,7 @@ function LeadCard({
             <RankMove row={row} words />
           </div>
         </div>
-        <ul className="relative mt-4 flex flex-wrap content-start justify-center gap-1.5">
+        <ul className="relative mt-4 flex flex-wrap content-start justify-center gap-1.5 lg:mt-7">
           {row.sources.map((source) => {
             const PlaceIcon = PLACE_ICON[source.place];
             return (

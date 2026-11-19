@@ -79,11 +79,13 @@ export function PodiumStage({ children }: { children: ReactNode }) {
       {/* What scrolls below lg. The padding is the room the canvas has for
           a card's corners when it turns, taken back by the margins; sideways it is
           the page's own gutter, so a card can be scrolled to the screen's
-          edge. */}
+          edge. It shows no scrollbar: the next card, cut by the screen's
+          edge, is what says there is more, and a link in a card brings its
+          card into view when it is tabbed to. */}
       <div
         onScroll={(event) => store.scrolled(event.currentTarget, event.currentTarget.scrollLeft, 0)}
         className={cn(
-          "-mx-5 -mt-6 -mb-2 snap-x snap-mandatory scroll-px-5 overflow-x-auto overscroll-x-contain px-5 pt-6 pb-7 [scrollbar-width:thin]",
+          "-mx-5 -mt-6 -mb-2 snap-x snap-mandatory scroll-px-5 overflow-x-auto overscroll-x-contain px-5 pt-6 pb-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           "sm:-mx-6 sm:scroll-px-6 sm:px-6",
           "lg:m-0 lg:overflow-visible lg:p-0",
         )}
