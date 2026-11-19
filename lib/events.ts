@@ -10,6 +10,7 @@ import guruRinpocheDay from "@/public/events/guru-rinpoche-day.webp";
 import sakaDawa from "@/public/events/saka-dawa.webp";
 import conventionHero from "@/public/convention/2026/hero.webp";
 import lhababDuchen from "@/public/events/lhabab-duchen.webp";
+import buddhaPurnima from "@/public/events/buddha-purnima.webp";
 
 export type EventEntry = {
   title: string;
@@ -18,10 +19,8 @@ export type EventEntry = {
       only; one with no known date has none. */
   date?: { label: string; start?: string; end?: string };
   location: string;
-  /** The summary on a card. The past list shows the gist instead. */
+  /** The summary on a card; for a past event, its full write-up. */
   description?: string;
-  /** The full write-up a past event opens to in the list. */
-  gist?: string;
   /** Where the card leads. Omitted when there is nothing to open yet. */
   href?: string;
   /** Absolute URL off this site. Opens in a new tab with an external cue. */
@@ -53,7 +52,7 @@ export const EVENTS_PAGE = {
   groups: {
     ongoing: { title: "Open now", description: "Running now. Join in from anywhere." },
     upcoming: { title: "Coming up", description: "Dates are set for what comes next." },
-    past: { title: "Past programs", description: "What each one reached. Open one for the full story." },
+    past: { title: "Past programs", description: "What each one reached, and the story behind it." },
   },
 } as const;
 
@@ -105,9 +104,8 @@ export const UPCOMING_EVENTS: EventEntry[] = [
 export const PAST_EVENTS: EventEntry[] = [
   {
     title: "Guru Rinpoche Day",
-    date: { label: "Several Guru Rinpoche Days" },
     location: "Online",
-    gist: "Guru Rinpoche Day is one of the most sacred days in Tibetan Buddhism. We ran this campaign on several Guru Rinpoche Days, in collaboration with creators who talked about who Guru Rinpoche was, why he matters, and how people can honour him. The aim was to spread awareness and share knowledge about the day with a wider audience.",
+    description: "Guru Rinpoche Day is one of the most sacred days in Tibetan Buddhism. We ran this campaign on several Guru Rinpoche Days, in collaboration with creators who talked about who Guru Rinpoche was, why he matters, and how people can honour him. The aim was to spread awareness and share knowledge about the day with a wider audience.",
     image: {
       src: guruRinpocheDay,
       alt: "Thangka painting of Guru Rinpoche seated on a lotus, holding a vajra and skull cup, before a golden halo and mountains.",
@@ -123,7 +121,7 @@ export const PAST_EVENTS: EventEntry[] = [
     title: "Saka Dawa Challenge 2026",
     date: { label: "31 May 2026", start: "2026-05-31" },
     location: "Online",
-    gist: "Saka Dawa is the holiest month for many Buddhists, and it is closely linked with making merit and acts of kindness. For this challenge, we collaborated with creators who made videos about Saka Dawa and did a real act of kindness, then shared it. It turned kindness into something people could see and join in with, and it became our biggest campaign of the season.",
+    description: "Saka Dawa is the holiest month for many Buddhists, and it is closely linked with making merit and acts of kindness. For this challenge, we collaborated with creators who made videos about Saka Dawa and did a real act of kindness, then shared it. It turned kindness into something people could see and join in with, and it became our biggest campaign of the season.",
     image: {
       src: sakaDawa,
       alt: "Thangka painting of Shakyamuni Buddha seated on a lotus throne, one hand touching the earth, among green hills and clouds.",
@@ -137,9 +135,12 @@ export const PAST_EVENTS: EventEntry[] = [
   },
   {
     title: "Buddha Purnima: My Buddha Moment",
-    date: { label: "Buddha Purnima" },
     location: "Online",
-    gist: "For Buddha Purnima, we ran “My Buddha Moment”, a creative competition in collaboration with 14 creators, who each shared a moment when the Buddha’s teachings touched their lives. The best creators across three categories received cash prizes.",
+    description: "For Buddha Purnima, we ran “My Buddha Moment”, a creative competition in collaboration with 14 creators, who each shared a moment when the Buddha’s teachings touched their lives. The best creators across three categories received cash prizes.",
+    image: {
+      src: buddhaPurnima,
+      alt: "Painting of the Buddha in orange robes, seated in meditation beneath the Bodhi tree with a golden halo, in a sunlit green forest.",
+    },
     stats: [
       { value: "14", label: "Creators" },
       { value: "60K+", label: "Views" },
@@ -151,7 +152,7 @@ export const PAST_EVENTS: EventEntry[] = [
     title: "Buddhist Creators Convention 2026",
     date: { label: "29 January – 6 February 2026", start: "2026-01-29", end: "2026-02-06" },
     location: "Bodh Gaya, Bihar, India",
-    gist: "In January 2026, 110 creators from 10 countries gathered in Bodh Gaya, the first global network of its kind. Nine days ran in three phases: community days with an opening ceremony, keynotes, a panel and lightning talks; a masterclass on marketing the Dharma; and a closing ceremony with the first Buddhist Influencer of the Year awards.",
+    description: "In January 2026, 110 creators from 10 countries gathered in Bodh Gaya, the first global network of its kind. Nine days ran in three phases: community days with an opening ceremony, keynotes, a panel and lightning talks; a masterclass on marketing the Dharma; and a closing ceremony with the first Buddhist Influencer of the Year awards.",
     href: "/convention/2026",
     cta: "Read the report",
     image: {
@@ -167,7 +168,7 @@ export const PAST_EVENTS: EventEntry[] = [
     title: "Lhabab Düchen Challenge",
     date: { label: "11 November 2025", start: "2025-11-11" },
     location: "Online, Google Meet",
-    gist: "Lhabab Düchen marks the Buddha’s descent from the heavens. We collaborated with creators who explained the story behind the day and shared its message with their audiences.",
+    description: "Lhabab Düchen marks the Buddha’s descent from the heavens. We collaborated with creators who explained the story behind the day and shared its message with their audiences.",
     image: {
       src: lhababDuchen,
       alt: "Thangka painting of the Buddha descending a jewelled staircase from the heavens, surrounded by deities and clouds.",
@@ -182,14 +183,12 @@ export const PAST_EVENTS: EventEntry[] = [
   {
     title: "Bodhicharyavatara Challenge",
     location: "Online",
-    gist: "The Bodhicharyavatara (A Guide to the Bodhisattva’s Way of Life) is available on our WeBuddhist app. To help more people discover it, we collaborated with four creators who talked about the text in four different languages, so the teaching could reach people in the language they are most comfortable with.",
+    description: "The Bodhicharyavatara (A Guide to the Bodhisattva’s Way of Life) is available on our WeBuddhist app. To help more people discover it, we collaborated with four creators who talked about the text in four different languages, so the teaching could reach people in the language they are most comfortable with.",
     image: {
       src: bodhisattvaChallenge,
       alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
     },
     stats: [
-      { value: "4", label: "Creators" },
-      { value: "4", label: "Languages" },
       { value: "45K+", label: "Views" },
       { value: "4K+", label: "Likes" },
       { value: "650+", label: "Shares" },
