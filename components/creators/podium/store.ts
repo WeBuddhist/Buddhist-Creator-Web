@@ -113,8 +113,6 @@ export class PodiumStore {
   room: number = CARD.room;
   /** Grows when a card arrives, leaves, or changes its place or size. */
   version = 0;
-  /** The visitor has asked for less motion: nothing turns and no light passes. */
-  reduced = false;
   /** A mouse or trackpad is the pointer, so a card can follow it. */
   hovers = true;
   /** Some of the box is on screen. */
@@ -238,7 +236,7 @@ export class PodiumStore {
   /** The pointer is over a card: it leans toward it and comes forward. */
   point(element: Element, clientX: number, clientY: number) {
     const card = this.byElement.get(element);
-    if (!card || this.reduced || !this.hovers || !card.live) return;
+    if (!card || !this.hovers || !card.live) return;
     const rect = card.el.getBoundingClientRect();
     const x = ((clientX - rect.left) / rect.width) * 2 - 1;
     const y = ((clientY - rect.top) / rect.height) * 2 - 1;
@@ -248,16 +246,11 @@ export class PodiumStore {
     this.wake();
   }
 
-  /** Turn a card over, or back. With less motion asked for it is simply
-      the other way up at once. */
+  /** Turn a card over, or back. */
   flip(element: Element, over: boolean) {
     const card = this.byElement.get(element);
     if (!card) return;
     card.toTurn = over ? 180 : 0;
-    if (this.reduced) {
-      card.turn = card.toTurn;
-      card.vturn = 0;
-    }
     this.wake();
   }
 
@@ -281,7 +274,7 @@ export class PodiumStore {
     const at = performance.now();
     const last = this.scrolls.get(source);
     this.scrolls.set(source, { x, y, at });
-    if (this.reduced || this.hovers || !this.visible || !last) return;
+    if (this.hovers || !this.visible || !last) return;
     const elapsed = Math.max(4, Math.min(at - last.at, 64));
     const alongRow = clamp((x - last.x) / elapsed / SCROLL_FULL);
     const upPage = clamp((y - last.y) / elapsed / SCROLL_FULL);
@@ -301,7 +294,7 @@ export class PodiumStore {
 
   /* Watch what the cards depend on outside themselves: whether they are
      near the screen and on it, what the visitor's device points with,
-     whether they have asked for less motion, and, where nothing hovers,
+     and, where nothing hovers,
      the page's scrolling. `onNear` is called once, when the cards first
      come within a screen's reach, which is when the scene is worth
      fetching. Returns the way to stop watching. */
@@ -318,9 +311,6 @@ export class PodiumStore {
       list.addEventListener("change", listen);
       stops.push(() => list.removeEventListener("change", listen));
     };
-    media("(prefers-reduced-motion: reduce)", (matches) => {
-      this.reduced = matches;
-    });
     media("(hover: hover) and (pointer: fine)", (matches) => {
       this.hovers = matches;
     });
@@ -368,7 +358,6 @@ export class PodiumStore {
 
   private arrive(card: PodiumCard, order: number) {
     card.arriving = false;
-    if (this.reduced) return;
     card.pass = -order * PASS_STAGGER;
     // A small nod as the light crosses: a push the spring then settles.
     card.vrx -= 46;

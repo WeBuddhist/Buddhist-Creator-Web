@@ -6,9 +6,8 @@ import { flushSync } from "react-dom";
    card (app/(site)/creator-card). Each is called from an event handler, a
    mutation callback or a ref, so neither form needs an effect for them. */
 
-/** Smooth, unless the reader has asked for less motion. */
-export const scrolling = (): ScrollBehavior =>
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+/** Smooth for everyone, reduced motion included, by the owner's decision. */
+export const scrolling = (): ScrollBehavior => "smooth";
 
 /** Takes the reader to the answer that needs fixing: the field `selector`
     names is brought to the middle of the screen and given focus. A field

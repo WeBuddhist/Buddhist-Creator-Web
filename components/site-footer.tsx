@@ -5,7 +5,6 @@ import {
   FacebookLogoIcon,
   InstagramLogoIcon,
   LinkedinLogoIcon,
-  MapPinIcon,
   YoutubeLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { label } from "@/components/convention/section-heading";
@@ -94,22 +93,10 @@ export function SiteFooter() {
 
           <FooterColumn title="Explore" links={EXPLORE} />
 
-          {/* Address */}
+          {/* Contact */}
           <div>
             <h2 className={columnTitle}>Contact us</h2>
-            <address className="mt-5 space-y-3 text-base not-italic leading-[1.6] text-paper/80">
-              <p className="flex gap-2.5">
-                <MapPinIcon className="mt-1 size-4 shrink-0" />
-                <span>
-                  Trehan Cottage
-                  <br />
-                  H. No. 112, Ward No. 3, Near Delek Hospital
-                  <br />
-                  Khara Danda Road, Dharamshala
-                  <br />
-                  Distt. Kangra, HP 176215, India
-                </span>
-              </p>
+            <address className="mt-5 text-base not-italic leading-[1.6] text-paper/80">
               <p className="flex gap-2.5">
                 <EnvelopeIcon className="mt-1 size-4 shrink-0" />
                 <a href="mailto:hello@buddhistcreators.com" className={linkText}>

@@ -44,8 +44,8 @@ const GOAL = MISSION_GOAL;
    Below, on the darkest cyan, the three numbers behind the sentence: what
    each one counts, the figure, and what it means, in that order, with a
    rule between neighbours. They arrive 100ms apart the first time the band
-   scrolls into view (`reveal` and `art` in globals.css); with reduced
-   motion they fade, and without scripts they are simply there.
+   scrolls into view (`reveal` and `art` in globals.css); without scripts
+   they are simply there.
 
    White on brand cyan measures 6.2:1 and 5.0:1 at 85%; the gold phrase is
    large text, 3.3:1. On sky-deep, white at 75% measures 7.6:1, gold-soft

@@ -6,15 +6,16 @@
    seamless.
 
    The markup carries no `autoplay`: the film starts from here once the page
-   is live, and not at all for a visitor who asked for reduced motion or for
-   data saving, who keep the still. It pauses while the hero is scrolled out
+   is live, and not at all for a visitor who asked for data saving, who
+   keeps the still. It plays for everyone else, reduced motion included:
+   the film is the site's first impression, by the owner's decision. It pauses while the hero is scrolled out
    of view, which saves battery and data, and picks up again on the way
    back. A browser may refuse to play (iOS in Low Power Mode does); the
    still stays. */
 function attach(video: HTMLVideoElement) {
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
     ?.saveData;
-  if (saveData || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (saveData) return;
 
   const observer = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting) video.play().catch(() => {});

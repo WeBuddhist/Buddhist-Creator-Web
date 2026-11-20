@@ -26,8 +26,8 @@ const tabShown = () => document.visibilityState === "visible";
    browser can afford it, the scene (scene.tsx, with three.js, fetched
    then) draws the medal turning slowly in its place, and the picture
    fades out as the first frame lands, from the same pose. It turns only
-   while it is on screen. With less motion asked for, or where WebGL is
-   not worth drawing (lib/worth-drawing.ts), or if the scene fails or runs
+   while it is on screen. It turns for everyone, reduced motion included,
+   by the owner's decision. Where WebGL is not worth drawing (lib/worth-drawing.ts), or if the scene fails or runs
    slowly, the picture stays. While the medal is off screen or the tab is
    hidden it is not drawn at all.
 
@@ -54,7 +54,7 @@ export function Medal({ className }: { className?: string }) {
     // Safari has no requestIdleCallback.
     const hasIdle = typeof window.requestIdleCallback === "function";
     let wait = 0;
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && worthDrawing()) {
+    if (worthDrawing()) {
       const start = () => setScene((now) => (now === "still" ? "loading" : now));
       wait = hasIdle ? window.requestIdleCallback(start, { timeout: 1500 }) : window.setTimeout(start, 300);
     }

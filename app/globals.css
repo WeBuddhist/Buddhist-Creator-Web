@@ -439,10 +439,8 @@ body:has([data-admin]) {
 [data-turns][data-flipped] [data-podium-face] {
   visibility: hidden;
 }
-@media (prefers-reduced-motion: no-preference) {
-  [data-turns]:not([data-live]) :is([data-podium-face], [data-podium-back]) {
-    transition: visibility 0s 350ms;
-  }
+[data-turns]:not([data-live]) :is([data-podium-face], [data-podium-back]) {
+  transition: visibility 0s 350ms;
 }
 
 /* The place's numeral on a podium card, raised out of the crown's metal:
@@ -547,17 +545,7 @@ body:has([data-admin]) {
    * anything whose animation never runs stays visible.
    */
   .reveal {
-    animation: stat-fade-in 300ms var(--ease-out) both;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal {
-      animation-name: stat-fade-in-up;
-    }
-  }
-  @keyframes stat-fade-in {
-    from {
-      opacity: 0;
-    }
+    animation: stat-fade-in-up 300ms var(--ease-out) both;
   }
   @keyframes stat-fade-in-up {
     from {
@@ -580,13 +568,10 @@ body:has([data-admin]) {
 /* A stroke drawn as if by a pen, once, as the page arrives: the mission
    meter's arrow to the creator's own share (app/(site)/creator-card/
    card-home.tsx). The path carries pathLength="1", so one unit is its whole
-   length; stagger parts with an inline animation-delay. With less motion
-   asked for, the stroke is simply there. */
-@media (prefers-reduced-motion: no-preference) {
-  .draw-in {
-    stroke-dasharray: 1;
-    animation: draw-in 650ms var(--ease-out) 400ms both;
-  }
+   length; stagger parts with an inline animation-delay. */
+.draw-in {
+  stroke-dasharray: 1;
+  animation: draw-in 650ms var(--ease-out) 400ms both;
 }
 @keyframes draw-in {
   from {
