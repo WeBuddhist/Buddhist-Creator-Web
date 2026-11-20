@@ -6,17 +6,19 @@ import { accentButton, ghostButton, label } from "@/components/convention/sectio
 import { CONVENTION_2027 } from "@/lib/convention-2027";
 import { SITE_NAME } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
-import heroPhoto from "@/public/photos/mahabodhi-gathering.webp";
+import { HeroVideo } from "@/components/hero-video";
+import heroPoster from "@/public/photos/hero-video-poster.webp";
 
-/* The opening sheet: the 2026 cohort under the Mahabodhi Temple, with the
-   name set in the sky above them: on two lines up to the tablet width,
-   where the frame is tall, and on one line from there, so it stays in the
-   sky and off the faces. The introduction and the two ways in sit in the
-   bottom corner and the next convention in the other, which leaves the
-   middle of the picture, where the teachers sit, uncovered. The sheet runs
-   up behind the floating header. The photograph is dimmed from the top,
-   where the name and the header sit, and from the bottom; the people in
-   the middle are left as they were shot. */
+/* The opening sheet: a short looping film of the convention, with the name
+   set large across the top: on two lines up to the tablet width, where the
+   frame is tall, and on one line from there. The introduction and the two
+   ways in sit in the bottom corner and the next convention in the other,
+   which leaves the middle of the picture, where the people are, uncovered.
+   The sheet runs up behind the floating header. The film's first frame is
+   laid underneath as a still, so the sheet is whole before the film loads
+   and stays whole for anyone it does not play for (see hero-video.tsx).
+   The picture is dimmed from the top, where the name and the header sit,
+   and from the bottom. */
 export function Hero() {
   return (
     <section
@@ -27,14 +29,15 @@ export function Hero() {
     >
       <div className="relative isolate flex min-h-[min(100svh,62rem)] flex-col overflow-hidden bg-sky-deep text-white">
         <Image
-          src={heroPhoto}
-          alt="Over a hundred creators, monastics and lay people seated together in front of the Mahabodhi Temple in Bodh Gaya, under a clear blue sky."
+          src={heroPoster}
+          alt="Creators, monastics and lay people at the Buddhist Creators Convention, laughing and cheering together on the steps of a temple."
           fill
           preload
           placeholder="blur"
           sizes="100vw"
-          className="-z-20 object-cover object-[50%_72%]"
+          className="-z-30 object-cover"
         />
+        <HeroVideo className="absolute inset-0 -z-20 size-full object-cover" />
         <div
           aria-hidden
           // Below the desktop width the introduction sits over the crowd, not
@@ -85,7 +88,7 @@ export function Hero() {
           </div>
 
           {/* The next convention, as a ticket pinned to the corner of the
-              photograph: gold, an ink outline, a perforated stub with the
+              picture: gold, an ink outline, a perforated stub with the
               arrow, and set a little off true from the desktop width, where
               it straightens under the pointer. The whole ticket is the
               link. It is set in Inter throughout, the one place the public site
