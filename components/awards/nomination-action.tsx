@@ -2,7 +2,7 @@ import { cache } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
-import { ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowDownIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import { accentButton, primaryButton } from "@/components/convention/section-heading";
 import { getCurrentUser } from "@/lib/auth";
@@ -57,16 +57,24 @@ type Tone = keyof typeof TONES;
 
 const note = "mt-4 max-w-md text-pretty text-sm leading-[1.5]";
 
-/** Pure, so it renders for a visitor and as the Suspense fallback. */
+/** Pure, so it renders for a visitor and as the Suspense fallback.
+
+    `toCategories` is for the opening, above the awards: there "Nominate a
+    creator" goes down the page to the categories, where each award opens
+    the form at its own place. Someone who has already nominated still goes
+    to the form, to see or change what they sent. */
 export function NominationCallToAction({
   sent = null,
   align = "start",
   tone = "dark",
+  toCategories = false,
 }: {
   sent?: Sent;
   align?: "start" | "center";
   tone?: Tone;
+  toCategories?: boolean;
 }) {
+  const down = toCategories && !sent;
   const centered = align === "center";
   const colours = TONES[tone];
   if (!AWARDS_2027.open && !sent) {
@@ -87,16 +95,28 @@ export function NominationCallToAction({
         size="pill"
         nativeButton={false}
         className={colours.button}
-        render={<Link href={AWARDS_2027.nominatePath} />}
+        render={down ? <a href="#categories" /> : <Link href={AWARDS_2027.nominatePath} />}
       >
         {sent ? (AWARDS_2027.open ? "View or change your nominations" : "View your nominations") : AWARDS_PAGE.action}
-        <ArrowRightIcon data-icon="inline-end" weight="bold" />
+        {down ? (
+          <ArrowDownIcon data-icon="inline-end" weight="bold" />
+        ) : (
+          <ArrowRightIcon data-icon="inline-end" weight="bold" />
+        )}
       </Button>
     </div>
   );
 }
 
-export async function NominationAction({ align, tone }: { align?: "start" | "center"; tone?: Tone }) {
+export async function NominationAction({
+  align,
+  tone,
+  toCategories,
+}: {
+  align?: "start" | "center";
+  tone?: Tone;
+  toCategories?: boolean;
+}) {
   const sent = await getSent();
-  return <NominationCallToAction sent={sent} align={align} tone={tone} />;
+  return <NominationCallToAction sent={sent} align={align} tone={tone} toCategories={toCategories} />;
 }

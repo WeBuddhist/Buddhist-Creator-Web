@@ -31,7 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         label: "Awards 2027 nominations",
         href: "/convention/2027/awards",
-        description: "Nominate creators for eight awards, in three categories.",
+        description: "Nominate creators for eight awards, in two categories.",
       },
       {
         label: "Buddhist Creators Convention 2026",

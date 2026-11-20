@@ -74,7 +74,7 @@ export type Award = {
 export type AccountField = { label: string; placeholder: string };
 
 export type AwardGroup = {
-  id: "a" | "b" | "c";
+  id: "a" | "b";
   letter: string;
   title: string;
   description?: string;
@@ -146,7 +146,7 @@ export const AWARD_GROUPS: readonly AwardGroup[] = [
     id: "b",
     letter: "B",
     title: "Best Art",
-    description: "Creators who share the Dharma through music, art and writing.",
+    description: "Creators who share the Dharma through music, art, writing and photography.",
     awards: [
       {
         slug: "best-music",
@@ -185,14 +185,6 @@ export const AWARD_GROUPS: readonly AwardGroup[] = [
         account: SOCIAL_LINK,
         credit: { kind: "new" },
       },
-    ],
-  },
-  {
-    id: "c",
-    letter: "C",
-    title: "Best Photography",
-    description: "Photographers who capture Buddhist life and devotion.",
-    awards: [
       {
         slug: "best-photography",
         title: "Best Photography",
@@ -251,7 +243,7 @@ export const AWARDS_PAGE = {
   categories: {
     kicker: "The categories",
     /** The second part takes the italic. */
-    title: ["Three categories,", "eight awards"],
+    title: ["Two categories,", "eight awards"],
     description: "Choose an award to nominate someone for it.",
   },
   closing: {

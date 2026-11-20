@@ -24,8 +24,8 @@ export const metadata: Metadata = {
    3. The awards, on a sky-deep band wider than the page's usual column:
       each category under its letter, its awards as posters, each with
       what it is for under its name (components/awards/award-card.tsx).
-      Category A's four sit in a row; B's three and C's one take the same
-      columns below.
+      Category A's four sit in a row, and B's four in the same columns
+      below.
    4. The cyan closing band with the action again.
 
    The action reads the session, so it streams in behind Suspense with the
@@ -57,8 +57,8 @@ export default function AwardsPage() {
             {AWARDS_PAGE.title[0]} <em className="italic text-brand-cyan">{AWARDS_PAGE.title[1]}</em>
           </h1>
           <div className="mt-7">
-            <Suspense fallback={<NominationCallToAction align="center" tone="light" />}>
-              <NominationAction align="center" tone="light" />
+            <Suspense fallback={<NominationCallToAction align="center" tone="light" toCategories />}>
+              <NominationAction align="center" tone="light" toCategories />
             </Suspense>
           </div>
         </div>
