@@ -50,23 +50,41 @@ type NavItem = {
   external?: true;
 };
 
-const WORKSPACE: NavItem[] = [
+/* The dashboard's own sections, in three groups drawn as a tree: a label,
+   and under it its links hanging from a guide line. Always open, nothing
+   folds, so every section stays one click away. */
+const WORKSPACE: { label: string; items: NavItem[] }[] = [
   {
-    href: "/admin",
-    label: "Applications",
-    icon: TrayIcon,
-    match: (p) => p === "/admin" || p.startsWith("/admin/applications"),
+    label: "Convention 2027",
+    items: [
+      {
+        href: "/admin",
+        label: "Applications",
+        icon: TrayIcon,
+        match: (p) => p === "/admin" || p.startsWith("/admin/applications"),
+      },
+      { href: "/admin/nominations", label: "Award nominations", icon: TrophyIcon },
+    ],
   },
   {
-    href: "/admin/creator-cards",
-    label: "Creator cards",
-    icon: IdentificationCardIcon,
-    match: (p) => p.startsWith("/admin/creator-cards") && !p.startsWith(CARD_CLAIMS),
+    label: "Creators",
+    items: [
+      {
+        href: "/admin/creator-cards",
+        label: "Creator cards",
+        icon: IdentificationCardIcon,
+        match: (p) => p.startsWith("/admin/creator-cards") && !p.startsWith(CARD_CLAIMS),
+      },
+      { href: CARD_CLAIMS, label: "Card claims", icon: SealCheckIcon },
+    ],
   },
-  { href: CARD_CLAIMS, label: "Card claims", icon: SealCheckIcon },
-  { href: "/admin/nominations", label: "Award nominations", icon: TrophyIcon },
-  { href: "/admin/suggestions", label: "Suggestions", icon: ChatTeardropTextIcon },
-  { href: "/admin/users", label: "Users & roles", icon: UsersThreeIcon, superadmin: true },
+  {
+    label: "Resources",
+    items: [
+      { href: "/admin/suggestions", label: "Suggestions", icon: ChatTeardropTextIcon },
+      { href: "/admin/users", label: "Users & roles", icon: UsersThreeIcon, superadmin: true },
+    ],
+  },
 ];
 
 const SITE: NavItem[] = [
@@ -85,32 +103,48 @@ const row = cn(
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
+/* A labelled group of links. As a tree, the links sit on a guide line that
+   drops from the label's leading edge, and the current link darkens its own
+   stretch of that line; flat, they sit flush under the label. A group the
+   reader has no link in is left out. */
 function NavGroup({
   label,
   items,
   user,
   pathname,
+  tree,
   className,
 }: {
   label: string;
   items: NavItem[];
   user: CurrentUser | null;
   pathname: string;
+  tree?: boolean;
   className?: string;
 }) {
   const shown = items.filter((item) => !item.superadmin || hasRole(user, "superadmin"));
+  if (shown.length === 0) return null;
   const id = `admin-nav-${label.toLowerCase().replace(/\W+/g, "-")}`;
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       <p id={id} className="px-3 pt-4 pb-1 text-xs font-medium text-muted-foreground">
         {label}
       </p>
-      <ul aria-labelledby={id} className="flex flex-col gap-0.5">
+      <ul
+        aria-labelledby={id}
+        className={cn("flex flex-col gap-0.5", tree && "ms-3 border-s border-border ps-2")}
+      >
         {shown.map((item) => {
           const active = !item.external && (item.match ? item.match(pathname) : pathname.startsWith(item.href));
           const ItemIcon = item.icon;
           return (
-            <li key={item.href}>
+            <li key={item.href} className={cn(tree && "relative")}>
+              {tree && active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-y-1.5 -start-[calc(0.5rem+1px)] w-px rounded-full bg-foreground"
+                />
+              )}
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
@@ -163,7 +197,9 @@ function SidebarContent({ user, trailing }: { user: CurrentUser | null; trailing
           the foot, just above the account, so the dashboard's own sections
           come first and the way out is where a hand expects it. */}
       <nav aria-label="Dashboard" className="flex flex-1 flex-col overflow-y-auto overscroll-contain px-3 pb-4">
-        <NavGroup label="Convention 2027" items={WORKSPACE} user={user} pathname={pathname} />
+        {WORKSPACE.map((group) => (
+          <NavGroup key={group.label} tree label={group.label} items={group.items} user={user} pathname={pathname} />
+        ))}
         <NavGroup label="Site" items={SITE} user={user} pathname={pathname} className="mt-auto" />
       </nav>
 
@@ -285,6 +321,8 @@ function Breadcrumb() {
       ? [{ label: "Award nominations" }]
     : pathname.startsWith("/admin/suggestions")
       ? [{ label: "Suggestions" }]
+      : pathname.startsWith(CARD_CLAIMS)
+      ? [{ label: "Card claims" }]
       : pathname === "/admin/creator-cards/new"
       ? [{ label: "Creator cards", href: "/admin/creator-cards" }, { label: "Add a creator" }]
       : pathname.startsWith("/admin/creator-cards/")
