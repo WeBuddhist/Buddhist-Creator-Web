@@ -14,12 +14,13 @@ import logoMark from "@/public/logo-mark.png";
    band's own colour with white text over a photograph, a cyan sheet or the
    footer (HeaderTone, and the tokens in globals.css). The strip it floats in lets clicks
    through; only the bar takes them. On a phone there is no room to float:
-   the bar runs edge to edge from the very top, square, with a line along
-   its foot, and reaches up under the notch. */
+   the bar runs edge to edge from the very top and reaches up under the
+   notch, with no surface, border or blur of its own, so the mark and the
+   buttons sit straight on the page. */
 export function SiteHeader() {
   return (
     <header className="site-header pointer-events-none sticky top-0 z-40 w-full sm:px-3 sm:pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]">
-      <div className="pointer-events-auto mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-(--header-border) bg-(--header-surface) transition-[background-color,border-color] duration-200 ease-hover ps-2.5 pe-2 shadow-[0_1px_2px_rgb(18_34_42/0.04),0_6px_20px_-12px_rgb(18_34_42/0.14)] max-sm:shadow-none backdrop-blur-md reduced-transparency:bg-(--header-solid) reduced-transparency:backdrop-blur-none max-sm:h-[calc(3.5rem+env(safe-area-inset-top,0px))] max-sm:rounded-none max-sm:border-x-0 max-sm:border-t-0 max-sm:px-3 max-sm:pt-[env(safe-area-inset-top,0px)] sm:ps-3">
+      <div className="pointer-events-auto mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-(--header-border) bg-(--header-surface) transition-[background-color,border-color] duration-200 ease-hover ps-2.5 pe-2 shadow-[0_1px_2px_rgb(18_34_42/0.04),0_6px_20px_-12px_rgb(18_34_42/0.14)] max-sm:shadow-none backdrop-blur-md reduced-transparency:bg-(--header-solid) reduced-transparency:backdrop-blur-none max-sm:h-[calc(3.5rem+env(safe-area-inset-top,0px))] max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:backdrop-blur-none max-sm:reduced-transparency:bg-transparent max-sm:px-3 max-sm:pt-[env(safe-area-inset-top,0px)] sm:ps-3">
         <Link
           href="/"
           aria-label={`${SITE_NAME} home`}
