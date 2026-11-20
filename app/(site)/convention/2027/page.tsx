@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRightIcon,
@@ -10,7 +9,7 @@ import {
   SparkleIcon,
   VideoCameraIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import { AWARD_PHOTOS } from "@/components/awards/photos";
+import { AwardsPointer } from "@/components/awards/awards-pointer";
 import { ConventionFlyer } from "@/components/convention-flyer";
 import {
   ClosingAction,
@@ -18,11 +17,10 @@ import {
   RegisterCallToAction,
   RegistrationAction,
 } from "@/components/convention/registration-action";
-import { SectionHeading, card, cardInner, label, panel, photo } from "@/components/convention/section-heading";
+import { SectionHeading, card, cardInner, panel } from "@/components/convention/section-heading";
 import { ctaLink } from "@/components/events/event-card";
 import { InView } from "@/components/home/in-view";
 import { Button } from "@/components/ui/button";
-import { AWARDS_2027 } from "@/lib/awards-2027";
 import { cn } from "@/lib/utils";
 import {
   BRING_HOME,
@@ -31,6 +29,7 @@ import {
   IN_STORE,
   ORGANISER,
   REGISTRATION,
+  REGISTRATION_ID,
   SUPPORTER,
   WELCOME,
   type ProgrammeItem,
@@ -64,7 +63,8 @@ const ICONS: Record<ProgrammeItem["id"], typeof MicrophoneStageIcon> = {
       the welcome on the right, closing on a link to last year's report.
    2. Registration, one wide panel: the facts a reader came for as a
       labelled list, and beside them the one action (applying, or for
-      someone with an application, getting back to it).
+      someone with an application, getting back to it). The awards card
+      follows close under it, the page's other action.
    3. What the four days hold, as a plain grid of five.
 
    The invitation to partners and the closing band follow. Both actions
@@ -118,7 +118,11 @@ export default function Convention2027Page() {
           {/* Registration: the site's white card, split in two.
               The facts read first; the action sits beside them from `lg`,
               under them before that, with a hairline between the two. */}
-          <section aria-labelledby="registration-title" className={cn(card, "mt-16 lg:mt-24")}>
+          <section
+            id={REGISTRATION_ID}
+            aria-labelledby="registration-title"
+            className={cn(card, "mt-16 scroll-mt-6 lg:mt-24")}
+          >
             <div
               className={cn(
                 cardInner,
@@ -172,6 +176,11 @@ export default function Convention2027Page() {
             </div>
           </section>
 
+          {/* The awards, beside registration rather than under the
+              programme: the other thing a visitor can do here, so it sits
+              where they still are. Close to the card above, as its pair. */}
+          <AwardsPointer id="awards-pointer-title" className="mt-6 lg:mt-8" />
+
           {/* The programme: five parts of equal weight, so a plain grid
               rather than a sequence. Each sits under a hairline with its
               mark in the brand cyan, and they arrive one after another
@@ -210,48 +219,6 @@ export default function Convention2027Page() {
               </ul>
             </InView>
           </section>
-        </div>
-      </section>
-
-      {/* The awards: last year's Influencer of the Year on stage beside the
-          invitation to nominate, leading to the awards page. */}
-      <section aria-labelledby="awards-pointer-title" className="bg-background">
-        <div className="mx-auto w-full max-w-6xl px-5 pt-24 sm:px-6 lg:pt-32">
-          <div className={card}>
-            <div className={cn(cardInner, "grid gap-4 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10")}>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-paper-deep">
-                <Image
-                  src={AWARD_PHOTOS["influencer-of-the-year"].src}
-                  alt={AWARD_PHOTOS["influencer-of-the-year"].alt}
-                  placeholder="blur"
-                  sizes="(min-width: 1024px) 32rem, 100vw"
-                  className={cn("size-full object-cover", photo)}
-                />
-              </div>
-              <div className="flex flex-col items-start justify-center px-1 pb-3 sm:px-2 lg:py-4">
-                <p className={cn(label, "text-brand-cyan")}>{AWARDS_2027.title}</p>
-                <h2
-                  id="awards-pointer-title"
-                  className="mt-4 text-balance font-display text-4xl leading-[1.06] text-foreground sm:text-5xl"
-                >
-                  {AWARDS_2027.open ? "Nominations are open" : "The awards"}
-                </h2>
-                <p className="mt-5 max-w-[46ch] text-pretty text-lg leading-[1.6] text-muted-foreground">
-                  Eight awards in three categories, from Influencer of the Year to Best Photography. Tell us which
-                  creators deserve them.
-                </p>
-                <Button
-                  size="pill"
-                  nativeButton={false}
-                  className="mt-7"
-                  render={<Link href={AWARDS_2027.path} />}
-                >
-                  See the awards
-                  <ArrowRightIcon data-icon="inline-end" weight="bold" />
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 

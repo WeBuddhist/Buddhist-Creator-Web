@@ -105,7 +105,7 @@ async function CardsList({ searchParams }: { searchParams: PageProps<"/admin/cre
           for a decision.
         </p>
       )}
-      {/* The monthly reading of follower counts says here when a link gave
+      {/* The weekly reading of follower counts says here when a link gave
           it nothing, which is most often a link that is wrong. */}
       {unread.length > 0 && (
         <p className="mb-4 text-sm text-muted-foreground">

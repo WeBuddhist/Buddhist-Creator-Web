@@ -90,6 +90,11 @@ export const CLOSING = {
   body: "Registration is open. It takes just 10 minutes.",
 } as const;
 
+/** The convention's page, and the id of its registration card, where the
+    flyer's status leads. */
+export const CONVENTION_PATH = "/convention/2027";
+export const REGISTRATION_ID = "registration";
+
 export const REGISTRATION = {
   title: "Registration is open",
   /** Flip to false to take the form offline: the register button is then

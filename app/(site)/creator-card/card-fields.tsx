@@ -372,7 +372,8 @@ export function TaglineField({
 
    A place a follower count is kept for takes the full row, the link with
    its count beside it (under it on a phone). The count is not an answer:
-   nobody types it. It is read from the link every month, and shown here
+   nobody types it. It is read from the link every week (every three
+   months on Douyin), and shown here
    with a line saying where that reading stands. */
 export function LinkField({
   social,

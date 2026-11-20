@@ -131,11 +131,11 @@ function audienceOf(card: FormCard | null, place: CountedSocial, typed: string) 
   const figure = card.followers[place];
   const count = figure == null ? null : formatCount(figure);
   const check = card.checks[place];
-  if (check?.status === "ok") return { count, note: CARD_READING.lastRead(formatDate(check.checkedAt)) };
+  if (check?.status === "ok") return { count, note: CARD_READING.lastRead(place, formatDate(check.checkedAt)) };
   if (check?.status === "not_found" || check?.status === "unreadable") return { count, note: CARD_READING.failed };
   // Only an approved card's links are read.
   if (card.status !== "approved") return { count, note: CARD_READING.onApproval };
-  return { count, note: count ? CARD_READING.monthly : CARD_READING.soon };
+  return { count, note: count ? CARD_READING.steady(place) : CARD_READING.soon };
 }
 
 /* What this visit has done about the photo and not yet sent: nothing, a
@@ -418,7 +418,7 @@ export function CardForm({
 
         <Section
           title="Where to find you"
-          description={`Add the link for each place you publish. One is enough; add as many as you use. For ${COUNTED_PLACES}, we read how many people follow you from the link itself, every month, so there is no number to type.`}
+          description={`Add the link for each place you publish. One is enough; add as many as you use. For ${COUNTED_PLACES}, we read how many people follow you from the link itself, every week (every three months on Douyin), so there is no number to type.`}
           required
         >
           {/* The links are one answer in several parts: the group carries

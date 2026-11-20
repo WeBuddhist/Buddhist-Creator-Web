@@ -67,7 +67,8 @@ export const CARD_CONTENT_TYPES = CONTENT_TOPICS;
    those the card also keeps how many people follow the creator there,
    under the name the place itself gives them. Creators are ranked on those
    numbers added together. Nobody types them: they are read from the place
-   itself every month (lib/follower-refresh.ts). */
+   itself every week, and every three months on Douyin
+   (lib/follower-refresh.ts). */
 export const CARD_SOCIALS = [
   {
     value: "youtube",
@@ -354,11 +355,15 @@ export const CARD_FORM = {
   contact: "hello@buddhistcreators.com",
 } as const;
 
+/** How often a place's count is read (lib/follower-refresh.ts): Douyin's,
+    which costs more to read, every three months, and the rest every week. */
+export const readingEvery = (place: CountedSocial) => (place === "douyin" ? "every three months" : "every week");
+
 /* What a counted link's reading says, beside the link on the form and on
    the creator's own page. */
 export const CARD_READING = {
-  monthly: "Updated every month.",
-  lastRead: (date: string) => `Updated every month. Last read ${date}.`,
+  steady: (place: CountedSocial) => `Updated ${readingEvery(place)}.`,
+  lastRead: (place: CountedSocial, date: string) => `Updated ${readingEvery(place)}. Last read ${date}.`,
   failed: "We could not read this account. Check that the link is your public profile.",
   onApproval: "We read this once your card is approved.",
   soon: "We will read this within a day.",
@@ -429,7 +434,8 @@ export const CARD_HOME = {
   channels: {
     eyebrow: "Your channels",
     title: "Where your followers are",
-    description: "We read each count from the channel itself, once a month. Nobody types a number in.",
+    description:
+      "We read each count from the channel itself: every week, and every three months on Douyin. Nobody types a number in.",
     lastRead: "Last read",
     uncounted: "Not counted for the leaderboard",
     total: "All channels",

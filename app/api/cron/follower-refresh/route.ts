@@ -11,8 +11,8 @@ import { refreshDueAccounts } from "@/lib/follower-refresh";
    workflow calls again until nothing is. That keeps each request well
    inside what a proxy in front of the site will wait for.
 
-   Run by hand, the workflow can ask for every link to be read again now
-   rather than only what is due. It then sends the moment it was started,
+   Run by hand, the workflow can ask for every link but the Douyin ones to
+   be read again now rather than only what is due. It then sends the moment it was started,
    `{"rereadBefore": "2026-11-18T10:00:00Z"}`, with every call.
 
    The reply is totals only. The repository is public and so are its

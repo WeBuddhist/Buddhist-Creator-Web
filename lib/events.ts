@@ -11,6 +11,8 @@ import sakaDawa from "@/public/events/saka-dawa.webp";
 import conventionHero from "@/public/convention/2026/hero.webp";
 import lhababDuchen from "@/public/events/lhabab-duchen.webp";
 import buddhaPurnima from "@/public/events/buddha-purnima.webp";
+import awards2027 from "@/public/events/awards-2027.webp";
+import { AWARDS_2027 } from "@/lib/awards-2027";
 
 export type EventEntry = {
   title: string;
@@ -58,6 +60,23 @@ export const EVENTS_PAGE = {
 
 /* Figures below are placeholders until the real numbers are in. */
 export const ONGOING_EVENTS: EventEntry[] = [
+  /* Listed while nominations are open; AWARDS_2027.open closes them. */
+  ...(AWARDS_2027.open
+    ? [
+        {
+          title: "Awards 2027 nominations",
+          location: "Online",
+          description:
+            "Eight awards will be presented at the convention in Nagpur. Nominate the creators who inspire you, one person in each category.",
+          href: AWARDS_2027.path,
+          cta: "See the awards",
+          image: {
+            src: awards2027,
+            alt: "The gold medal of the Buddhist Creators Convention Awards, a lion standing on its face",
+          },
+        } satisfies EventEntry,
+      ]
+    : []),
   {
     title: "Bodhisattva Challenge",
     date: { label: "Daily, through 2026", start: "2026-01-01", end: "2026-12-31" },

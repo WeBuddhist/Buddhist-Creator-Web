@@ -374,13 +374,16 @@ export const creatorCardClaims = pgTable(
 );
 
 /* A follower count as it was read from the place itself: one row for each
-   card, counted place and month (lib/follower-refresh.ts). The rows are
+   card, counted place and week (lib/follower-refresh.ts). The rows are
    three things at once. They are the history a ranking by growth is worked
-   out from; they say what became of the latest attempt; and a row for this
-   month is what marks an account as done for the month.
+   out from; they say what became of the latest attempt; and the latest row
+   is what marks an account as read for now: for the week, or for Douyin,
+   which is read every three months, for the quarter.
 
-   `month` is the first day of the month, in UTC, so a second attempt
-   later in the month writes to the same row. `link_key` is the card's link
+   `week` is the Monday the week begins on, in UTC, so a second attempt
+   later in the week writes to the same row. A place read less often than
+   weekly has no row in the weeks between; its figure then is its latest
+   one. `link_key` is the card's link
    as it is compared (socialLinkKey in lib/creator-card.ts): when a card's
    link changes, its earlier rows are another account's, and two figures
    are only ever set beside each other when their keys match.
@@ -395,26 +398,26 @@ export const creatorFollowerChecks = pgTable(
       .references(() => creatorCards.id, { onDelete: "cascade" }),
     /** A COUNTED_SOCIALS slug. */
     platform: text("platform").$type<CountedSocial>().notNull(),
-    month: date("month", { mode: "string" }).notNull(),
+    week: date("week", { mode: "string" }).notNull(),
     linkKey: text("link_key").notNull(),
     status: followerCheckStatus("status").notNull(),
     /** Null unless the status is ok. */
     followers: integer("followers"),
     // The account as the place itself names it. The id outlasts a change
-    // of handle; for YouTube it is also what the monthly reading asks by.
+    // of handle; for YouTube it is also what the weekly reading asks by.
     externalId: text("external_id"),
     handle: text("handle"),
     /** The latest attempt, whatever came of it. */
     checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    primaryKey({ name: "creator_follower_checks_pk", columns: [table.cardId, table.platform, table.month] }),
-    index("creator_follower_checks_month_idx").on(table.month),
+    primaryKey({ name: "creator_follower_checks_pk", columns: [table.cardId, table.platform, table.week] }),
+    index("creator_follower_checks_week_idx").on(table.week),
     check(
       "creator_follower_checks_platform_check",
       sql`${table.platform} in ('youtube', 'instagram', 'tiktok', 'facebook', 'douyin')`,
     ),
-    check("creator_follower_checks_month_check", sql`extract(day from ${table.month}) = 1`),
+    check("creator_follower_checks_week_check", sql`extract(isodow from ${table.week}) = 1`),
     check(
       "creator_follower_checks_followers_check",
       sql`(${table.status} = 'ok') = (${table.followers} is not null) and ${table.followers} >= 0`,

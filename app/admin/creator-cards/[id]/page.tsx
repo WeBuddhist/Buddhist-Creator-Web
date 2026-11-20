@@ -45,7 +45,8 @@ const link =
    The links are the part most worth opening before approving, so each is
    spelled out in full rather than hidden behind an icon. Under each link
    a count is kept for is its follower count, which is read from that link
-   every month, and what came of the latest reading. */
+   every week (Douyin every three months), and what came of the latest
+   reading. */
 const CHECK_NOTE: Record<FollowerCheckStatus, string> = {
   ok: "Read from the link",
   not_found: "No account was found at this link. Tried",

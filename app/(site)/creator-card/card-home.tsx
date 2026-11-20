@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 /* The creator's own page, drawn from what lib/creator-home.ts hands over.
 
    A creator comes here to see themself, so the page opens on where they
-   stand: their place on the leaderboard as the title, what the month did
+   stand: their place on the leaderboard as the title, what the week did
    to it, and beside it their card, the white one of the leaderboard's
    collectible cards. Under the title is their part in the mission: their
    followers inside everybody the network reaches, on the way to the two
@@ -302,10 +302,10 @@ function StatusLine({ status }: { status: CreatorCardStatus }) {
   );
 }
 
-/** What the month did to the creator's place, as a sentence. */
+/** What the week did to the creator's place, as a sentence. */
 function Moved({ standing }: { standing: NonNullable<CardHome["standing"]> }) {
-  const since = "since last month’s reading";
-  if (standing.fresh) return <>This is your first month on the leaderboard.</>;
+  const since = "since last week’s reading";
+  if (standing.fresh) return <>This is your first week on the leaderboard.</>;
   if (standing.climbed === null) return <>Your place is counted across all your channels together.</>;
   if (standing.climbed === 0) return <>You have held your place {since}.</>;
   const places = Math.abs(standing.climbed);
@@ -320,7 +320,7 @@ function Moved({ standing }: { standing: NonNullable<CardHome["standing"]> }) {
   );
 }
 
-/* The figures under the title: the audience, what the month added to it,
+/* The figures under the title: the audience, what the week added to it,
    and the place among the creators of the same country. One, two or three
    of them, as the card has them. */
 function Figures({ home }: { home: CardHome }) {
@@ -329,7 +329,7 @@ function Figures({ home }: { home: CardHome }) {
   ];
   if (home.gain) {
     cells.push({
-      name: "Since last month",
+      name: "Since last week",
       value: `${home.gain > 0 ? "+" : "−"}${formatCount(Math.abs(home.gain))}`,
       note: plural(Math.abs(home.gain), "follower", "followers"),
     });
@@ -625,7 +625,7 @@ function Channels({ home }: { home: CardHome }) {
 }
 
 /* One of the card's links: where it is, the figure read there and what
-   the month did to it, and its place on that channel's own board. On a
+   the week did to it, and its place on that channel's own board. On a
    phone the figures sit under the link; from md they trail the row. */
 function ChannelRow({ channel, status, first }: { channel: HomeChannel; status: CreatorCardStatus; first: boolean }) {
   const PlaceIcon = SOCIAL_ICON[channel.place];

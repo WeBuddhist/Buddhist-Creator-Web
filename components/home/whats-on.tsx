@@ -37,7 +37,14 @@ export function WhatsOn() {
           </Link>
         </div>
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3 lg:gap-6">
+        {/* Four cards would leave one alone under a row of three: two
+            rows of two, then one row of four once each is wide enough. */}
+        <ul
+          className={cn(
+            "mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:gap-6",
+            events.length === 4 ? "xl:grid-cols-4" : "lg:grid-cols-3",
+          )}
+        >
           {events.map((event) => (
             <EventCard key={event.title} event={event} />
           ))}

@@ -1,7 +1,10 @@
 import Image from "next/image";
-import { tag } from "@/components/convention/section-heading";
+import Link from "next/link";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { ctaLink } from "@/components/events/event-card";
+import { AWARDS_2027 } from "@/lib/awards-2027";
 import { cn } from "@/lib/utils";
-import { CONVENTION_2027 } from "@/lib/convention-2027";
+import { CONVENTION_2027, CONVENTION_PATH, REGISTRATION_ID } from "@/lib/convention-2027";
 import logo from "@/public/logo.jpg";
 import nagalokaFooter from "@/public/nagaloka-footer.webp";
 
@@ -65,11 +68,41 @@ export function ConventionFlyer({ as: Heading = "h2", first }: ConventionFlyerPr
           </p>
         )}
 
-        {/* A status, not a control: a quiet label with a gold light. */}
-        <p className={cn(tag, "mt-7 gap-2 bg-card px-3.5 py-2 text-xs text-foreground")}>
-          <span aria-hidden className="size-2 rounded-full bg-saffron" />
-          {CONVENTION_2027.status}
-        </p>
+        {/* The status with its gold light, and the way to registration:
+            it leads to the registration card on the convention's page,
+            which says what applying takes before the form asks for a
+            sign-in. Framed in the creator card's double border (a muted
+            frame with a ring, the white pill inside with its own), and
+            the arrow marks it as a link. */}
+        <Link
+          href={`${CONVENTION_PATH}#${REGISTRATION_ID}`}
+          className="group/status mt-7 inline-flex rounded-full border border-transparent bg-muted/40 p-1 shadow-ring transition-[background-color,scale] duration-150 ease-out hover:bg-muted motion-safe:active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-transparent bg-card px-3.5 py-2 text-xs font-semibold uppercase leading-none tracking-[0.1em] text-foreground shadow-border">
+            <span aria-hidden className="size-2 rounded-full bg-saffron" />
+            {CONVENTION_2027.status}
+            <span className="sr-only">: how to register</span>
+            <ArrowRightIcon
+              aria-hidden
+              weight="bold"
+              className="size-3.5 text-brand-cyan transition-transform duration-150 ease-hover motion-safe:group-hover/status:translate-x-0.5"
+            />
+          </span>
+        </Link>
+
+        {/* The awards are given at the convention, so while nominations are
+            open the flyer points to them under its status, on the homepage
+            and at the head of the convention's own page. */}
+        {AWARDS_2027.open && (
+          <Link href={AWARDS_2027.path} className={cn(ctaLink, "mt-5 text-brand-cyan")}>
+            Nominate creators for the 2027 awards
+            <ArrowRightIcon
+              aria-hidden
+              weight="bold"
+              className="size-4 transition-transform duration-150 ease-hover motion-safe:group-hover/link:translate-x-0.5"
+            />
+          </Link>
+        )}
       </div>
 
       {/* Full-bleed illustration, bottom-aligned so the ground meets whatever

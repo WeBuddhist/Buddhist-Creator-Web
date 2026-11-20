@@ -2,17 +2,17 @@ import { ArrowDownIcon, ArrowUpIcon, CaretDownIcon, CaretUpIcon } from "@phospho
 import { formatCount, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-/* What a month did to a creator, as the leaderboard and the creator's own
+/* What a week did to a creator, as the leaderboard and the creator's own
    page both show it. Up is green and down is red, and each has its sign
    and its words for a screen reader, so colour is never the only carrier.
 
    No "use client": the leaderboard draws these in the browser and the
    creator's page on the server. */
 
-/* The places a creator has gained or lost on a board since last month's
+/* The places a creator has gained or lost on a board since last week's
    reading: a filled triangle and the number, green for up and red for
    down. "New" for a first appearance, a dash for the same place, and
-   nothing when last month has no place to compare with. `words` spells
+   nothing when last week has no place to compare with. `words` spells
    the unit out ("2 places"), for where no column head says it. */
 export function RankMove({
   row,
@@ -25,7 +25,7 @@ export function RankMove({
   if (row.fresh) {
     return (
       <span className="text-[0.6875rem] leading-[1.3] font-semibold tracking-[0.08em] text-brand-cyan uppercase">
-        New<span className="sr-only"> on the board this month</span>
+        New<span className="sr-only"> on the board this week</span>
       </span>
     );
   }
@@ -38,7 +38,7 @@ export function RankMove({
         ) : (
           <>
             <span aria-hidden>–</span>
-            <span className="sr-only">Same place as last month</span>
+            <span className="sr-only">Same place as last week</span>
           </>
         )}
       </span>
@@ -60,12 +60,12 @@ export function RankMove({
       <span className="sr-only">{up ? "Up " : "Down "}</span>
       {places}
       {words ? unit : <span className="sr-only">{unit}</span>}
-      <span className="sr-only"> since last month</span>
+      <span className="sr-only"> since last week</span>
     </span>
   );
 }
 
-/* How far a figure has moved since last month's reading: followers gained
+/* How far a figure has moved since last week's reading: followers gained
    in green, lost in red. The arrow and the words for a screen reader say
    which, so colour is never the only sign. */
 export function Change({ gain }: { gain: number }) {
@@ -81,7 +81,7 @@ export function Change({ gain }: { gain: number }) {
       <Arrow aria-hidden weight="bold" className="size-3.5" />
       <span className="sr-only">{up ? "Up " : "Down "}</span>
       {formatCount(Math.abs(gain))}
-      <span className="sr-only"> followers since last month</span>
+      <span className="sr-only"> followers since last week</span>
     </p>
   );
 }

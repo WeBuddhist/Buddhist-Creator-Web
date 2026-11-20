@@ -24,6 +24,7 @@ const EXPLORE: FooterLink[] = [
   { label: "Get Involved", href: "/get-involved" },
   { label: "Program", href: "/program" },
   { label: "Convention 2027", href: "/convention/2027" },
+  { label: "Awards 2027", href: "/convention/2027/awards" },
   { label: "Convention 2026", href: "/convention/2026" },
   { label: "Creators", href: "/creators" },
   { label: "Team", href: "/team" },

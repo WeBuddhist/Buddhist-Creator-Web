@@ -1,13 +1,15 @@
 name: Follower refresh
 
 # Reads the creators' follower counts (lib/follower-refresh.ts). It runs
-# every day: on the first of the month every account is due, on the other
+# every day: on the first run of a week (Monday, UTC) every YouTube,
+# Instagram, TikTok and Facebook account is due, and on the first run of
+# December, March, June and September every Douyin account; on the other
 # days only new links and the ones that failed.
 #
-# Run by hand ("Run workflow"), it can read every account again now, with
-# the box ticked. That spends a SocialCrawl credit for each Instagram,
-# TikTok and Facebook link and six for each Douyin link, so it is off
-# unless asked for.
+# Run by hand ("Run workflow"), it can read every account but the Douyin
+# ones again now, with the box ticked. That spends a SocialCrawl credit
+# for each Instagram, TikTok and Facebook link, so it is off unless asked
+# for.
 #
 # Two repository secrets:
 #   FOLLOWER_REFRESH_URL  the full address of /api/cron/follower-refresh
@@ -22,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       all:
-        description: "Read every account again now (one SocialCrawl credit per Instagram, TikTok and Facebook link, six per Douyin link)"
+        description: "Read every account but the Douyin ones again now (one SocialCrawl credit per Instagram, TikTok and Facebook link)"
         type: boolean
         default: false
 

@@ -15,7 +15,7 @@
    On the white card `mid` is the ground of its whole face, the palest
    cyan, and `deep` the line its embroidery is edged with. On that ground
    ink measures 13.1:1, ink at 75% 6.4:1, brand cyan 5.0:1 and the green
-   and red of a month's change 5.3:1 and 5.4:1. */
+   and red of a week's change 5.3:1 and 5.4:1. */
 export const TIERS = [
   { metal: "gold", deep: "#b0760b", mid: "#f2b130", light: "#fbdc8e", pale: "#fff6dc", rim: "#f2b130", sheen: "#f6c350" },
   { metal: "silver", deep: "#6f7a87", mid: "#a3adb8", light: "#d9dfe6", pale: "#f5f7f9", rim: "#a3adb8", sheen: "#cdd4dc" },

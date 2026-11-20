@@ -109,7 +109,7 @@ screen. The form is shown only to make or change a card. Sending it ends on
 card itself (a collectible card like the leaderboard's top three, drawn in
 WebGL where the browser can, which turns over on a click to a brand-cyan
 back with the lion), where the review stands, the creator's place
-on the leaderboard and what the month did to it, each channel's own figure
+on the leaderboard and what the week did to it, each channel's own figure
 and place, how the creators are spread by audience, and the creator's
 followers inside everybody the network reaches, on the way to the mission's
 figure. Admins and superadmins review at `/admin/creator-cards`:
@@ -155,8 +155,8 @@ approved, since the admin is the reviewer, and then:
 - reads the follower count of each link that is new or changed, at once
   (`readCardLinks`), so the count is on the card's page when it opens.
   YouTube is free; Instagram, TikTok and Facebook cost a SocialCrawl credit
-  each and Douyin six, and a link read already this month is not read
-  again;
+  each and Douyin six, and a link read already this week (this quarter,
+  on Douyin) is not read again;
 - refuses a link another card already has, since one account is one
   creator;
 - gives a card with no photo the profile picture the reading brought
@@ -213,9 +213,11 @@ Follower counts are kept for YouTube, Instagram, TikTok, Facebook and
 Douyin and
 added up by the database (`total_followers`); they order the directory and
 are never part of a review. Nobody types them. Each counted link is read
-from the place itself once a month: YouTube from its own Data API v3,
-the others through [SocialCrawl](https://www.socialcrawl.dev)'s
-profile endpoints (one credit per account read, six for a Douyin account).
+from the place itself: YouTube from its own Data API v3, the others
+through [SocialCrawl](https://www.socialcrawl.dev)'s profile endpoints
+(one credit per account read, six for a Douyin account). YouTube,
+Instagram, TikTok and Facebook are read every week; Douyin, for its cost,
+every three months, in December, March, June and September.
 
 | Piece | Where |
 | --- | --- |
@@ -225,20 +227,24 @@ profile endpoints (one credit per account read, six for a Douyin account).
 | The schedule | `.github/workflows/follower-refresh.yml` |
 | Links that gave no count | `/admin/creator-cards/followers` |
 
-- **One row per card, place and month** in `creator_follower_checks`: the
-  figure, what came of the attempt, and the account's own id and handle.
-  It is the history a ranking by growth is worked out from. The card's
-  `*_followers` column holds the latest figure. November 2026 is the first
-  month. Its rows began as the counts on the team's sheet (migration
-  `0017`) and were written over by the first full reading, on 18 November.
-- **The schedule runs every day.** On the first of the month (UTC) every
-  link is due; on the other days only links added since and attempts that
-  failed. One call works for about a minute and says how many links are
-  left; the workflow calls again until none are.
+- **One row per card, place and week** in `creator_follower_checks`, the
+  week named by its Monday (UTC): the figure, what came of the attempt,
+  and the account's own id and handle. It is the history a ranking by
+  growth is worked out from. The card's `*_followers` column holds the
+  latest figure. The first readings, of November 2026, were kept by month
+  and moved to the week they were taken in, 16 November (migration
+  `0030`). Douyin has no row in the weeks it is not read; its figure then
+  is its latest.
+- **The schedule runs every day.** On the first run of a week (Monday,
+  UTC) every YouTube, Instagram, TikTok and Facebook link is due, and on
+  the first run of December, March, June and September every Douyin link;
+  on the other days only links added since and attempts that failed. One
+  call works for about a minute and says how many links are left; the
+  workflow calls again until none are.
 - **A full reading can be asked for by hand**: "Run workflow" on the
-  Actions tab, with its box ticked, reads every link again now and writes
-  over the month's rows. It costs a SocialCrawl credit for each Instagram,
-  TikTok and Facebook link, and six for each Douyin link.
+  Actions tab, with its box ticked, reads every link again now, but for
+  Douyin's, and writes over the week's rows. It costs a SocialCrawl credit
+  for each Instagram, TikTok and Facebook link.
 - **Only approved cards are read.** A reading costs a credit, so a card
   waiting for a review is not read; its links are read within a day of
   its approval.
@@ -260,7 +266,7 @@ day the counts were last read.
 
 | Piece | Where |
 | --- | --- |
-| The ranking and the month-on-month change | `creatorLeaderboard` in `lib/creator-cards.ts` |
+| The ranking and the week-on-week change | `creatorLeaderboard` in `lib/creator-cards.ts` |
 | The boards as a page gets them, with photos | `lib/creator-leaderboard.ts` |
 | Tabs, the first three as cards, the rows | `components/creators/leaderboard.tsx` |
 | A whole board, for the browser | `GET /api/creators/leaderboard?place=youtube` |
@@ -272,11 +278,13 @@ day the counts were last read.
   its figure was read from, and each icon is the link to the creator
   there. On the board of all channels the first three also show each
   channel's own share.
-- **Change** appears once two months of readings exist. Beside a count:
-  this month's figure less last month's, for the same account. Beside a
-  rank: the places gained or lost against last month's order (`ranksBefore`),
-  or "New" for a creator last month has no reading of. Up is green, down
-  is red, each with its own sign.
+- **Change** appears once two weeks of readings exist. Beside a count:
+  the figure now less the figure at the end of last week, for the same
+  account, each the latest reading by then (`figuresAsOf`), so Douyin
+  moves only in the week it is read. Beside a rank: the places gained or
+  lost against last week's order (`ranksBefore`), or "New" for a creator
+  with no reading from last week or before. Up is green, down is red,
+  each with its own sign.
 - **The mission's progress bar** on the home page (`components/mission.tsx`)
   is the same counts added up, `networkAudience`, against the two hundred
   million the mission names. It counts followers, so somebody who follows

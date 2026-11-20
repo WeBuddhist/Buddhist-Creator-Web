@@ -22,7 +22,7 @@ const WHY: Record<UnreadLink["status"], string> = {
 
 const placeLabel = (slug: string) => CARD_SOCIALS.find((social) => social.value === slug)?.label ?? slug;
 
-/* Follower counts are read from each card's links every month
+/* Follower counts are read from each card's links every week
    (lib/follower-refresh.ts). This is what that reading could not do: the
    links that gave no figure the last time they were tried. A wrong or
    mistyped link is the usual reason, and it is put right on the card: by
@@ -33,7 +33,7 @@ export default function FollowerCountsPage() {
     <>
       <PageHeader
         title="Follower counts"
-        description="We read each creator's follower count from their links every month. These are the links that gave no count the last time we tried, by creator. Open the link to see what is wrong with it; a card keeps the count it had until its link reads again."
+        description="We read each creator's follower count from their links every week, and every three months on Douyin. These are the links that gave no count the last time we tried, by creator. Open the link to see what is wrong with it; a card keeps the count it had until its link reads again."
         className="mb-6"
       />
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading links…</p>}>

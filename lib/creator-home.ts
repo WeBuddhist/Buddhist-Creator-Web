@@ -30,13 +30,13 @@ import { forLog } from "@/lib/log-error";
    was sent back, is on no board, so it has its details and its figures
    and no place. */
 
-/** A place on a board, and what the month did to it. */
+/** A place on a board, and what the week did to it. */
 export type HomeStanding = {
   rank: number;
   outOf: number;
-  /** Places gained since last month's reading; null with nothing to compare. */
+  /** Places gained since last week's reading; null with nothing to compare. */
   climbed: number | null;
-  /** On the board for the first time this month. */
+  /** On the board for the first time this week. */
   fresh: boolean;
 };
 
@@ -66,7 +66,7 @@ export type CardHome = {
   card: CardContent & { countryCode: string | null };
   /** The followers of all counted channels together. */
   followers: number;
-  /** Since last month's reading, on all channels; null with nothing to compare. */
+  /** Since last week's reading, on all channels; null with nothing to compare. */
   gain: number | null;
   /** On the board of all channels. */
   standing: HomeStanding | null;

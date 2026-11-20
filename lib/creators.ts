@@ -26,12 +26,12 @@ export const CREATORS_LEADERBOARD = {
   eyebrow: "Leaderboard",
   title: "The most followed creators",
   description:
-    "The creators with the largest audience, across all their channels and on each one. We read every count from the channel itself, once a month.",
+    "The creators with the largest audience, across all their channels and on each one. We read every count from the channel itself: every week, and every three months on Douyin.",
   all: "All channels",
   updated: "Last updated",
-  empty: "The leaderboard appears here after our first monthly reading of the counts.",
+  empty: "The leaderboard appears here after our first weekly reading of the counts.",
   change:
-    "Changes are since last month's reading: the triangle by a rank is places gained or lost on the board, and the arrow by a count is followers gained or lost.",
+    "Changes are since last week's reading: the triangle by a rank is places gained or lost on the board, and the arrow by a count is followers gained or lost.",
   /* The end of the list while there is more of the board to bring in. */
   more: "Load more creators",
   loading: "Loading more creators…",
@@ -119,12 +119,12 @@ export type BoardRow = {
   photoUrl: string | null;
   /** The audience the board ranks on. */
   followers: number;
-  /** Since last month's reading; null when there is nothing to compare. */
+  /** Since last week's reading; null when there is nothing to compare. */
   gain: number | null;
-  /** Places gained on the board since last month's reading, less than
+  /** Places gained on the board since last week's reading, less than
       nothing for places lost; null when there is nothing to compare. */
   climbed: number | null;
-  /** On the board for the first time this month. */
+  /** On the board for the first time this week. */
   fresh: boolean;
   /** The channels that figure is made of, each with its own. */
   sources: BoardSource[];

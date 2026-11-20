@@ -1,6 +1,6 @@
 import "server-only";
 import { randomInt, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type {
   CardClaimStatus,
@@ -41,8 +41,9 @@ import type { FollowerReading } from "@/lib/follower-reading";
    The review is there to say that this is a creator and the card is
    theirs, and a number says nothing about that; it is kept to rank
    creators by. Nobody types one: each is read from the place itself every
-   month (lib/follower-refresh.ts) and saved where the card stands, and
-   neither the status nor the revision moves. See "Follower readings".
+   week, or every three months on Douyin (lib/follower-refresh.ts), and
+   saved where the card stands, and neither the status nor the revision
+   moves. See "Follower readings".
 
    The team also makes cards itself, for creators it knows. Those are
    approved from the start and belong to nobody. A signed-in person can
@@ -837,9 +838,9 @@ export async function deleteTeamCard(cardId: string): Promise<{ displayName: str
 /* Follower readings                                                       */
 /* ---------------------------------------------------------------------- */
 
-/* The counts are read from each place every month by
-   lib/follower-refresh.ts, which decides what is due and asks the
-   services; what is here is its reading and writing of the tables, and
+/* The counts are read from each place every week (Douyin every three
+   months) by lib/follower-refresh.ts, which decides what is due and asks
+   the services; what is here is its reading and writing of the tables, and
    what the pages show of it. */
 
 /** One counted link of one card. */
@@ -864,9 +865,12 @@ export async function listCountedLinks(): Promise<CountedLink[]> {
   );
 }
 
-/** The readings made in one month. */
-export async function listMonthChecks(month: string): Promise<CreatorFollowerCheck[]> {
-  return db().select().from(creatorFollowerChecks).where(eq(creatorFollowerChecks.month, month));
+/** The latest reading of each card's each place, whatever link it was of. */
+export async function listLatestChecks(): Promise<CreatorFollowerCheck[]> {
+  return db()
+    .selectDistinctOn([creatorFollowerChecks.cardId, creatorFollowerChecks.platform])
+    .from(creatorFollowerChecks)
+    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.platform, desc(creatorFollowerChecks.week));
 }
 
 /** The id each account of one place was last read under, keyed as
@@ -886,13 +890,13 @@ export async function knownAccountIds(platform: CountedSocial): Promise<Map<stri
         sql`${creatorFollowerChecks.externalId} is not null`,
       ),
     )
-    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.linkKey, desc(creatorFollowerChecks.month));
+    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.linkKey, desc(creatorFollowerChecks.week));
   return new Map(rows.map((row) => [accountKey(row), row.externalId!]));
 }
 
 export const accountKey = ({ cardId, linkKey }: { cardId: string; linkKey: string }) => `${cardId} ${linkKey}`;
 
-/** Keep one reading: the month's row for that card and place, and, when
+/** Keep one reading: the week's row for that card and place, and, when
     there is a figure, the card's own count. Nothing else on the card
     moves: not its status, its revision, or the dates that say when a
     person last changed or sent it.
@@ -902,11 +906,11 @@ export const accountKey = ({ cardId, linkKey }: { cardId: string; linkKey: strin
     an account the card no longer names, and is dropped ("moved"). */
 export async function saveFollowerCheck(args: {
   link: CountedLink;
-  month: string;
+  week: string;
   reading: FollowerReading;
   at: Date;
 }): Promise<"saved" | "moved"> {
-  const { link, month, reading, at } = args;
+  const { link, week, reading, at } = args;
   return db().transaction(async (tx) => {
     const [card] = await tx
       .select({ socials: creatorCards.socials })
@@ -925,9 +929,9 @@ export async function saveFollowerCheck(args: {
     };
     await tx
       .insert(creatorFollowerChecks)
-      .values({ cardId: link.cardId, platform: link.platform, month, ...row })
+      .values({ cardId: link.cardId, platform: link.platform, week, ...row })
       .onConflictDoUpdate({
-        target: [creatorFollowerChecks.cardId, creatorFollowerChecks.platform, creatorFollowerChecks.month],
+        target: [creatorFollowerChecks.cardId, creatorFollowerChecks.platform, creatorFollowerChecks.week],
         set: row,
       });
     if (ok) {
@@ -953,7 +957,7 @@ export async function cardLinkChecks(card: {
     .selectDistinctOn([creatorFollowerChecks.platform])
     .from(creatorFollowerChecks)
     .where(eq(creatorFollowerChecks.cardId, card.id))
-    .orderBy(creatorFollowerChecks.platform, desc(creatorFollowerChecks.month));
+    .orderBy(creatorFollowerChecks.platform, desc(creatorFollowerChecks.week));
   return Object.fromEntries(
     rows
       .filter((row) => row.linkKey === linkKeyOf(card.socials, row.platform))
@@ -985,7 +989,7 @@ export async function listUnreadLinks(): Promise<UnreadLink[]> {
     .innerJoin(creatorCards, eq(creatorCards.id, creatorFollowerChecks.cardId))
     // Only approved cards are read, so only theirs can be waiting on a fix.
     .where(eq(creatorCards.status, "approved"))
-    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.platform, desc(creatorFollowerChecks.month));
+    .orderBy(creatorFollowerChecks.cardId, creatorFollowerChecks.platform, desc(creatorFollowerChecks.week));
   return rows
     .flatMap(({ check, card }) => {
       const link = card.socials[check.platform]?.trim();
@@ -1010,10 +1014,13 @@ export async function listUnreadLinks(): Promise<UnreadLink[]> {
 /* ---------------------------------------------------------------------- */
 
 /* The creators with the largest audiences: in all their counted places
-   together, and in each place by itself. It is made of what the monthly
+   together, and in each place by itself. It is made of what the weekly
    reading keeps (lib/follower-refresh.ts): the card's own counts rank
-   it, and two months of readings set beside each other say how far a
-   creator has moved since the last one. */
+   it, and two weeks of readings set beside each other say how far a
+   creator has moved since the last one. A place read less often than
+   weekly (Douyin, every three months) counts at its latest figure in the
+   weeks between, so it shows no change then, and moves in the week it is
+   read. */
 
 export type LeaderboardRow = {
   id: string;
@@ -1023,15 +1030,15 @@ export type LeaderboardRow = {
   ownerPicture: string | null;
   /** The audience the board ranks on: in that place, or in all of them. */
   followers: number;
-  /** How far that figure has moved since last month's reading. Null
+  /** How far that figure has moved since last week's reading. Null
       until there are two readings of the same account to compare. */
   gain: number | null;
   /** How many places the creator has moved up the board since last
-      month's reading, less than nothing for places lost. Null when last
-      month has no place for them to compare with. */
+      week's reading, less than nothing for places lost. Null when last
+      week has no place for them to compare with. */
   climbed: number | null;
-  /** On the board for the first time: last month has no reading of
-      theirs at all. */
+  /** On the board for the first time: there is no reading of theirs from
+      last week or before. */
   fresh: boolean;
   /** The channels the figure is made of: the one place, or, on the board
       of all places, every place the creator has a count in. */
@@ -1060,21 +1067,51 @@ export type LeaderboardStanding = {
   row: LeaderboardRow;
 };
 
-/** The first day of the month before `month` ("2026-12-01" → "2026-11-01"). */
-function monthBefore(month: string) {
-  const [year, index] = month.split("-").map(Number);
-  return new Date(Date.UTC(year, index - 2, 1)).toISOString().slice(0, 10);
+/** The Monday of the week before `week` ("2026-11-23" → "2026-11-16"). */
+function weekBefore(week: string) {
+  const day = new Date(`${week}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() - 7);
+  return day.toISOString().slice(0, 10);
 }
 
-/** When the counts were last read: the day most of the latest month's
+/** Each account's figure as it stood at the end of `week`: its latest
+    reading with a figure, from that week or before. So a place read
+    every three months keeps its figure through the weeks between, and a
+    link that failed one week keeps the one before. Only `cardIds`' when
+    given. */
+function figuresAsOf(week: string, cardIds?: string[]) {
+  return db()
+    .selectDistinctOn([creatorFollowerChecks.cardId, creatorFollowerChecks.platform, creatorFollowerChecks.linkKey], {
+      cardId: creatorFollowerChecks.cardId,
+      platform: creatorFollowerChecks.platform,
+      linkKey: creatorFollowerChecks.linkKey,
+      followers: creatorFollowerChecks.followers,
+    })
+    .from(creatorFollowerChecks)
+    .where(
+      and(
+        lte(creatorFollowerChecks.week, week),
+        eq(creatorFollowerChecks.status, "ok"),
+        cardIds ? inArray(creatorFollowerChecks.cardId, cardIds) : undefined,
+      ),
+    )
+    .orderBy(
+      creatorFollowerChecks.cardId,
+      creatorFollowerChecks.platform,
+      creatorFollowerChecks.linkKey,
+      desc(creatorFollowerChecks.week),
+    );
+}
+
+/** When the counts were last read: the day most of the latest week's
     readings were taken, which is the day the reading ran. A few links
-    read later in the month (a new card's, a retry) do not move it. Null
+    read later in the week (a new card's, a retry) do not move it. Null
     before the first reading. */
 async function lastReadingDay(): Promise<Date | null> {
   const [day] = await db()
     .select({ at: sql<Date>`max(${creatorFollowerChecks.checkedAt})`.mapWith(creatorFollowerChecks.checkedAt) })
     .from(creatorFollowerChecks)
-    .where(sql`${creatorFollowerChecks.month} = (select max(${creatorFollowerChecks.month}) from ${creatorFollowerChecks})`)
+    .where(sql`${creatorFollowerChecks.week} = (select max(${creatorFollowerChecks.week}) from ${creatorFollowerChecks})`)
     .groupBy(sql`(${creatorFollowerChecks.checkedAt} at time zone 'UTC')::date`)
     .orderBy(desc(sql`count(*)`), desc(sql`max(${creatorFollowerChecks.checkedAt})`))
     .limit(1);
@@ -1143,15 +1180,16 @@ export async function countryStanding(card: {
   return { rank: row.ahead + 1, outOf: row.outOf };
 }
 
-/* Where every approved card stood on each board a month ago, worked out
-   from last month's readings: its place among the cards that had a figure
-   then, in the order the boards use. A card's figure then is last month's
-   reading of the link it has now; on the board of all places it is those
-   added up, and only when every place the card is counted in now was read
-   then, so that a channel added since does not pass for a climb. Null
-   when last month has no readings at all, which is the first month. */
+/* Where every approved card stood on each board at the end of `week`
+   (last week), worked out from the figures then (figuresAsOf): its place
+   among the cards that had a figure, in the order the boards use. A
+   card's figure then is that of the link it has now; on the board of all
+   places it is those added up, and only when every place the card is
+   counted in now had a figure then, so that a channel added since does
+   not pass for a climb. Null when there is no reading from then or
+   before, which is the first week. */
 async function ranksBefore(
-  month: string,
+  week: string,
   places: readonly LeaderboardPlace[],
 ): Promise<{ rank: Map<string, number>; known: Set<string> } | null> {
   const [cards, readings] = await Promise.all([
@@ -1168,15 +1206,7 @@ async function ranksBefore(
       })
       .from(creatorCards)
       .where(eq(creatorCards.status, "approved")),
-    db()
-      .select({
-        cardId: creatorFollowerChecks.cardId,
-        platform: creatorFollowerChecks.platform,
-        linkKey: creatorFollowerChecks.linkKey,
-        followers: creatorFollowerChecks.followers,
-      })
-      .from(creatorFollowerChecks)
-      .where(and(eq(creatorFollowerChecks.month, month), eq(creatorFollowerChecks.status, "ok"))),
+    figuresAsOf(week),
   ]);
   if (readings.length === 0) return null;
 
@@ -1270,7 +1300,7 @@ export async function creatorLeaderboard(
     );
   };
   const onBoard = (place: LeaderboardPlace) => sql<number>`count(*) filter (where ${boardFigure(place)} > 0)::int`;
-  const [lists, [counts], [{ month }], [own = null]] = await Promise.all([
+  const [lists, [counts], [{ week }], [own = null]] = await Promise.all([
     Promise.all(places.map(top)),
     db()
       .select({
@@ -1283,7 +1313,7 @@ export async function creatorLeaderboard(
       })
       .from(creatorCards)
       .where(approved),
-    db().select({ month: sql<string | null>`max(${creatorFollowerChecks.month})::text` }).from(creatorFollowerChecks),
+    db().select({ week: sql<string | null>`max(${creatorFollowerChecks.week})::text` }).from(creatorFollowerChecks),
     // A card that is not approved is on no board, so it has no standing.
     options.standingOf
       ? (cards().where(and(approved, eq(creatorCards.id, options.standingOf))).limit(1) as Promise<BoardCard[]>)
@@ -1300,27 +1330,10 @@ export async function creatorLeaderboard(
   };
 
   const ids = [...new Set([...lists.flat(), ...(own ? [own] : [])].map((card) => card.id))];
-  const [readings, readAt, before, [placesAhead = null]] = await Promise.all([
-    month && ids.length > 0
-      ? db()
-            .select({
-              cardId: creatorFollowerChecks.cardId,
-              platform: creatorFollowerChecks.platform,
-              month: creatorFollowerChecks.month,
-              linkKey: creatorFollowerChecks.linkKey,
-              followers: creatorFollowerChecks.followers,
-            })
-            .from(creatorFollowerChecks)
-            .where(
-              and(
-                inArray(creatorFollowerChecks.cardId, ids),
-                inArray(creatorFollowerChecks.month, [month, monthBefore(month)]),
-                eq(creatorFollowerChecks.status, "ok"),
-              ),
-            )
-      : [],
+  const [[figuresNow, figuresThen], readAt, before, [placesAhead = null]] = await Promise.all([
+    week && ids.length > 0 ? Promise.all([figuresAsOf(week, ids), figuresAsOf(weekBefore(week), ids)]) : [[], []],
     lastReadingDay(),
-    month && ids.length > 0 ? ranksBefore(monthBefore(month), places) : null,
+    week && ids.length > 0 ? ranksBefore(weekBefore(week), places) : null,
     own
       ? db()
           .select({
@@ -1336,15 +1349,17 @@ export async function creatorLeaderboard(
       : [],
   ]);
 
-  /* A place's gain: this month's figure less last month's, when both are
-     readings of the link the card has now. */
-  const figures = new Map(readings.map((row) => [`${row.cardId} ${row.platform} ${row.month} ${row.linkKey}`, row.followers]));
+  /* A place's gain: its figure now less its figure at the end of last
+     week, when both are readings of the link the card has now. */
+  const byAccount = (rows: typeof figuresNow) =>
+    new Map(rows.map((row) => [`${row.cardId} ${row.platform} ${row.linkKey}`, row.followers]));
+  const [now, then] = [byAccount(figuresNow), byAccount(figuresThen)];
   const gainIn = (card: BoardCard, place: CountedSocial) => {
     const key = linkKeyOf(card.socials, place);
-    if (!month || !key) return null;
-    const now = figures.get(`${card.id} ${place} ${month} ${key}`);
-    const before = figures.get(`${card.id} ${place} ${monthBefore(month)} ${key}`);
-    return now == null || before == null ? null : now - before;
+    if (!key) return null;
+    const after = now.get(`${card.id} ${place} ${key}`);
+    const before = then.get(`${card.id} ${place} ${key}`);
+    return after == null || before == null ? null : after - before;
   };
 
   /** A card as a board's row, at the rank it holds there. */

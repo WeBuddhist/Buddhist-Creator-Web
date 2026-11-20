@@ -7,7 +7,7 @@ import { readCount, SourceStopped, type FollowerReading } from "@/lib/follower-r
    channels.list). A channel is asked for by its id, fifty to a request,
    or one at a time by its handle; either costs one unit of a daily quota
    of ten thousand. So a channel is looked up by handle once, to learn its
-   id, and by id every month after.
+   id, and by id every week after.
 
    YouTube rounds the count it gives out to three figures (2,970,000;
    24,900). That is theirs to decide, and the same wherever it is read.

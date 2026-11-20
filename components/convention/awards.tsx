@@ -1,8 +1,11 @@
 import Image from "next/image";
-import { TrophyIcon } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import { ArrowRightIcon, TrophyIcon } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { SectionHeading, card, cardInner, label, photo } from "@/components/convention/section-heading";
+import { ctaLink } from "@/components/events/event-card";
 import { AWARDS } from "@/lib/convention-2026";
+import { AWARDS_2027 } from "@/lib/awards-2027";
 
 export function Awards() {
   const { featured, winners, closing } = AWARDS;
@@ -101,6 +104,21 @@ export function Awards() {
           Awards presented by {AWARDS.presentedBy} on {AWARDS.date} at {AWARDS.venue}, in the
           presence of {AWARDS.witness}.
         </p>
+
+        {/* A reader of last year's winners is the likeliest to nominate
+            this year's. */}
+        {AWARDS_2027.open && (
+          <p className="mt-5">
+            <Link href={AWARDS_2027.path} className={cn(ctaLink, "text-brand-cyan")}>
+              Nominate creators for the 2027 awards
+              <ArrowRightIcon
+                aria-hidden
+                weight="bold"
+                className="size-4 transition-transform duration-150 ease-hover motion-safe:group-hover/link:translate-x-0.5"
+              />
+            </Link>
+          </p>
+        )}
 
         {/* Closing */}
         <div className="mt-16 grid gap-4 border-t border-border pt-6 lg:mt-20 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10 lg:pt-8">

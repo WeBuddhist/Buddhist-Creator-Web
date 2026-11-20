@@ -65,8 +65,8 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
    channel's own share of it (LeadCard). The rest are rows: rank,
    photo, name and country, the figure, and the channels it was read
    from. A channel is a link to the creator there, so the board says
-   where every number comes from. From the second monthly reading on, a
-   creator also carries what the month did: beside the rank, the places
+   where every number comes from. From the second weekly reading on, a
+   creator also carries what the week did: beside the rank, the places
    gained or lost on the board (a triangle, or "New" for a first
    appearance), and beside the figure, the followers gained or lost (an
    arrow). Up is green and down is red, and each has its sign and its
@@ -163,7 +163,7 @@ function BoardPanel({ board, viewer }: { board: Board; viewer: BoardViewer }) {
     enabled: false,
     // One more try, then the visitor is told and can ask again.
     retry: 1,
-    // The counts change once a month.
+    // The counts change once a week.
     staleTime: 10 * 60 * 1000,
   });
   // A creator who moved between two stretches being read is listed once.
@@ -182,7 +182,7 @@ function BoardPanel({ board, viewer }: { board: Board; viewer: BoardViewer }) {
 
   const unit = boardUnit(board.place);
   const moved = rows.some((row) => row.gain);
-  // Anything at all to say about last month, which the line under the board explains.
+  // Anything at all to say about last week, which the line under the board explains.
   const compared = moved || rows.some((row) => row.climbed !== null || row.fresh);
   const first = rows.slice(0, 3);
   const rest = rows.slice(3);

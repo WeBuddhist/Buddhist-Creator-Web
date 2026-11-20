@@ -126,7 +126,7 @@ export function Mission() {
    creator in the directory, added up, against the two hundred million, with
    what is left to go. It is the same count the leaderboard is made of
    (networkAudience in lib/creator-cards.ts), read on each visit, so it
-   moves with every monthly reading.
+   moves with every weekly reading.
 
    A meter, not a progress bar: nothing is loading. The figures beside it
    say everything the bar does, so the bar is never the only carrier.
