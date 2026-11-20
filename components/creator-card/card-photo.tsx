@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { UserIcon } from "@phosphor-icons/react";
-import { cardPhotoSrc } from "@/lib/creator-card";
+import { cardInitials, cardPhotoSrc } from "@/lib/creator-card";
 import { cn } from "@/lib/utils";
 
 /** The circle at each size: its box, that box in pixels, and the sizes of
@@ -12,18 +12,6 @@ const SIZES = {
   field: { box: "size-20", pixels: 80, letters: "text-[1.75rem]", figure: "size-8" },
   row: { box: "size-12", pixels: 48, letters: "text-[1.0625rem]", figure: "size-5" },
 } as const;
-
-/** A name's initials: the first letter of its first word and of its last,
-    "Ted Kunchok" → "TK". One word gives one letter. A name written in two
-    scripts, "พระศักดา สุนฺทโร (Phra Sakda Suntharo)", gives the Latin
-    ones, "PS", rather than a letter from each. */
-function cardInitials(name: string | undefined) {
-  const letters = (name ?? "").split(/\s+/).flatMap((word) => /[\p{L}\p{N}]/u.exec(word)?.[0] ?? []);
-  const latin = letters.filter((letter) => /[\p{Script=Latin}\p{N}]/u.test(letter));
-  const words = latin.length > 0 ? latin : letters;
-  if (words.length === 0) return "";
-  return (words.length === 1 ? words[0] : words[0] + words[words.length - 1]).toUpperCase();
-}
 
 /* The round photo of a creator: on the card itself (`card`), smaller
    beside the form's photo field (`field`), and smallest in a row of the

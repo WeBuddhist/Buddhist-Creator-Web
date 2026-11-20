@@ -11,7 +11,7 @@ import { CreatorCard } from "@/components/creator-card/creator-card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CARD_FORM, CARD_PATH, CLAIM_NOTE_MAX, cardLinks, type CardContent } from "@/lib/creator-card";
+import { CARD_EDIT_PATH, CARD_FORM, CARD_PATH, CLAIM_NOTE_MAX, cardLinks, type CardContent } from "@/lib/creator-card";
 import { claimHref } from "@/lib/creators";
 import { formatDate } from "@/lib/format";
 import { loginUrl } from "@/lib/login-url";
@@ -178,7 +178,7 @@ export function ClaimCard({ cardId, card, email }: { cardId: string; card: CardC
               size="pill"
               variant="outline"
               nativeButton={false}
-              render={<Link href={CARD_PATH} />}
+              render={<Link href={CARD_EDIT_PATH} />}
               className="w-full sm:w-auto"
             >
               Not me: make a new card
@@ -206,7 +206,7 @@ export function ClaimCard({ cardId, card, email }: { cardId: string; card: CardC
    text on it, and our team can see it there without being sent anything.
 
    The claimant may take the claim back, which returns this page to the
-   empty card form. */
+   invitation to make a card. */
 export function ClaimPending({
   card,
   code,

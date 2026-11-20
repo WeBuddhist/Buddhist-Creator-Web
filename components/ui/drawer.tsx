@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils";
 /* A panel from the trailing edge on Base UI's Drawer, for a task with more
    in it than a centred dialog holds: a list to read through, then a run to
    watch. It is the full height of the screen and the full width of a
-   phone. The panel is a column, header and footer fixed and the body
+   phone. With `side="bottom"` it is a sheet from the foot of the screen
+   instead, as tall as what is in it; give the Root `swipeDirection="down"`
+   with it, and `"right"` with the side panel, so a swipe closes it the way
+   it came. The panel is a column, header and footer fixed and the body
    scrolling, the same parts as components/ui/dialog.tsx so a view moves
    between the two by swapping the imports.
 
@@ -28,10 +31,13 @@ function DrawerContent({
   children,
   initialFocus,
   locked = false,
+  side = "right",
   ...props
 }: DrawerPrimitive.Popup.Props & {
   /** True while the drawer must stay open: a swipe no longer moves it. */
   locked?: boolean;
+  /** The edge it comes from: the trailing one, or the foot of the screen. */
+  side?: "right" | "bottom";
 }) {
   const popup = useRef<HTMLDivElement>(null);
   return (
@@ -46,21 +52,37 @@ function DrawerContent({
           "data-swiping:duration-0 data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)]",
         )}
       />
-      <DrawerPrimitive.Viewport className="fixed inset-0 z-50 flex items-stretch justify-end">
+      <DrawerPrimitive.Viewport
+        className={cn(
+          "fixed inset-0 z-50 flex",
+          side === "right" ? "items-stretch justify-end" : "items-end justify-center",
+        )}
+      >
         <DrawerPrimitive.Popup
           ref={popup}
           initialFocus={initialFocus ?? (() => popup.current?.querySelector<HTMLElement>("[data-initial-focus]") ?? true)}
           className={cn(
             // --bleed lets the panel overshoot the edge during a swipe without
             // exposing a gap behind it.
-            "[--bleed:3rem] relative -mr-[3rem] flex h-full w-[calc(min(30rem,100vw)+3rem)] flex-col",
-            "bg-popover pr-[3rem] text-popover-foreground outline-none",
-            "border-l border-border shadow-[-24px_0_48px_-24px] shadow-black/20",
-            "pt-[env(safe-area-inset-top,0px)] touch-auto",
-            "[transform:translateX(var(--drawer-swipe-movement-x))]",
+            "[--bleed:3rem] relative flex flex-col bg-popover text-popover-foreground outline-none touch-auto",
             "transition-transform duration-[450ms] ease-drawer",
-            "data-starting-style:[transform:translateX(calc(100%-var(--bleed)+2px))]",
-            "data-ending-style:[transform:translateX(calc(100%-var(--bleed)+2px))]",
+            side === "right"
+              ? [
+                  "-mr-[3rem] h-full w-[calc(min(30rem,100vw)+3rem)] pr-[3rem]",
+                  "border-l border-border shadow-[-24px_0_48px_-24px] shadow-black/20",
+                  "pt-[env(safe-area-inset-top,0px)]",
+                  "[transform:translateX(var(--drawer-swipe-movement-x))]",
+                  "data-starting-style:[transform:translateX(calc(100%-var(--bleed)+2px))]",
+                  "data-ending-style:[transform:translateX(calc(100%-var(--bleed)+2px))]",
+                ]
+              : [
+                  // Short of the top, so the page shows above it and it reads as a sheet.
+                  "-mb-[3rem] max-h-[calc(100dvh-env(safe-area-inset-top,0px)-1.5rem+3rem)] w-full pb-[3rem]",
+                  "rounded-t-[1.25rem] border-t border-border shadow-[0_-24px_48px_-24px] shadow-black/20",
+                  "[transform:translateY(var(--drawer-swipe-movement-y))]",
+                  "data-starting-style:[transform:translateY(calc(100%-var(--bleed)+2px))]",
+                  "data-ending-style:[transform:translateY(calc(100%-var(--bleed)+2px))]",
+                ],
             "data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)]",
             "data-swiping:select-none",
             "motion-reduce:transition-opacity motion-reduce:duration-200 motion-reduce:ease-hover",
@@ -70,6 +92,11 @@ function DrawerContent({
           )}
           {...props}
         >
+          {/* The sheet's grip: says it can be pulled down. The close
+              button in the header does the same for a pointer or a key. */}
+          {side === "bottom" && (
+            <span aria-hidden className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-ink/15" />
+          )}
           <DrawerPrimitive.Content
             className="flex min-h-0 flex-1 flex-col"
             {...(locked ? { "data-base-ui-swipe-ignore": "" } : null)}

@@ -10,6 +10,7 @@ import type {
   FollowerCheckStatus,
 } from "@/lib/db/schema";
 import {
+  AUDIENCE_BANDS,
   COUNTED_SOCIALS,
   PROFILE_PICTURE_PREFIX,
   socialLinkKey,
@@ -78,6 +79,7 @@ const FOLLOWER_COLUMN = {
   instagram: "instagramFollowers",
   tiktok: "tiktokFollowers",
   facebook: "facebookFollowers",
+  douyin: "douyinFollowers",
 } as const satisfies Record<CountedSocial, keyof CreatorCard>;
 
 type FollowerColumns = Record<(typeof FOLLOWER_COLUMN)[CountedSocial], number | null>;
@@ -1098,6 +1100,49 @@ export async function networkAudience(): Promise<{ followers: number; creators: 
   return { followers: Number(total.followers), creators: total.creators, readAt };
 }
 
+/** How the creators on the board of all channels are spread over the
+    audience bands (AUDIENCE_BANDS in lib/creator-card.ts): how many are in
+    each, in the bands' order. A card with no figure is on no board, so it
+    is in no band. */
+export async function audienceSpread(): Promise<number[]> {
+  const total = creatorCards.totalFollowers;
+  const within = AUDIENCE_BANDS.map((band, index) => {
+    const next = AUDIENCE_BANDS[index + 1];
+    return next
+      ? sql<number>`count(*) filter (where ${total} >= ${band.from} and ${total} < ${next.from})::int`
+      : sql<number>`count(*) filter (where ${total} >= ${band.from})::int`;
+  });
+  const [row] = await db()
+    .select(Object.fromEntries(within.map((count, index) => [`band${index}`, count])))
+    .from(creatorCards)
+    .where(and(eq(creatorCards.status, "approved"), sql`${total} > 0`));
+  return within.map((_, index) => Number(row[`band${index}`] ?? 0));
+}
+
+/** Where a card stands among the creators of its own country, on all its
+    counted places together: its place, and how many of them have a figure.
+    Null for a card that is not approved, has no country or has no figure.
+    The order is the boards' own: the figure, then the name, then the id. */
+export async function countryStanding(card: {
+  id: string;
+  status: CreatorCardStatus;
+  displayName: string;
+  country: string | null;
+  totalFollowers: number;
+}): Promise<{ rank: number; outOf: number } | null> {
+  const mine = Number(card.totalFollowers);
+  if (card.status !== "approved" || !card.country || mine <= 0) return null;
+  const total = creatorCards.totalFollowers;
+  const [row] = await db()
+    .select({
+      outOf: sql<number>`count(*)::int`,
+      ahead: sql<number>`count(*) filter (where ${total} > ${mine} or (${total} = ${mine} and (lower(${creatorCards.displayName}), ${creatorCards.id}) < (lower(${card.displayName}), ${card.id}::uuid)))::int`,
+    })
+    .from(creatorCards)
+    .where(and(eq(creatorCards.status, "approved"), eq(creatorCards.country, card.country), sql`${total} > 0`));
+  return { rank: row.ahead + 1, outOf: row.outOf };
+}
+
 /* Where every approved card stood on each board a month ago, worked out
    from last month's readings: its place among the cards that had a figure
    then, in the order the boards use. A card's figure then is last month's
@@ -1119,6 +1164,7 @@ async function ranksBefore(
         instagramFollowers: creatorCards.instagramFollowers,
         tiktokFollowers: creatorCards.tiktokFollowers,
         facebookFollowers: creatorCards.facebookFollowers,
+        douyinFollowers: creatorCards.douyinFollowers,
       })
       .from(creatorCards)
       .where(eq(creatorCards.status, "approved")),
@@ -1181,6 +1227,7 @@ const boardCard = {
   instagramFollowers: creatorCards.instagramFollowers,
   tiktokFollowers: creatorCards.tiktokFollowers,
   facebookFollowers: creatorCards.facebookFollowers,
+  douyinFollowers: creatorCards.douyinFollowers,
   totalFollowers: creatorCards.totalFollowers,
   ownerPicture: users.picture,
 };
@@ -1232,6 +1279,7 @@ export async function creatorLeaderboard(
         instagram: onBoard("instagram"),
         tiktok: onBoard("tiktok"),
         facebook: onBoard("facebook"),
+        douyin: onBoard("douyin"),
       })
       .from(creatorCards)
       .where(approved),
@@ -1281,6 +1329,7 @@ export async function creatorLeaderboard(
             instagram: ahead(own, "instagram"),
             tiktok: ahead(own, "tiktok"),
             facebook: ahead(own, "facebook"),
+            douyin: ahead(own, "douyin"),
           })
           .from(creatorCards)
           .where(approved)

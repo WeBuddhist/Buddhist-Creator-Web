@@ -43,3 +43,11 @@ const shortNumber = new Intl.NumberFormat("en-US", { notation: "compact", maximu
 export function formatCompact(value: number) {
   return shortNumber.format(value);
 }
+
+const pluralRules = new Intl.PluralRules("en-US");
+
+/** The word that goes with a count: plural(1, "place", "places") is
+    "place". The count itself is the caller's to print. */
+export function plural(count: number, one: string, other: string) {
+  return pluralRules.select(count) === "one" ? one : other;
+}

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Component,
   createContext,
   use,
   useCallback,
@@ -11,7 +10,9 @@ import {
   type ReactNode,
 } from "react";
 import dynamic from "next/dynamic";
+import { SceneBoundary } from "@/components/scene-boundary";
 import { cn } from "@/lib/utils";
+import { worthDrawing } from "@/lib/worth-drawing";
 import { PodiumStore } from "./store";
 import { TIERS, type Tier } from "./tiers";
 
@@ -31,25 +32,26 @@ import { TIERS, type Tier } from "./tiers";
    Below `lg` the row scrolls sideways, a card and a half to a phone's
    screen, each card catching at the edge; from `lg` the three stand side
    by side. The canvas is inside what scrolls, so the browser moves a body
-   and its markup together. */
+   and its markup together.
+
+   CardStage is the same thing for one card standing alone: the white card
+   a creator has on their own page (components/creator-card/
+   collectible-card.tsx). */
 
 const PodiumScene = dynamic(() => import("./scene"), { ssr: false });
 
 const StageContext = createContext<PodiumStore | null>(null);
 
-/** Whether this browser should be asked to draw the scene at all. */
-function worthDrawing() {
-  if (typeof WebGL2RenderingContext === "undefined") return false;
-  if (window.matchMedia("(forced-colors: active)").matches) return false;
-  const device = navigator as Navigator & { connection?: { saveData?: boolean }; deviceMemory?: number };
-  if (device.connection?.saveData) return false;
-  if (device.deviceMemory !== undefined && device.deviceMemory < 4) return false;
-  if (navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency < 4) return false;
-  return true;
-}
-
-export function PodiumStage({ children }: { children: ReactNode }) {
-  const [store] = useState(() => new PodiumStore());
+/* What a stage keeps: the store its cards and its scene share, whether the
+   scene is being drawn, and the two elements the store watches. `host` is
+   what must be near the screen for the scene to be fetched; `box` is what
+   the canvas fills. */
+function useStage(room?: number) {
+  const [store] = useState(() => {
+    const made = new PodiumStore();
+    if (room !== undefined) made.room = room;
+    return made;
+  });
   /* "waiting" until the cards are near the screen, then "drawing"; "plain"
      once the scene has failed or been given up, for the rest of the visit. */
   const [scene, setScene] = useState<"waiting" | "drawing" | "plain">("waiting");
@@ -74,6 +76,20 @@ export function PodiumStage({ children }: { children: ReactNode }) {
     [store],
   );
 
+  return {
+    store,
+    host,
+    box,
+    canvas: scene === "drawing" && (
+      <SceneBoundary onError={plain}>
+        <PodiumScene store={store} onLost={plain} />
+      </SceneBoundary>
+    ),
+  };
+}
+
+export function PodiumStage({ children }: { children: ReactNode }) {
+  const { store, host, box, canvas } = useStage();
   return (
     <StageContext value={store}>
       {/* What scrolls below lg. The padding is the room the canvas has for
@@ -96,11 +112,7 @@ export function PodiumStage({ children }: { children: ReactNode }) {
             aria-hidden
             className="pointer-events-none absolute -inset-x-5 -top-6 -bottom-7 sm:-inset-x-6 lg:-inset-y-10"
           >
-            {scene === "drawing" && (
-              <SceneBoundary onError={plain}>
-                <PodiumScene store={store} onLost={plain} />
-              </SceneBoundary>
-            )}
+            {canvas}
           </div>
           {children}
         </div>
@@ -109,24 +121,29 @@ export function PodiumStage({ children }: { children: ReactNode }) {
   );
 }
 
-/* The scene is an enhancement: whatever goes wrong in it (no WebGL
-   context to be had, a driver that fails a shader), the page keeps its
-   plain cards and says nothing. */
-class SceneBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  componentDidCatch() {
-    this.props.onError();
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
+/* The stage for one card, which can be turned over. The canvas reaches
+   past the card by the page's own gutter to either side, and by 4rem
+   above and below: a card turning over rises toward the eye, and half
+   way round its near edge stands out past its box. It takes no clicks
+   and holds nothing but the card's body, so what it lies over is not
+   hidden. */
+export function CardStage({ children, className }: { children: ReactNode; className?: string }) {
+  const { store, host, box, canvas } = useStage(4);
+  return (
+    <StageContext value={store}>
+      <div ref={host} className={cn("relative", className)}>
+        <div ref={box} aria-hidden className="pointer-events-none absolute -inset-x-5 -inset-y-16 sm:-inset-x-6">
+          {canvas}
+        </div>
+        {children}
+      </div>
+    </StageContext>
+  );
 }
 
-/* A card's place on the stage: what its list item and the scene need of
-   each other. `attach` goes on the list item, whose markup marks the part
+/* A card's place on the stage: what its element and the scene need of
+   each other. `attach` goes on the card's own element (a list item on the
+   leaderboard), whose markup marks the part
    that turns (`data-podium-body`) and the photo (`data-podium-photo`);
    the handlers lean the card toward a mouse that is over it. `style`
    carries the place's metal to the card's CSS. Outside a stage it is an
@@ -134,9 +151,9 @@ class SceneBoundary extends Component<{ onError: () => void; children: ReactNode
 export function usePodiumCard(key: string, tier: Tier) {
   const store = use(StageContext);
   const attach = useCallback(
-    (element: HTMLLIElement) => {
-      const body = element.querySelector<HTMLElement>("[data-podium-body]");
-      if (!store || !body) return;
+    (element: HTMLElement | null) => {
+      const body = element?.querySelector<HTMLElement>("[data-podium-body]");
+      if (!store || !element || !body) return;
       const added = store.add({
         key,
         tier,
@@ -157,7 +174,10 @@ export function usePodiumCard(key: string, tier: Tier) {
       "--metal-mid": metal.mid,
       "--metal-light": metal.light,
       "--metal-pale": metal.pale,
+      "--metal-rim": metal.rim,
     } as CSSProperties,
+    /** Turn the card whose element this is over, or back. */
+    turnOver: (element: Element, over: boolean) => store?.flip(element, over),
     handlers: {
       onPointerMove: (event: PointerEvent) => {
         if (event.pointerType !== "touch") store?.point(event.currentTarget, event.clientX, event.clientY);

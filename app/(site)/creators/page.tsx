@@ -9,7 +9,7 @@ import { LeaderboardSection } from "@/components/creators/leaderboard-section";
 import { PageIntro } from "@/components/page-intro";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
-import { CARD_PATH } from "@/lib/creator-card";
+import { CARD_EDIT_PATH } from "@/lib/creator-card";
 import { listPublicCards } from "@/lib/creator-cards";
 import { cardPhotoUrl } from "@/lib/creator-leaderboard";
 import {
@@ -59,7 +59,7 @@ export default function CreatorsPage(props: PageProps<"/creators">) {
           {/* The way in for a creator. The page behind it asks for a
               sign-in first and comes back. */}
           <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-            <Button size="pill" nativeButton={false} render={<Link href={CARD_PATH} />}>
+            <Button size="pill" nativeButton={false} render={<Link href={CARD_EDIT_PATH} />}>
               {CREATORS_DIRECTORY.card.action}
               <ArrowRightIcon data-icon="inline-end" weight="bold" />
             </Button>

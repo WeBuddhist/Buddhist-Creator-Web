@@ -35,6 +35,8 @@ const SOCIAL_ICON: Record<CardSocial, Icon> = {
   youtube: YoutubeLogoIcon,
   instagram: InstagramLogoIcon,
   facebook: FacebookLogoIcon,
+  // Douyin has no icon of its own here; its mark is the same note as TikTok's.
+  douyin: TiktokLogoIcon,
   tiktok: TiktokLogoIcon,
   x: XLogoIcon,
   website: GlobeSimpleIcon,

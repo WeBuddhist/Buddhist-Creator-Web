@@ -5,9 +5,9 @@ import * as THREE from "three";
 import { Environment, Lightformer, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type RootState } from "@react-three/fiber";
 import logoMark from "@/assets/logo-mark-white.png";
-import { layOut, makeFace, makeMetal } from "./materials";
+import { layOut, layOutBack, makeBack, makeFace, makeMetal } from "./materials";
 import { PASS_SECONDS, type PodiumCard, type PodiumStore } from "./store";
-import { CARD } from "./tiers";
+import { CARD, WHITE } from "./tiers";
 
 /* The bodies of the leaderboard's first three cards, drawn with three.js
    through React Three Fiber, under the cards' own markup (store.ts says
@@ -112,7 +112,7 @@ function drawFrame(store: PodiumStore, loop: Loop, state: RootState, delta: numb
   const dt = Math.min(delta, 0.05);
   const rem = store.rem;
   const eye = CARD.perspective * rem;
-  const room = CARD.room * rem;
+  const room = store.room * rem;
 
   /* Clear to nothing, and say so each time: whatever drew last (the
      studio's bake, for one) may have left another colour to clear to, and
@@ -128,8 +128,9 @@ function drawFrame(store: PodiumStore, loop: Loop, state: RootState, delta: numb
     if (store.step(card, dt)) moving = true;
 
     // The same turn the markup gets; CSS counts rx the other way round.
-    parts.tilt.position.z = card.lift;
-    parts.tilt.rotation.set(-card.rx * DEGREES, card.ry * DEGREES, 0);
+    const posed = store.posed(card);
+    parts.tilt.position.z = posed.lift;
+    parts.tilt.rotation.set(-posed.rx * DEGREES, posed.ry * DEGREES, 0);
     const face = parts.face.uniforms;
     face.uTilt.value.set(card.ry / 9, card.rx / 7);
     face.uPass.value = card.pass === null ? 9 : passAt(card.pass);
@@ -314,14 +315,17 @@ function Body({
   const frame = CARD.frame * rem;
   const depth = CARD.depth * rem;
 
+  // Only the white card is ever turned over, so only it has a back.
+  const turns = card.tier === WHITE;
   const materials = useMemo(
-    () => ({ face: makeFace(card.tier, logo), metal: makeMetal(card.tier) }),
-    [card.tier, logo],
+    () => ({ face: makeFace(card.tier, logo), metal: makeMetal(card.tier), back: turns ? makeBack(logo) : null }),
+    [card.tier, logo, turns],
   );
   useEffect(
     () => () => {
       materials.face.dispose();
       materials.metal.dispose();
+      materials.back?.dispose();
     },
     [materials],
   );
@@ -351,6 +355,7 @@ function Body({
   const tilt = useRef<THREE.Group>(null);
   useEffect(() => {
     layOut(materials.face, { w, h, px, py, pr, rem });
+    if (materials.back) layOutBack(materials.back, { w, h, rem });
     if (tilt.current) store.setParts(card, { tilt: tilt.current, face: materials.face });
     return () => store.setParts(card, null);
   }, [store, card, materials, w, h, px, py, pr, rem]);
@@ -360,7 +365,19 @@ function Body({
       <group ref={tilt}>
         <mesh geometry={shapes.frame} material={materials.metal} layers={layer} />
         <mesh geometry={shapes.face} material={materials.face} position-z={-0.5 * unit} layers={layer} />
-        {pr > 0 && (
+        {/* The back, inside the frame's back, facing the other way. */}
+        {materials.back && (
+          <mesh
+            geometry={shapes.face}
+            material={materials.back}
+            position-z={-depth + 0.5 * unit}
+            rotation-y={Math.PI}
+            layers={layer}
+          />
+        )}
+        {/* The white card has no metal ring: its photo lies flat on the
+            face with a border of its own, in CSS. */}
+        {pr > 0 && card.tier !== WHITE && (
           <mesh
             geometry={ring}
             material={materials.metal}

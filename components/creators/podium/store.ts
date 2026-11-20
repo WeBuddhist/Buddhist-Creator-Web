@@ -29,6 +29,12 @@ export type PodiumCard = {
   body: HTMLElement;
   /** The photo's box, which the scene rings in metal. */
   photo: HTMLElement | null;
+  /* On a card that turns over, the markup of each side. Whichever faces
+     away is hidden outright as the card passes edge-on: browsers do not
+     all hide a turned-away side for backface-visibility (Safari draws its
+     separately composited parts, the photo and the text, mirrored). */
+  front: HTMLElement | null;
+  back: HTMLElement | null;
   /* The card's box in CSS pixels from the canvas's top-left corner, and
      the photo's centre and radius from the card's. */
   x: number;
@@ -50,6 +56,12 @@ export type PodiumCard = {
   toRx: number;
   toRy: number;
   toLift: number;
+  /** How far the card is turned over, in degrees: 0 face up, 180 face
+      down; its speed; and where it is going. Only a card with a back
+      (CardStage's) is ever turned. */
+  turn: number;
+  vturn: number;
+  toTurn: number;
   /** Seconds into the pass of light a card arrives with; below zero it is
       waiting its turn, and null when there is none. */
   pass: number | null;
@@ -74,6 +86,16 @@ const SCROLL_REST = 90;
 const STIFFNESS = 170;
 const DAMPING = 23;
 
+/* The spring that turns a card over: slower than the tilt's, and a touch
+   under critical damping, so the card lands a hair past flat and settles
+   back, as a card dropped face down on a table does. */
+const TURN_STIFFNESS = 120;
+const TURN_DAMPING = 19;
+/** How far a card turning over rises toward the eye at the middle of the
+    turn, in rem, and how far its top tips away then, in degrees. */
+const TURN_LIFT = 2.5;
+const TURN_TIP = 5;
+
 /** How long the pass of light takes, and how far apart the cards start it. */
 export const PASS_SECONDS = 1.1;
 const PASS_STAGGER = 0.12;
@@ -86,6 +108,9 @@ export class PodiumStore {
   boxHeight = 0;
   /** The root font-size in pixels. */
   rem = 16;
+  /** The room around each card the scene draws in, in rem: for its
+      corners when it turns and comes forward. */
+  room: number = CARD.room;
   /** Grows when a card arrives, leaves, or changes its place or size. */
   version = 0;
   /** The visitor has asked for less motion: nothing turns and no light passes. */
@@ -136,8 +161,13 @@ export class PodiumStore {
   add(given: Pick<PodiumCard, "key" | "tier" | "el" | "body" | "photo">) {
     const card: PodiumCard = {
       ...given,
+      front: given.body.querySelector<HTMLElement>("[data-podium-face]"),
+      back: given.body.querySelector<HTMLElement>("[data-podium-back]"),
       ...{ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0, pr: 0 },
       ...{ rx: 0, ry: 0, lift: 0, vrx: 0, vry: 0, vlift: 0, toRx: 0, toRy: 0, toLift: 0 },
+      // A card already turned over when the scene arrives starts so.
+      ...(given.el.hasAttribute("data-flipped") ? { turn: 180, toTurn: 180 } : { turn: 0, toTurn: 0 }),
+      vturn: 0,
       pass: null,
       live: false,
       arriving: false,
@@ -215,6 +245,19 @@ export class PodiumStore {
     card.toRx = -clamp(y) * POINTER_TILT.x;
     card.toRy = clamp(x) * POINTER_TILT.y;
     card.toLift = CARD.hoverLift * this.rem;
+    this.wake();
+  }
+
+  /** Turn a card over, or back. With less motion asked for it is simply
+      the other way up at once. */
+  flip(element: Element, over: boolean) {
+    const card = this.byElement.get(element);
+    if (!card) return;
+    card.toTurn = over ? 180 : 0;
+    if (this.reduced) {
+      card.turn = card.toTurn;
+      card.vturn = 0;
+    }
     this.wake();
   }
 
@@ -350,6 +393,8 @@ export class PodiumStore {
       card.rx += card.vrx * h;
       card.ry += card.vry * h;
       card.lift += card.vlift * h;
+      card.vturn += ((card.toTurn - card.turn) * TURN_STIFFNESS - card.vturn * TURN_DAMPING) * h;
+      card.turn += card.vturn * h;
     }
     const still =
       Math.abs(card.toRx - card.rx) < 0.02 &&
@@ -357,33 +402,58 @@ export class PodiumStore {
       Math.abs(card.toLift - card.lift) < 0.05 &&
       Math.abs(card.vrx) < 0.05 &&
       Math.abs(card.vry) < 0.05 &&
-      Math.abs(card.vlift) < 0.05;
+      Math.abs(card.vlift) < 0.05 &&
+      Math.abs(card.toTurn - card.turn) < 0.05 &&
+      Math.abs(card.vturn) < 0.05;
     if (still) {
       card.rx = card.toRx;
       card.ry = card.toRy;
       card.lift = card.toLift;
-      card.vrx = card.vry = card.vlift = 0;
+      card.turn = card.toTurn;
+      card.vrx = card.vry = card.vlift = card.vturn = 0;
     }
     return moving || !still;
   }
 
-  /** Turn a card's markup as its body is turned. A card lying flat has no
-      transform at all, so its text is drawn sharp. */
+  /** How a card stands as a whole: its tilt, and its turn over with the
+      rise and the tip back that go with it, which are greatest half way. */
+  posed(card: PodiumCard) {
+    const midway = Math.sin((Math.min(Math.max(card.turn, 0), 180) * Math.PI) / 180);
+    return {
+      rx: card.rx + midway * TURN_TIP,
+      ry: card.ry + card.turn,
+      lift: card.lift + midway * TURN_LIFT * this.rem,
+    };
+  }
+
+  /** Turn a card's markup as its body is turned. A card lying flat face up
+      has no transform at all, so its text is drawn sharp. */
   pose(card: PodiumCard) {
-    const flat = card.rx === 0 && card.ry === 0 && card.lift === 0;
+    const { rx, ry, lift } = this.posed(card);
+    const flat = rx === 0 && ry === 0 && lift === 0;
     card.body.style.transform = flat
       ? ""
-      : `perspective(${CARD.perspective * this.rem}px) translateZ(${card.lift.toFixed(2)}px) rotateX(${card.rx.toFixed(3)}deg) rotateY(${card.ry.toFixed(3)}deg)`;
+      : `perspective(${CARD.perspective * this.rem}px) translateZ(${lift.toFixed(2)}px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;
+    if (card.back) {
+      const showingBack = Math.cos((ry * Math.PI) / 180) < 0;
+      if (card.front) card.front.style.visibility = showingBack ? "hidden" : "visible";
+      card.back.style.visibility = showingBack ? "visible" : "hidden";
+    }
   }
 
   /** Give a card back to its markup alone: flat, and with its own surface. */
   settle(card: PodiumCard) {
     card.rx = card.ry = card.lift = card.vrx = card.vry = card.vlift = 0;
     card.toRx = card.toRy = card.toLift = 0;
+    // The markup's own CSS turns a card that is face down (data-flipped).
+    card.turn = card.toTurn = card.vturn = 0;
     card.pass = null;
     card.live = false;
     card.arriving = false;
     card.body.style.transform = "";
+    // Which side shows goes back to the markup's own CSS.
+    if (card.front) card.front.style.visibility = "";
+    if (card.back) card.back.style.visibility = "";
     card.el.removeAttribute("data-live");
   }
 

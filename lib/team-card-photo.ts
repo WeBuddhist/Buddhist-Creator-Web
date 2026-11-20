@@ -20,6 +20,7 @@ const PICTURE_HOSTS = [
   ".tiktokcdn.com",
   ".tiktokcdn-eu.com",
   ".tiktokcdn-us.com",
+  ".douyinpic.com",
 ];
 const MAX_BYTES = 2 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;

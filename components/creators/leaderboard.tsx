@@ -4,12 +4,8 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
-  ArrowDownIcon,
   ArrowRightIcon,
-  ArrowUpIcon,
   ArrowsClockwiseIcon,
-  CaretDownIcon,
-  CaretUpIcon,
   ClockIcon,
   FacebookLogoIcon,
   InstagramLogoIcon,
@@ -21,11 +17,12 @@ import {
 import { CardPhoto } from "@/components/creator-card/card-photo";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { Flag } from "@/components/creators/flag";
+import { Change, RankMove } from "@/components/creators/movement";
 import { PodiumStage, usePodiumCard } from "@/components/creators/podium/stage";
 import type { Tier } from "@/components/creators/podium/tiers";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
-import { CARD_PATH, COUNTED_SOCIALS, type CountedSocial } from "@/lib/creator-card";
+import { CARD_EDIT_PATH, CARD_PATH, COUNTED_SOCIALS, type CountedSocial } from "@/lib/creator-card";
 import {
   CREATORS_LEADERBOARD,
   LEADERBOARD_API,
@@ -43,6 +40,8 @@ const PLACE_ICON: Record<CountedSocial, Icon> = {
   instagram: InstagramLogoIcon,
   tiktok: TiktokLogoIcon,
   facebook: FacebookLogoIcon,
+  // Douyin has no icon of its own here; its mark is the same note as TikTok's.
+  douyin: TiktokLogoIcon,
 };
 
 const placeOf = (place: CountedSocial) => COUNTED_SOCIALS.find(({ value }) => value === place)!;
@@ -572,7 +571,7 @@ function YourPlace({
           nativeButton={false}
           className="h-11 sm:shrink-0"
           // Behind a sign-in: nothing to fetch ahead for a visitor.
-          render={<Link href={CARD_PATH} prefetch={false} />}
+          render={<Link href={CARD_EDIT_PATH} prefetch={false} />}
         >
           {copy.none.action}
           <ArrowRightIcon data-icon="inline-end" weight="bold" />
@@ -581,9 +580,13 @@ function YourPlace({
     );
   } else {
     const standing = viewer.state === "approved" ? viewer.standings[place] : undefined;
+    /* A ranked card, or one in review, is read on the creator's own page.
+       An approved card with no rank here wants a link added, which is
+       done on the form. */
+    const toForm = viewer.state === "approved" && !standing;
     const action = (
       <Link
-        href={CARD_PATH}
+        href={toForm ? CARD_EDIT_PATH : CARD_PATH}
         prefetch={false}
         className={cn(
           "inline-flex min-h-6 items-center gap-1 rounded-sm text-sm font-medium whitespace-nowrap text-brand-cyan",
@@ -591,7 +594,7 @@ function YourPlace({
           focusRing,
         )}
       >
-        {copy[viewer.state].action}
+        {viewer.state === "approved" && standing ? copy.approved.view : copy[viewer.state].action}
         <ArrowRightIcon aria-hidden weight="bold" className="size-3.5" />
       </Link>
     );
@@ -740,76 +743,5 @@ function Channels({ row, slots, className }: { row: BoardRow; slots: boolean; cl
         );
       })}
     </ul>
-  );
-}
-
-/* The places a creator has gained or lost on the board since last month's
-   reading: a filled triangle and the number, green for up and red for
-   down. "New" for a first appearance, a dash for the same place, and
-   nothing when last month has no place to compare with. `words` spells
-   the unit out ("2 places"), for where no column head says it. */
-function RankMove({ row, words = false }: { row: BoardRow; words?: boolean }) {
-  const small = "text-xs leading-[1.3] font-medium tabular-nums";
-  if (row.fresh) {
-    return (
-      <span className="text-[0.6875rem] leading-[1.3] font-semibold tracking-[0.08em] text-brand-cyan uppercase">
-        New<span className="sr-only"> on the board this month</span>
-      </span>
-    );
-  }
-  if (row.climbed === null) return null;
-  if (row.climbed === 0) {
-    return (
-      <span className={cn(small, "text-muted-foreground")}>
-        {words ? (
-          "Same place"
-        ) : (
-          <>
-            <span aria-hidden>–</span>
-            <span className="sr-only">Same place as last month</span>
-          </>
-        )}
-      </span>
-    );
-  }
-  const up = row.climbed > 0;
-  const places = Math.abs(row.climbed);
-  const Triangle = up ? CaretUpIcon : CaretDownIcon;
-  const unit = places === 1 ? " place" : " places";
-  return (
-    <span
-      className={cn(
-        small,
-        "inline-flex items-center gap-0.5",
-        up ? "text-status-accepted-text" : "text-status-rejected-text",
-      )}
-    >
-      <Triangle aria-hidden weight="fill" className="size-3" />
-      <span className="sr-only">{up ? "Up " : "Down "}</span>
-      {places}
-      {words ? unit : <span className="sr-only">{unit}</span>}
-      <span className="sr-only"> since last month</span>
-    </span>
-  );
-}
-
-/* How far a figure has moved since last month's reading: followers gained
-   in green, lost in red. The arrow and the words for a screen reader say
-   which, so colour is never the only sign. */
-function Change({ gain }: { gain: number }) {
-  const up = gain > 0;
-  const Arrow = up ? ArrowUpIcon : ArrowDownIcon;
-  return (
-    <p
-      className={cn(
-        "flex items-center gap-0.5 text-sm leading-[1.3] font-medium tabular-nums",
-        up ? "text-status-accepted-text" : "text-status-rejected-text",
-      )}
-    >
-      <Arrow aria-hidden weight="bold" className="size-3.5" />
-      <span className="sr-only">{up ? "Up " : "Down "}</span>
-      {formatCount(Math.abs(gain))}
-      <span className="sr-only"> followers since last month</span>
-    </p>
   );
 }

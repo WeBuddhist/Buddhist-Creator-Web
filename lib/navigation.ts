@@ -29,6 +29,11 @@ export const NAV_ITEMS: NavItem[] = [
         description: "18 – 21 February 2027 at Nagaloka, Nagpur.",
       },
       {
+        label: "Awards 2027 nominations",
+        href: "/convention/2027/awards",
+        description: "Nominate creators for eight awards, in three categories.",
+      },
+      {
         label: "Buddhist Creators Convention 2026",
         href: "/convention/2026",
         description: "Nine days in Bodh Gaya: talks, a masterclass and awards.",

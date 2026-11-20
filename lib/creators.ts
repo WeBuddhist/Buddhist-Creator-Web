@@ -78,9 +78,12 @@ export const CREATORS_LEADERBOARD = {
     /* An approved card with no figure on the board being looked at. */
     approved: {
       status: "Not ranked yet",
+      /* With a rank, the way to the creator's own page; without one, to
+         the form, where the missing link is added. */
+      view: "View your card",
       action: "Edit your card",
       uncounted: "Your followers have not been counted yet. Your rank shows here after our next reading.",
-      unlinked: "Add a YouTube, Instagram, TikTok or Facebook link to your card to be ranked.",
+      unlinked: "Add a YouTube, Instagram, TikTok, Facebook or Douyin link to your card to be ranked.",
       uncountedOn: (site: string) =>
         `Your ${site} followers have not been counted yet. Your rank shows here after our next reading.`,
       unlinkedOn: (site: string) => `Your card has no ${site} link. Add one to be ranked on this board.`,

@@ -15,10 +15,10 @@ import { fetchYoutubeChannel, fetchYoutubeChannels, YOUTUBE_IDS_PER_REQUEST } fr
 
 /* The monthly reading of follower counts. Each counted link of each
    approved card is read once a month from the place itself: YouTube from its
-   own API, Instagram, TikTok and Facebook through SocialCrawl, where each
-   account read costs a credit. A reading goes to creator_follower_checks,
-   one row for the card, place and month, and its figure to the card's own
-   count.
+   own API, Instagram, TikTok, Facebook and Douyin through SocialCrawl,
+   where each account read costs a credit (six for Douyin). A reading goes
+   to creator_follower_checks, one row for the card, place and month, and
+   its figure to the card's own count.
 
    It is run every day (app/api/cron/follower-refresh). On the first run
    of a month every link is due; on the others only what is new since, and

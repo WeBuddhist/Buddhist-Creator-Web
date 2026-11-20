@@ -14,6 +14,7 @@ import {
   IdentificationCardIcon,
   ListIcon,
   SealCheckIcon,
+  TrophyIcon,
   TrayIcon,
   UsersThreeIcon,
   XIcon,
@@ -63,6 +64,7 @@ const WORKSPACE: NavItem[] = [
     match: (p) => p.startsWith("/admin/creator-cards") && !p.startsWith(CARD_CLAIMS),
   },
   { href: CARD_CLAIMS, label: "Card claims", icon: SealCheckIcon },
+  { href: "/admin/nominations", label: "Award nominations", icon: TrophyIcon },
   { href: "/admin/suggestions", label: "Suggestions", icon: ChatTeardropTextIcon },
   { href: "/admin/users", label: "Users & roles", icon: UsersThreeIcon, superadmin: true },
 ];
@@ -279,6 +281,8 @@ function Breadcrumb() {
   const pathname = usePathname();
   const crumbs: { label: string; href?: string }[] = pathname.startsWith("/admin/users")
     ? [{ label: "Users & roles" }]
+    : pathname.startsWith("/admin/nominations")
+      ? [{ label: "Award nominations" }]
     : pathname.startsWith("/admin/suggestions")
       ? [{ label: "Suggestions" }]
       : pathname === "/admin/creator-cards/new"

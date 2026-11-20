@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
-import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
+import { label } from "@/components/convention/section-heading";
 import { requireUser } from "@/lib/auth";
-import { CARD_FORM, CARD_PATH, type CardContent } from "@/lib/creator-card";
-import { cardFollowers, cardLinkChecks, getClaimableCard, getMyCard, getMyClaim } from "@/lib/creator-cards";
+import { CARD_CLAIM, CARD_FORM, CARD_HOME, CARD_PATH, type CardContent } from "@/lib/creator-card";
+import { getClaimableCard, getMyCard, getMyClaim } from "@/lib/creator-cards";
+import { cardHome, homeNetwork } from "@/lib/creator-home";
 import { claimHref } from "@/lib/creators";
 import type { CreatorCard } from "@/lib/db/schema";
 import { presignedGetUrl } from "@/lib/s3";
 import { cn } from "@/lib/utils";
-import { CardForm, type FormCard } from "./card-form";
+import { CardHomeView, HomeNotice, NoCardView } from "./card-home";
 import { ClaimCard, ClaimPending } from "./claim-card";
 
 export const metadata: Metadata = {
@@ -17,49 +18,28 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-/* The heading is static and prerenders; the form needs the session and the
-   creator's card, so it streams in behind the boundary. The proxy has
-   already sent anyone without a session to sign in, so the fallback is
-   only ever a brief placeholder.
+/* The creator's own page: their card, where it stands on the leaderboard
+   and what it adds to the mission (card-home.tsx). Everything on it is
+   about the person the session names, so nothing prerenders but the
+   frame; the page streams in behind the boundary. The proxy has already
+   sent anyone without a session to sign in.
 
-   Opening the page stores nothing. A card exists once its creator sends
-   it for review.
+   The form is not here: a card is made and changed on its own page
+   (./edit), which this one leads to. Opening either stores nothing; a
+   card exists once its creator sends it for review.
 
    The page is also where a card the team made is claimed: the directory's
    claim link arrives here as ?claim=<id>, after the sign-in. Someone with
    no card of their own is then shown that card and can send a claim for
-   it, in place of the empty form. A claim is a request: while it is with
-   our team this page shows it waiting, with the code to put on the
-   channel, and the card becomes theirs here only once an admin has
-   approved it. */
+   it. A claim is a request: while it is with our team this page shows it
+   waiting, with the code to put on the channel, and the card becomes
+   theirs here only once an admin has approved it. */
 export default function CreatorCardPage(props: PageProps<"/creator-card">) {
   return (
-    <main className="flex flex-1 flex-col bg-background">
-      <section aria-labelledby="creator-card-title" className="border-b border-border">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-14 pb-12 sm:px-6 lg:pt-20 lg:pb-16">
-          {/* The section heading's stack, with the page's h1 in it. */}
-          <div className="max-w-3xl">
-            <p className={cn(label, "text-brand-cyan")}>{CARD_FORM.eyebrow}</p>
-            <h1
-              id="creator-card-title"
-              className="mt-4 text-balance font-display text-4xl leading-[1.06] text-foreground sm:text-5xl lg:text-6xl"
-            >
-              {CARD_FORM.title}
-            </h1>
-            <p className="mt-5 max-w-[58ch] text-pretty text-lg leading-[1.6] text-muted-foreground">
-              {CARD_FORM.intro}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section aria-label="Your creator card" className="flex-1 bg-paper-deep/50">
-        <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
-          <Suspense fallback={<FormFallback />}>
-            <CardLoader searchParams={props.searchParams} />
-          </Suspense>
-        </div>
-      </section>
+    <main data-face="inter" className="flex flex-1 flex-col bg-background">
+      <Suspense fallback={<HomeFallback />}>
+        <CardLoader searchParams={props.searchParams} />
+      </Suspense>
     </main>
   );
 }
@@ -75,20 +55,23 @@ async function CardLoader({ searchParams }: { searchParams: PageProps<"/creator-
   const row = await getMyCard(user.id);
   if (row) {
     return (
-      <>
-        {/* One card each: theirs is shown, whatever they came to claim. */}
-        {claimId && claimId !== row.id && (
-          <Notice>You already have a creator card, so you cannot claim another one. This is your card.</Notice>
-        )}
-        <CardForm accountName={user.name} accountPicture={user.picture} card={await fromRow(row)} />
-      </>
+      <CardHomeView
+        home={await cardHome(row, user)}
+        notice={
+          // One card each: theirs is shown, whatever they came to claim.
+          claimId &&
+          claimId !== row.id && (
+            <HomeNotice>You already have a creator card, so you cannot claim another one. This is your card.</HomeNotice>
+          )
+        }
+      />
     );
   }
 
   const claim = await getMyClaim(user.id);
   if (claim?.status === "pending") {
     return (
-      <>
+      <ClaimFrame>
         {claimId && claimId !== claim.cardId && (
           <Notice>
             You already have a claim with our team, for the card below. To claim a different card, withdraw this one
@@ -101,40 +84,48 @@ async function CardLoader({ searchParams }: { searchParams: PageProps<"/creator-
           sentAt={claim.createdAt.toISOString()}
           email={user.email}
         />
-      </>
+      </ClaimFrame>
     );
   }
 
   const claimable = claimId ? await getClaimableCard(claimId) : null;
   if (claimable) {
-    return <ClaimCard cardId={claimable.id} email={user.email} card={await cardContent(claimable)} />;
+    return (
+      <ClaimFrame>
+        <ClaimCard cardId={claimable.id} email={user.email} card={await cardContent(claimable)} />
+      </ClaimFrame>
+    );
   }
   return (
-    <>
-      {claimId ? (
-        <Notice>
-          That card has an owner already, or is no longer there. If it is yours, write to {contactLink}. You can still
-          make a card of your own below.
-        </Notice>
-      ) : (
-        // The last claim was turned down: say so once, where they look.
-        claim?.status === "rejected" && (
-          <Notice>
-            Your claim for <span className="font-medium">{claim.card.displayName}</span> was not approved.
-            {claim.reviewNote && (
-              <span className="mt-2 block whitespace-pre-line wrap-anywhere border-s-2 border-brand-cyan/40 ps-3">
-                {claim.reviewNote}
+    <NoCardView
+      name={user.name}
+      picture={user.picture}
+      network={await homeNetwork()}
+      notice={
+        claimId ? (
+          <HomeNotice>
+            That card has an owner already, or is no longer there. If it is yours, write to {contactLink}. You can
+            still create a card of your own.
+          </HomeNotice>
+        ) : (
+          // The last claim was turned down: say so once, where they look.
+          claim?.status === "rejected" && (
+            <HomeNotice>
+              Your claim for <span className="font-medium">{claim.card.displayName}</span> was not approved.
+              {claim.reviewNote && (
+                <span className="mt-2 block whitespace-pre-line wrap-anywhere border-s-2 border-brand-cyan/40 ps-3">
+                  {claim.reviewNote}
+                </span>
+              )}
+              <span className={claim.reviewNote ? "mt-2 block" : undefined}>
+                {" "}
+                If you have a question about it, write to {contactLink}. You can also create a card of your own.
               </span>
-            )}
-            <span className={claim.reviewNote ? "mt-2 block" : undefined}>
-              {" "}
-              If you have a question about it, write to {contactLink}. You can also make a card of your own below.
-            </span>
-          </Notice>
+            </HomeNotice>
+          )
         )
-      )}
-      <CardForm accountName={user.name} accountPicture={user.picture} card={null} />
-    </>
+      }
+    />
   );
 }
 
@@ -164,7 +155,35 @@ async function cardContent(row: CreatorCard): Promise<CardContent> {
   };
 }
 
-/* A line above the form about the claim that brought the visitor here. */
+/* The claim screens under their own heading: the page's title, for
+   somebody who is here about a card the team made. */
+function ClaimFrame({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <section aria-labelledby="creator-card-title" className="border-b border-border">
+        <div className="mx-auto w-full max-w-6xl px-5 pt-14 pb-12 sm:px-6 lg:pt-20 lg:pb-16">
+          <div className="max-w-3xl">
+            <p className={cn(label, "text-brand-cyan")}>{CARD_CLAIM.eyebrow}</p>
+            <h1
+              id="creator-card-title"
+              className="mt-4 text-balance font-display text-4xl leading-[1.06] text-foreground sm:text-5xl lg:text-6xl"
+            >
+              {CARD_CLAIM.title}
+            </h1>
+            <p className="mt-5 max-w-[58ch] text-pretty text-lg leading-[1.6] text-muted-foreground">
+              {CARD_CLAIM.intro}
+            </p>
+          </div>
+        </div>
+      </section>
+      <section aria-label="Your claim" className="flex-1 bg-paper-deep/50">
+        <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-6 lg:py-16">{children}</div>
+      </section>
+    </>
+  );
+}
+
+/* A line above a claim screen about the claim that brought the visitor here. */
 function Notice({ children }: { children: ReactNode }) {
   return (
     <p
@@ -176,39 +195,13 @@ function Notice({ children }: { children: ReactNode }) {
   );
 }
 
-async function fromRow(row: CreatorCard): Promise<FormCard> {
-  const [photoUrl, checks] = await Promise.all([presignedGetUrl(row.photoKey), cardLinkChecks(row)]);
-  return {
-    // Only an uploaded photo; the form falls back to the account's picture.
-    photoUrl,
-    status: row.status,
-    // The note is written for a rejection; it is not shown otherwise.
-    reviewNote: row.status === "rejected" ? row.reviewNote : null,
-    submittedAt: row.submittedAt?.toISOString() ?? null,
-    displayName: row.displayName,
-    country: row.country,
-    creatorType: row.creatorType,
-    languages: row.languages ?? [],
-    languagesOther: row.languagesOther,
-    contentTypes: row.contentTypes ?? [],
-    contentTypesOther: row.contentTypesOther,
-    tagline: row.tagline,
-    socials: row.socials,
-    totalFollowers: row.totalFollowers,
-    followers: cardFollowers(row),
-    checks: Object.fromEntries(
-      Object.entries(checks).map(([place, check]) => [
-        place,
-        { status: check.status, checkedAt: check.checkedAt.toISOString() },
-      ]),
-    ),
-  };
-}
-
-function FormFallback() {
+/* Holds about the height the page's opening takes, so the footer does not
+   jump far when the page arrives. */
+function HomeFallback() {
   return (
-    <div className={cn(framedCard, "max-w-3xl")} aria-busy="true" aria-live="polite">
-      <div className={cn(framedCardInner, "px-5 py-6 text-sm text-muted-foreground sm:px-6")}>Loading your card…</div>
+    <div className="mx-auto w-full max-w-6xl px-5 pt-12 pb-16 sm:px-6 lg:pt-16" aria-busy="true">
+      <p className={cn(label, "text-brand-cyan")}>{CARD_HOME.eyebrow}</p>
+      <p className="mt-4 min-h-[32rem] text-lg text-muted-foreground">{CARD_HOME.loading}</p>
     </div>
   );
 }

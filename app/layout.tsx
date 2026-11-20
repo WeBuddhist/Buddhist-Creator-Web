@@ -23,12 +23,15 @@ const newsreader = Newsreader({
 });
 
 // The admin dashboard's face. The dashboard keeps its own neutral look, see
-// "Admin keeps the dashboard look" in globals.css. On the public site only
-// the homepage hero's convention ticket is set in it, so it is not
-// preloaded: no other page should pay for it.
+// "Admin keeps the dashboard look" in globals.css. On the public site the
+// homepage hero's convention ticket and the creator's own card page
+// (data-face="inter" in globals.css) are set in it, so it is not
+// preloaded: no other page should pay for it. The optical-size axis gives
+// that page's large titles Inter's display cut.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  axes: ["opsz"],
   preload: false,
 });
 

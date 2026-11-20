@@ -14,7 +14,12 @@ import { CONTENT_TOPICS, isWebLink, labelFor, type Option } from "@/lib/registra
    required here is what a creator must give when sending their own card
    for review. */
 
+/** The creator's own page: their card, where it stands and what it adds
+    to the mission. */
 export const CARD_PATH = "/creator-card";
+
+/** The form a card is made and changed with. */
+export const CARD_EDIT_PATH = "/creator-card/edit";
 
 /** The longest note a claimant can send with a claim. */
 export const CLAIM_NOTE_MAX = 1000;
@@ -83,6 +88,14 @@ export const CARD_SOCIALS = [
     placeholder: "https://www.facebook.com/yourpage",
     audience: "Followers",
   },
+  // Douyin (抖音), ByteDance's app for mainland China: a network of its
+  // own, apart from TikTok. An account's address is /user/ and its sec_uid.
+  {
+    value: "douyin",
+    label: "Douyin",
+    placeholder: "https://www.douyin.com/user/MS4wLjABAAAA…",
+    audience: "Followers",
+  },
   { value: "x", label: "X", placeholder: "https://x.com/yourhandle" },
   { value: "website", label: "Website", placeholder: "https://" },
 ] as const satisfies readonly (Option & { placeholder: string; audience?: string })[];
@@ -112,6 +125,7 @@ const SOCIAL_SITES: Partial<Record<CardSocial, readonly string[]>> = {
   instagram: ["instagram.com"],
   tiktok: ["tiktok.com"],
   facebook: ["facebook.com", "fb.com"],
+  douyin: ["douyin.com"],
   x: ["x.com", "twitter.com"],
 };
 
@@ -129,14 +143,17 @@ export function linkFitsPlace(slug: CardSocial, link: string) {
     two ways ("https://instagram.com/Name" and
     "https://www.instagram.com/name/?hl=en") gives the same key. Follower
     readings are kept under it, so one account's figures are never set
-    beside another's. A YouTube channel id and a Facebook share code keep
-    their capitals, which are part of them. */
+    beside another's. A YouTube channel id, a Facebook share code and a
+    Douyin sec_uid keep their capitals, which are part of them. */
 export function socialLinkKey(slug: CardSocial, link: string) {
   const text = link.trim();
   if (!URL.canParse(text)) return text.toLowerCase();
   const url = new URL(text);
   const path = url.pathname.replace(/\/+$/, "");
-  const exact = (slug === "youtube" && /^\/channel\//i.test(path)) || (slug === "facebook" && /^\/share\//i.test(path));
+  const exact =
+    (slug === "youtube" && /^\/channel\//i.test(path)) ||
+    (slug === "facebook" && /^\/share\//i.test(path)) ||
+    (slug === "douyin" && /^\/user\//i.test(path));
   const id = slug === "facebook" ? url.searchParams.get("id") : null;
   return `${siteOf(url)}${exact ? path : path.toLowerCase()}${id ? `?id=${id}` : ""}`;
 }
@@ -148,7 +165,7 @@ export type SocialAccount =
   | { by: "channel"; channelId: string }
   /** A YouTube name from before handles: youtube.com/user/name. */
   | { by: "user"; username: string }
-  /** Facebook is read by the page's address. */
+  /** Facebook and Douyin are read by the account's address. */
   | { by: "url"; url: string };
 
 function safeDecode(part: string) {
@@ -191,6 +208,11 @@ export function socialAccount(slug: CountedSocial, link: string): SocialAccount 
       const id = url.searchParams.get("id");
       return { by: "url", url: `https://www.facebook.com${url.pathname}${id ? `?id=${encodeURIComponent(id)}` : ""}` };
     }
+    case "douyin":
+      // The sec_uid, without what a share adds to the address.
+      return first === "user" && /^[\w-]{20,}$/.test(second)
+        ? { by: "url", url: `https://www.douyin.com/user/${second}` }
+        : null;
   }
 }
 
@@ -237,6 +259,18 @@ export function cardPhotoSrc(url: string | null | undefined): string | null {
   if (!url) return null;
   if (!URL.canParse(url) || !new URL(url).hostname.endsWith(".googleusercontent.com")) return url;
   return url.replace(/=s\d+(-c)?$/, "=s512-c");
+}
+
+/** A name's initials: the first letter of its first word and of its last,
+    "Ted Kunchok" → "TK". One word gives one letter. A name written in two
+    scripts, "พระศักดา สุนฺทโร (Phra Sakda Suntharo)", gives the Latin
+    ones, "PS", rather than a letter from each. */
+export function cardInitials(name: string | undefined) {
+  const letters = (name ?? "").split(/\s+/).flatMap((word) => /[\p{L}\p{N}]/u.exec(word)?.[0] ?? []);
+  const latin = letters.filter((letter) => /[\p{Script=Latin}\p{N}]/u.test(letter));
+  const words = latin.length > 0 ? latin : letters;
+  if (words.length === 0) return "";
+  return (words.length === 1 ? words[0] : words[0] + words[words.length - 1]).toUpperCase();
 }
 
 /* A card the team makes for a creator it knows takes its picture from
@@ -292,13 +326,134 @@ export function cardLinks(socials: Record<string, string | undefined> | null) {
   });
 }
 
+/* Where a creator's audience puts them among the others: five bands, each
+   ten times the one before it, named by the figures themselves. `from` is
+   the fewest followers a band holds; it runs up to the next band's. */
+export const AUDIENCE_BANDS = [
+  { from: 0, label: "Under 1K", phrase: "fewer than 1K followers" },
+  { from: 1_000, label: "1K to 10K", phrase: "1K to 10K followers" },
+  { from: 10_000, label: "10K to 100K", phrase: "10K to 100K followers" },
+  { from: 100_000, label: "100K to 1M", phrase: "100K to 1M followers" },
+  { from: 1_000_000, label: "1M and above", phrase: "1M followers or more" },
+] as const;
+
+/** Which band an audience is in, as an index into AUDIENCE_BANDS. */
+export function audienceBand(followers: number) {
+  return AUDIENCE_BANDS.findLastIndex((band) => followers >= band.from);
+}
+
 /* Copy. */
 export const CARD_FORM = {
   eyebrow: "Creator card",
   title: "Create your creator card",
+  editTitle: "Edit your creator card",
   intro:
     "A creator card says who you are, what you make and where to find it. Fill it in and send it to our team; we read every card before it is approved.",
+  editIntro:
+    "Change what your card says and send it back to our team. A changed card is read again before it returns to the directory and the leaderboard.",
   contact: "hello@buddhistcreators.com",
+} as const;
+
+/* What a counted link's reading says, beside the link on the form and on
+   the creator's own page. */
+export const CARD_READING = {
+  monthly: "Updated every month.",
+  lastRead: (date: string) => `Updated every month. Last read ${date}.`,
+  failed: "We could not read this account. Check that the link is your public profile.",
+  onApproval: "We read this once your card is approved.",
+  soon: "We will read this within a day.",
+} as const;
+
+/* The claim screens, which the creator's page shows in place of a card to
+   somebody who has none and came for one the team made. */
+export const CARD_CLAIM = {
+  eyebrow: "Creator card",
+  title: "Claim your creator card",
+  intro:
+    "Our team makes cards for creators it knows, from what is public on their channels. If one of them is you, ask for it here; we check every claim before a card changes hands.",
+} as const;
+
+/* The creator's own page (app/(site)/creator-card): the card, where it
+   stands on the leaderboard and what it adds to the mission. The figures
+   are put into the sentences by the page. */
+export const CARD_HOME = {
+  eyebrow: "Your creator card",
+  loading: "Loading your card…",
+  edit: "Edit your card",
+  resubmit: "Edit and resubmit",
+  create: "Create your creator card",
+  board: "See who is above you",
+  boardFirst: "See the leaderboard",
+  /* Nobody has a card yet. */
+  none: {
+    title: "Your place among Buddhist creators starts with a card",
+    lede: "A creator card says who you are, what you make and where to find it. Once our team approves it you are in the directory, your channels are counted for the leaderboard, and your followers count toward our mission.",
+  },
+  pending: {
+    title: "Your card is with our team",
+    lede: "We read every card before it is approved. Your place on the leaderboard shows here once yours is.",
+    status: "In review",
+  },
+  rejected: {
+    title: "Your card was not approved yet",
+    lede: "Change what needs changing and send it again. Our team reads every resubmitted card.",
+    note: "A note from our team",
+    status: "Not approved",
+  },
+  approved: {
+    status: "Approved",
+    /* Approved, with no figure to rank it on. */
+    title: "Your card is approved",
+  },
+  card: {
+    label: "Your card",
+    rank: "Rank",
+    sample: "A sample of your card",
+    turn: "Turn the card over",
+    /* Under the card, beside the turn. */
+    edit: "Edit card",
+    front: "Show the front",
+    details: "On your card",
+    creates: "Creates",
+    languages: "Publishes in",
+  },
+  mission: {
+    label: "Our mission",
+    goal: (goal: string, year: number) => `Our goal is ${goal} people by ${year}.`,
+    meter: (goal: string) => `Progress to ${goal} followers`,
+    /* Pointing at the gold end of the meter. */
+    yours: "Your contribution",
+    waiting: "Once your card is approved, your followers count toward it.",
+    join: "Create your card to add yours.",
+  },
+  channels: {
+    eyebrow: "Your channels",
+    title: "Where your followers are",
+    description: "We read each count from the channel itself, once a month. Nobody types a number in.",
+    lastRead: "Last read",
+    uncounted: "Not counted for the leaderboard",
+    total: "All channels",
+  },
+  bands: {
+    eyebrow: "Among all creators",
+    description: (creators: string) =>
+      `How the ${creators} creators on the leaderboard are spread, by the followers of all their channels together.`,
+  },
+} as const;
+
+/* Sharing the card (components/creator-card/share-card.tsx). */
+export const CARD_SHARE = {
+  open: "Share your card",
+  title: "Share your card",
+  description: "Post your card to your story or your feed. The picture shows it as it is today.",
+  shape: "Shape of the picture",
+  drawing: "Drawing your card…",
+  failed: "Your card could not be drawn just now. Close this and try again in a moment.",
+  alt: (shape: string) => `Your creator card, drawn for a ${shape}`,
+  download: "Save picture",
+  share: "Share",
+  shareTitle: "My Buddhist Creators card",
+  shareFailed: "Sharing did not open. Save the picture and post it from your photos.",
 } as const;
 
 /* ---------------------------------------------------------------------- */

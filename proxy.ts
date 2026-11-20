@@ -3,8 +3,8 @@ import { getAuth0, isAuth0Configured, LOGIN_PATH, loginUrl, safeReturnTo } from 
 
 /* The Auth0 SDK's middleware serves /auth/* and keeps the session cookie
    rolling. On top of that, three areas need a session before they render:
-   the registration form, the creator card form and the admin dashboard.
-   Everyone else passes.
+   the registration form, the awards nomination form, the creator card
+   form and the admin dashboard. Everyone else passes.
 
    Sign-in happens on our own /login page. Someone without a session is
    sent there with where they were going; someone who already has one is
@@ -15,6 +15,7 @@ import { getAuth0, isAuth0Configured, LOGIN_PATH, loginUrl, safeReturnTo } from 
 
 const REQUIRES_SESSION = [
   /^\/convention\/2027\/register(?:\/|$)/,
+  /^\/convention\/2027\/awards\/nominate(?:\/|$)/,
   /^\/creator-card(?:\/|$)/,
   /^\/admin(?:\/|$)/,
 ];

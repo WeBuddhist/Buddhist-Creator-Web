@@ -14,9 +14,12 @@ The website for [Buddhist Creators](https://buddhistcreators.com), a global netw
 | `/convention/2026` | Buddhist Creators Convention 2026 in Bodh Gaya |
 | `/convention/2027` | Buddhist Creators Convention 2027 in Nagpur |
 | `/convention/2027/register` | The convention application form (sign-in required) |
+| `/convention/2027/awards` | The 2027 awards: the categories and the invitation to nominate |
+| `/convention/2027/awards/nominate` | The nomination form (sign-in required) |
 | `/admin` | The selection committee's dashboard (admin role required) |
 | `/creators` | The leaderboard of the most followed creators (also on the home page), and the creators directory: every approved creator card, searchable and paged |
-| `/creator-card` | A creator's own card: make it, edit it, or claim one the team made (sign-in required) |
+| `/creator-card` | A creator's own page: their card, their place on the leaderboard and their part in the mission; also where a card the team made is claimed (sign-in required) |
+| `/creator-card/edit` | The form a creator card is made and changed with (sign-in required) |
 | `/team` | The team, and the invitation to join it |
 
 ## Tech stack
@@ -70,6 +73,7 @@ Most copy lives in typed data files in `lib/`, so it can be changed without touc
 | `lib/events.ts` | Events listing |
 | `lib/convention-2026.ts` | Convention 2026 page |
 | `lib/convention-2027.ts` | Convention 2027 page, including the registration switch |
+| `lib/awards-2027.ts` | The 2027 awards, their page and the nomination form, including the switch that closes nominations |
 | `lib/team.ts` | The team |
 | `lib/creators.ts` | Creators page: copy, and the search and country in the URL |
 | `lib/creator-card.ts` | Creator card form: copy and option lists |
@@ -97,11 +101,18 @@ WebP or JPEG, at most 512 KB) and stored in the private S3 bucket under
 is a change to the card like any other, so it goes back for review, and the
 object it replaces is deleted.
 
-A signed-in creator fills theirs in at `/creator-card`, with the card drawn
-beside the form as they type, and submits it for review. The form then
-behaves as the registration form does: it is read-only behind an Edit card
-button, editing offers Save changes and Cancel, and the actions float at the
-foot of the screen. Admins and superadmins review at `/admin/creator-cards`:
+A signed-in creator fills theirs in at `/creator-card/edit`, with the card
+drawn beside the form as they type, and submits it for review; the actions
+(Submit for review, or Save changes, and Cancel) float at the foot of the
+screen. The form is shown only to make or change a card. Sending it ends on
+`/creator-card`, the creator's own page, which is where a card is read: the
+card itself (a collectible card like the leaderboard's top three, drawn in
+WebGL where the browser can, which turns over on a click to a brand-cyan
+back with the lion), where the review stands, the creator's place
+on the leaderboard and what the month did to it, each channel's own figure
+and place, how the creators are spread by audience, and the creator's
+followers inside everybody the network reaches, on the way to the mission's
+figure. Admins and superadmins review at `/admin/creator-cards`:
 approve, or reject with a note the creator reads on their card page. A
 creator can edit their card at any time, and every change, even to an
 approved card, goes back to pending, so nothing is approved unread. A review names the version of the card it read
@@ -113,7 +124,9 @@ and is refused if the creator has changed the card since.
 | Reads and writes, status rules | `lib/creator-cards.ts` |
 | The card itself | `components/creator-card/creator-card.tsx` |
 | Preparing an uploaded photo in the browser | `components/creator-card/photo.ts` |
-| The form | `app/(site)/creator-card/` |
+| The creator's own page | `app/(site)/creator-card/page.tsx`, `card-home.tsx`, `lib/creator-home.ts` |
+| The creator's collectible card | `components/creator-card/collectible-card.tsx`, `components/creators/podium/` |
+| The form | `app/(site)/creator-card/edit/`, `card-form.tsx`, `card-fields.tsx` |
 | Review | `app/admin/creator-cards/` |
 | The public directory | `app/(site)/creators/`, `components/creators/` |
 | Claiming a card | `app/(site)/creator-card/claim-card.tsx` |
@@ -142,7 +155,8 @@ approved, since the admin is the reviewer, and then:
 - reads the follower count of each link that is new or changed, at once
   (`readCardLinks`), so the count is on the card's page when it opens.
   YouTube is free; Instagram, TikTok and Facebook cost a SocialCrawl credit
-  each, and a link read already this month is not read again;
+  each and Douyin six, and a link read already this month is not read
+  again;
 - refuses a link another card already has, since one account is one
   creator;
 - gives a card with no photo the profile picture the reading brought
@@ -195,12 +209,13 @@ time and none while they have a card. Nothing is emailed at any step.
 
 ### Follower counts
 
-Follower counts are kept for YouTube, Instagram, TikTok and Facebook and
+Follower counts are kept for YouTube, Instagram, TikTok, Facebook and
+Douyin and
 added up by the database (`total_followers`); they order the directory and
 are never part of a review. Nobody types them. Each counted link is read
 from the place itself once a month: YouTube from its own Data API v3,
-the other three through [SocialCrawl](https://www.socialcrawl.dev)'s
-profile endpoints (one credit per account read).
+the others through [SocialCrawl](https://www.socialcrawl.dev)'s
+profile endpoints (one credit per account read, six for a Douyin account).
 
 | Piece | Where |
 | --- | --- |
@@ -223,7 +238,7 @@ profile endpoints (one credit per account read).
 - **A full reading can be asked for by hand**: "Run workflow" on the
   Actions tab, with its box ticked, reads every link again now and writes
   over the month's rows. It costs a SocialCrawl credit for each Instagram,
-  TikTok and Facebook link.
+  TikTok and Facebook link, and six for each Douyin link.
 - **Only approved cards are read.** A reading costs a credit, so a card
   waiting for a review is not read; its links are read within a day of
   its approval.

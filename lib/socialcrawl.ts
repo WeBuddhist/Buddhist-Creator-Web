@@ -4,13 +4,14 @@ import type { SocialAccount } from "@/lib/creator-card";
 import { readCount, SourceStopped, type FollowerReading } from "@/lib/follower-reading";
 
 /* SocialCrawl (socialcrawl.dev) reads the follower counts YouTube's own
-   API does not cover: Instagram, TikTok and Facebook. Only the plain
-   profile endpoints are called, one credit each for an account that was
-   found. Nothing here asks for the fuller, dearer ones.
+   API does not cover: Instagram, TikTok, Facebook and Douyin. Only the
+   plain profile endpoints are called, one credit each for an account that
+   was found (six for Douyin, whose profile is the cheapest call that place
+   has). Nothing here asks for the fuller, dearer ones.
 
    SOCIALCRAWL_BASE_URL is for a local stand-in; it is unset on the site. */
 
-export type SocialCrawlPlace = "instagram" | "tiktok" | "facebook";
+export type SocialCrawlPlace = "instagram" | "tiktok" | "facebook" | "douyin";
 
 const DEFAULT_BASE = "https://www.socialcrawl.dev/v1";
 const TIMEOUT_MS = 25_000;
@@ -39,7 +40,9 @@ const reply = z.object({
 });
 
 function query(place: SocialCrawlPlace, account: SocialAccount): URLSearchParams | null {
-  if (place === "facebook") return account.by === "url" ? new URLSearchParams({ url: account.url }) : null;
+  if (place === "facebook" || place === "douyin") {
+    return account.by === "url" ? new URLSearchParams({ url: account.url }) : null;
+  }
   if (account.by !== "handle") return null;
   // `trim` leaves the recent posts out of an Instagram reply.
   return new URLSearchParams(place === "instagram" ? { handle: account.handle, trim: "true" } : { handle: account.handle });

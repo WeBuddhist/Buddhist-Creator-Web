@@ -300,12 +300,13 @@ export const creatorCards = pgTable(
     instagramFollowers: integer("instagram_followers"),
     tiktokFollowers: integer("tiktok_followers"),
     facebookFollowers: integer("facebook_followers"),
+    douyinFollowers: integer("douyin_followers"),
     /** The counts added together, kept by the database so it cannot fall
         out of step with them. A card with no count has 0. */
     totalFollowers: bigint("total_followers", { mode: "number" })
       .generatedAlwaysAs(
         (): SQL =>
-          sql`coalesce(${creatorCards.youtubeFollowers}, 0)::bigint + coalesce(${creatorCards.instagramFollowers}, 0) + coalesce(${creatorCards.tiktokFollowers}, 0) + coalesce(${creatorCards.facebookFollowers}, 0)`,
+          sql`coalesce(${creatorCards.youtubeFollowers}, 0)::bigint + coalesce(${creatorCards.instagramFollowers}, 0) + coalesce(${creatorCards.tiktokFollowers}, 0) + coalesce(${creatorCards.facebookFollowers}, 0) + coalesce(${creatorCards.douyinFollowers}, 0)`,
       )
       .notNull(),
 
@@ -326,7 +327,7 @@ export const creatorCards = pgTable(
     check("creator_cards_tagline_check", sql`char_length(${table.tagline}) <= 140`),
     check(
       "creator_cards_followers_check",
-      sql`${table.youtubeFollowers} >= 0 and ${table.instagramFollowers} >= 0 and ${table.tiktokFollowers} >= 0 and ${table.facebookFollowers} >= 0`,
+      sql`${table.youtubeFollowers} >= 0 and ${table.instagramFollowers} >= 0 and ${table.tiktokFollowers} >= 0 and ${table.facebookFollowers} >= 0 and ${table.douyinFollowers} >= 0`,
     ),
   ],
 );
@@ -411,13 +412,81 @@ export const creatorFollowerChecks = pgTable(
     index("creator_follower_checks_month_idx").on(table.month),
     check(
       "creator_follower_checks_platform_check",
-      sql`${table.platform} in ('youtube', 'instagram', 'tiktok', 'facebook')`,
+      sql`${table.platform} in ('youtube', 'instagram', 'tiktok', 'facebook', 'douyin')`,
     ),
     check("creator_follower_checks_month_check", sql`extract(day from ${table.month}) = 1`),
     check(
       "creator_follower_checks_followers_check",
       sql`(${table.status} = 'ok') = (${table.followers} is not null) and ${table.followers} >= 0`,
     ),
+  ],
+);
+
+/* Nominations for the convention awards (app/(site)/convention/2027/awards).
+   A signed-in person fills in one ballot a year: who they are, and for each
+   award they choose, the one person they put forward. The rule "one person
+   per category" is the unique index on (ballot, category); leaving a
+   category blank means there is no row for it.
+
+   The category is a slug from lib/awards-2027.ts, not checked here, so a
+   later year can name its own awards without a migration. The limits repeat
+   that file's NOMINATION_LIMITS; drizzle-kit reads this file on its own, so
+   they are written out. */
+export const nominationBallots = pgTable(
+  "nomination_ballots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    awardYear: integer("award_year").default(2027).notNull(),
+    /** As the nominator gave it; the email is the user's. */
+    nominatorName: text("nominator_name").notNull(),
+    /** A name from lib/countries.ts. */
+    nominatorCountry: text("nominator_country").notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("nomination_ballots_user_year_idx").on(table.userId, table.awardYear),
+    check("nomination_ballots_name_check", sql`char_length(${table.nominatorName}) between 1 and 200`),
+    check("nomination_ballots_country_check", sql`char_length(${table.nominatorCountry}) between 1 and 100`),
+  ],
+);
+
+export const nominations = pgTable(
+  "nominations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ballotId: uuid("ballot_id")
+      .notNull()
+      .references(() => nominationBallots.id, { onDelete: "cascade" }),
+    /** An award's slug, e.g. "influencer-of-the-year". */
+    category: text("category").notNull(),
+    nomineeName: text("nominee_name").notNull(),
+    /** A link to their social media, for an award that asks for one. */
+    account: text("account"),
+    /** Their profile, or the video, content or music the award is for.
+        Empty only for an award that takes a picture and was given one. */
+    link: text("link"),
+    /** A video of theirs, for an award whose link is to their profile. */
+    videoLink: text("video_link"),
+    /** The S3 key of the uploaded picture of the work, for an award that
+        takes one (Best Painting / Visual Art). Private; read through a
+        presigned URL. */
+    imageKey: text("image_key"),
+    reason: text("reason").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("nominations_ballot_category_idx").on(table.ballotId, table.category),
+    index("nominations_category_idx").on(table.category),
+    check("nominations_nominee_name_check", sql`char_length(${table.nomineeName}) between 1 and 200`),
+    check("nominations_account_check", sql`char_length(${table.account}) between 1 and 1000`),
+    check("nominations_link_check", sql`char_length(${table.link}) between 1 and 1000`),
+    check("nominations_video_link_check", sql`char_length(${table.videoLink}) between 1 and 1000`),
+    check("nominations_link_or_image_check", sql`${table.link} is not null or ${table.imageKey} is not null`),
+    check("nominations_reason_check", sql`char_length(${table.reason}) between 1 and 2000`),
   ],
 );
 
@@ -463,6 +532,15 @@ export const applicationEventsRelations = relations(applicationEvents, ({ one })
   actor: one(users, { fields: [applicationEvents.actorId], references: [users.id] }),
 }));
 
+export const nominationBallotsRelations = relations(nominationBallots, ({ one, many }) => ({
+  user: one(users, { fields: [nominationBallots.userId], references: [users.id] }),
+  nominations: many(nominations),
+}));
+
+export const nominationsRelations = relations(nominations, ({ one }) => ({
+  ballot: one(nominationBallots, { fields: [nominations.ballotId], references: [nominationBallots.id] }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type UserRole = User["role"];
 export type Application = typeof applications.$inferSelect;
@@ -478,3 +556,5 @@ export type CreatorCardClaim = typeof creatorCardClaims.$inferSelect;
 export type CardClaimStatus = CreatorCardClaim["status"];
 export type CreatorFollowerCheck = typeof creatorFollowerChecks.$inferSelect;
 export type FollowerCheckStatus = CreatorFollowerCheck["status"];
+export type NominationBallot = typeof nominationBallots.$inferSelect;
+export type Nomination = typeof nominations.$inferSelect;

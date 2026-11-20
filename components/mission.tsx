@@ -6,6 +6,7 @@ import { InView } from "@/components/home/in-view";
 import { networkAudience } from "@/lib/creator-cards";
 import { formatCompact, formatCount, formatDate } from "@/lib/format";
 import { forLog } from "@/lib/log-error";
+import { MISSION_GOAL } from "@/lib/mission";
 import { cn } from "@/lib/utils";
 import crowdSelfie from "@/public/photos/crowd-selfie.webp";
 
@@ -28,7 +29,7 @@ const STATS = [
 ];
 
 /** The mission's figure: the audience the sentence sets out to reach. */
-const GOAL = 200_000_000;
+const GOAL = MISSION_GOAL;
 
 /* The mission, as a split sheet in two tones of the brand's cyan.
 

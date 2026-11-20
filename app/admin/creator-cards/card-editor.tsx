@@ -160,7 +160,7 @@ const NONE: ReadonlySet<string> = new Set();
    Saving keeps the card approved, since the admin is the reviewer, and
    reads the follower count of each link that is new or changed, which the
    line over the links says before the button is pressed: Instagram, TikTok
-   and Facebook cost a credit each. The page that follows is the card's
+   and Facebook cost a credit each, Douyin six. The page that follows is the card's
    own, where every link shows what its reading gave.
 
    Saving and removing are React Query mutations around their server
@@ -363,8 +363,8 @@ export function CardEditor({ card, canRemove }: { card: EditorCard | null; canRe
         <Section id="editor-links-title" title="Where to find them" bodyClassName="flex flex-col gap-5 py-5">
           <p className="max-w-[68ch] text-sm leading-[1.6] text-muted-foreground">
             Paste the address of each channel. One is enough. When you save, we read the follower count of every link
-            that is new or changed: YouTube is free, and Instagram, TikTok and Facebook use one SocialCrawl credit
-            each.
+            that is new or changed: YouTube is free, Instagram, TikTok and Facebook use one SocialCrawl credit
+            each, and Douyin six.
           </p>
           <fieldset
             aria-label="Their links"

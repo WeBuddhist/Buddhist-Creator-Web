@@ -6,7 +6,8 @@ name: Follower refresh
 #
 # Run by hand ("Run workflow"), it can read every account again now, with
 # the box ticked. That spends a SocialCrawl credit for each Instagram,
-# TikTok and Facebook link, so it is off unless asked for.
+# TikTok and Facebook link and six for each Douyin link, so it is off
+# unless asked for.
 #
 # Two repository secrets:
 #   FOLLOWER_REFRESH_URL  the full address of /api/cron/follower-refresh
@@ -21,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       all:
-        description: "Read every account again now (one SocialCrawl credit per Instagram, TikTok and Facebook link)"
+        description: "Read every account again now (one SocialCrawl credit per Instagram, TikTok and Facebook link, six per Douyin link)"
         type: boolean
         default: false
 

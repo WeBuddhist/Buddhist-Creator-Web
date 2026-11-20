@@ -7,7 +7,7 @@ import { SectionHeading, accentButton, ghostButton } from "@/components/conventi
 import { Leaderboard } from "@/components/creators/leaderboard";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
-import { CARD_PATH } from "@/lib/creator-card";
+import { CARD_EDIT_PATH } from "@/lib/creator-card";
 import { openingBoards } from "@/lib/creator-leaderboard";
 import { CREATORS_LEADERBOARD, CREATORS_PATH, DIRECTORY_ID } from "@/lib/creators";
 import { formatDate } from "@/lib/format";
@@ -74,7 +74,7 @@ export function LeaderboardSection({
                 nativeButton={false}
                 className={accentButton}
                 // Behind a sign-in: nothing to fetch ahead for a visitor.
-                render={<Link href={CARD_PATH} prefetch={false} />}
+                render={<Link href={CARD_EDIT_PATH} prefetch={false} />}
               >
                 {CREATORS_LEADERBOARD.invite.create}
                 <ArrowRightIcon data-icon="inline-end" weight="bold" />

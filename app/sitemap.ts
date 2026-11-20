@@ -10,6 +10,7 @@ const ROUTES = [
   "/program",
   "/convention/2026",
   "/convention/2027",
+  "/convention/2027/awards",
   "/creators",
   "/team",
 ];
