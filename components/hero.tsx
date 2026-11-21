@@ -9,12 +9,17 @@ import { cn } from "@/lib/utils";
 import { HeroVideo } from "@/components/hero-video";
 import heroPoster from "@/public/photos/hero-video-poster.webp";
 
+/* One fact in the announcement bar's last line. Each carries the dot that
+   separates it from the one before in its own leading padding. */
+const detail =
+  "relative whitespace-nowrap ps-4 before:absolute before:start-[0.40625rem] before:top-1/2 before:size-[0.1875rem] before:-translate-y-1/2 before:rounded-full before:bg-current";
+
 /* The opening sheet: a short looping film of the convention, with the name
    set large across the top: on two lines up to the tablet width, where the
    frame is tall, and on one line from there. The introduction and the two
-   ways in sit in the bottom corner and the next convention in the other,
-   which leaves the middle of the picture, where the people are, uncovered.
-   The sheet runs up behind the floating header. The film's first frame is
+   ways in sit in the bottom corner, which leaves the middle of the picture,
+   where the people are, uncovered, and the next convention is a slim bar
+   along the foot. The sheet runs up behind the floating header. The film's first frame is
    laid underneath as a still, so the sheet is whole before the film loads
    and stays whole for anyone it does not play for (see hero-video.tsx).
    The picture is dimmed from the top, where the name and the header sit,
@@ -56,69 +61,91 @@ export function Hero() {
           </h1>
         </div>
 
-        <div className="mt-auto flex flex-col gap-6 px-5 pt-10 pb-5 sm:gap-8 sm:px-7 sm:pt-16 sm:pb-7 lg:flex-row lg:items-end lg:justify-between lg:px-10 lg:pb-10">
-          <div className="max-w-lg">
-            <p className="text-pretty text-base leading-[1.6] text-white/90 text-on-photo sm:text-xl sm:leading-[1.5]">
-              A worldwide community of monastics, practitioners, and storytellers
-              using digital media to carry the Dharma further than ever before.
-            </p>
-            {/* On a phone the two buttons share the row and fill it, or,
-                where they will not both fit, each takes a row of its own,
-                as wide as the ticket below. */}
-            <div className="mt-6 flex flex-wrap gap-3 sm:mt-7 max-sm:*:flex-1">
-              <Button
-                size="pill"
-                nativeButton={false}
-                className={accentButton}
-                render={<Link href="/get-involved" />}
-              >
-                Get Involved
-                <ArrowUpRightIcon data-icon="inline-end" weight="bold" />
-              </Button>
-              <Button
-                variant="outline"
-                size="pill"
-                nativeButton={false}
-                className={ghostButton}
-                render={<Link href="/creators" />}
-              >
-                Meet our creators
-              </Button>
-            </div>
+        <div className="mt-auto max-w-lg box-content px-5 pt-10 pb-6 sm:px-7 sm:pt-16 sm:pb-8 lg:px-10 lg:pb-10">
+          <p className="text-pretty text-base leading-[1.6] text-white/90 text-on-photo sm:text-xl sm:leading-[1.5]">
+            A worldwide community of monastics, practitioners, and storytellers
+            using digital media to carry the Dharma further than ever before.
+          </p>
+          {/* On a phone the two buttons share the row and fill it, or,
+              where they will not both fit, each takes a row of its own. */}
+          <div className="mt-6 flex flex-wrap gap-3 sm:mt-7 max-sm:*:flex-1">
+            <Button
+              size="pill"
+              nativeButton={false}
+              className={accentButton}
+              render={<Link href="/get-involved" />}
+            >
+              Get Involved
+              <ArrowUpRightIcon data-icon="inline-end" weight="bold" />
+            </Button>
+            <Button
+              variant="outline"
+              size="pill"
+              nativeButton={false}
+              className={ghostButton}
+              render={<Link href="/creators" />}
+            >
+              Meet our creators
+            </Button>
           </div>
-
-          {/* The next convention, as a ticket pinned to the corner of the
-              picture: gold, an ink outline, a perforated stub with the
-              arrow, and set a little off true from the desktop width, where
-              it straightens under the pointer. The whole ticket is the
-              link. It is set in Inter throughout, the one place the public site
-              uses it. Ink on saffron measures 8.6:1. */}
-          <Link
-            href="/convention/2027"
-            className="group/ticket flex w-full max-w-sm items-stretch rounded-2xl border-[1.5px] bg-saffron font-(family-name:--font-inter) text-ink transition-transform duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-safe:lg:rotate-2 motion-safe:lg:hover:rotate-0"
-          >
-            <span className="flex min-w-0 flex-1 flex-col items-start gap-2 p-4">
-              <span className="inline-flex items-center rounded-md border-[1.5px] bg-card px-2 py-1 text-[0.6875rem] font-bold uppercase leading-none tracking-[0.08em]">
-                {CONVENTION_2027.status}
-              </span>
-              <span className="text-xl font-extrabold uppercase leading-none tracking-[-0.02em] sm:text-2xl">
-                Convention {CONVENTION_2027.year}
-              </span>
-              <span className="text-sm font-medium leading-[1.35]">
-                <time dateTime={CONVENTION_2027.dates.start}>{CONVENTION_2027.dates.label}</time>
-                <br />
-                {CONVENTION_2027.location}
-              </span>
-            </span>
-            <span className="flex w-12 shrink-0 items-center justify-center border-s-[1.5px] sm:w-14 border-dashed border-ink">
-              <ArrowRightIcon
-                aria-hidden
-                weight="bold"
-                className="size-6 transition-transform duration-150 ease-hover motion-safe:group-hover/ticket:translate-x-1"
-              />
-            </span>
-          </Link>
         </div>
+
+        {/* The next convention, as an announcement bar along the foot of
+            the sheet: brand cyan, the status in the soft gold, the name in
+            the serif, and a gold arrow that says the whole bar is the link.
+            From the desktop width it is one centred line, set so the
+            middle of each text's capitals lies on the arrow's centre: the
+            two sans texts get there by their boxes, and the serif, whose
+            capitals ride high in its box, is let down by the difference
+            (measured, 0.0875em). Below that width the
+            status and the name are stacked on the page's leading edge with
+            the arrow beside them, and the date and place run under both,
+            so on a phone it is three short lines and the picture and the
+            two buttons above keep the screen. Where the date and the place
+            will not share a line the place drops to the next, and the dot
+            between them, which sits in the place's own leading padding, is
+            clipped away with it. White on brand cyan measures 6.2:1 (4.6:1
+            at 80%), gold-soft 4.7:1, and on the sky-deep the bar turns
+            under the pointer all three are higher. The focus ring is drawn
+            inside the bar because the sheet clips at its edges. */}
+        <Link
+          href="/convention/2027"
+          className="group/next grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 bg-brand-cyan px-5 py-3 text-white transition-[background-color] duration-150 ease-hover hover:bg-sky-deep focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white sm:px-7 lg:flex lg:justify-center lg:gap-6 lg:px-10 lg:py-4"
+        >
+          <span
+            className={cn(
+              label,
+              "col-start-1 row-start-1 flex items-center gap-2.5 whitespace-nowrap text-gold-soft",
+            )}
+          >
+            {/* A live dot: the gold dot stays put and a second one under
+                it swells to twice the size and fades, like a radar ping,
+                every two seconds. Only scale and opacity move. */}
+            <span aria-hidden className="relative flex size-2">
+              <span className="absolute inset-0 animate-ping rounded-full bg-saffron opacity-75 [animation-duration:2s]" />
+              <span className="relative size-2 rounded-full bg-saffron" />
+            </span>
+            {CONVENTION_2027.status}
+          </span>
+          <span className="col-start-1 row-start-2 font-display text-xl leading-[1.15] lg:translate-y-[0.0875em] lg:text-2xl">
+            Convention {CONVENTION_2027.year}
+          </span>
+          <span className="col-span-2 row-start-3 overflow-hidden text-[0.8125rem] leading-[1.4] text-white/85 sm:text-sm lg:text-[0.9375rem]">
+            <span className="-ms-4 flex flex-wrap">
+              <time dateTime={CONVENTION_2027.dates.start} className={detail}>
+                {CONVENTION_2027.dates.label}
+              </time>
+              <span className={detail}>{CONVENTION_2027.location}</span>
+            </span>
+          </span>
+          <span className="col-start-2 row-span-2 row-start-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-saffron text-ink lg:size-8">
+            <ArrowRightIcon
+              aria-hidden
+              weight="bold"
+              className="size-4 transition-transform duration-150 ease-hover motion-safe:group-hover/next:translate-x-0.5"
+            />
+          </span>
+        </Link>
       </div>
     </section>
   );

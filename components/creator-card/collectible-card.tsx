@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import {
-  ArrowsCounterClockwiseIcon,
+  ArrowsOutSimpleIcon,
   FacebookLogoIcon,
   GlobeSimpleIcon,
   InstagramLogoIcon,
@@ -12,6 +12,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { CardPhoto } from "@/components/creator-card/card-photo";
+import { CardSeal } from "@/components/creator-card/card-seal";
 import { VerifiedMark } from "@/components/creator-card/verified-mark";
 import { label } from "@/components/convention/section-heading";
 import { Flag } from "@/components/creators/flag";
@@ -19,7 +20,7 @@ import { Change, RankMove } from "@/components/creators/movement";
 import { CardStage, usePodiumCard } from "@/components/creators/podium/stage";
 import { WHITE } from "@/components/creators/podium/tiers";
 import { CARD_HOME, creatorTypeLabel, type CardSocial } from "@/lib/creator-card";
-import { formatCompact, formatCount } from "@/lib/format";
+import { formatCompact, formatCount, formatFigure, isShortened } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import logoMark from "@/assets/logo-mark-white.png";
 
@@ -79,30 +80,35 @@ export type CollectibleCardProps = {
 
 /* The card every creator has, on their own page: the leaderboard's card
    for the first three places (LeadCard in components/creators/
-   leaderboard.tsx), made of silk in place of a medal's metal, in one
-   piece of the palest cyan with a rim of brand cyan. At its head the
-   photo, with the creator's place on the leaderboard set large and their
-   country's flag across from it; under it who they are, the line about
-   their work, the figure and the channels it is read from, over our lion
-   embroidered large in the middle.
+   leaderboard.tsx) in brand cyan in place of a medal's metal: a pale sky
+   full of clouds at its head, clearing to a pearl satin, inside a rim of
+   brand cyan. At its head the photo, lit from behind, with the creator's
+   place on the leaderboard set large and their country's flag across
+   from it; under it who they are, the line about their work, the figure
+   and the channels it is read from; and in the bottom corner our lion on
+   a small seal of holographic foil (CardSeal), whose colours run as the
+   card leans to the pointer.
 
    What is here is the whole card for a reader: markup and a surface in
    CSS (`podium-surface` in app/globals.css). Where the browser can, the
    stage draws the card's body behind the markup instead and turns the two
    together toward the pointer (components/creators/podium).
 
-   It can be turned over, as a card in the hand is: a click or tap on it
-   (anywhere but its links), or the button under it, which is the way for
-   a keyboard. The back is brand cyan with our lion large in the middle.
-   The stage turns it on a spring, rising toward the eye and tipping back
-   a little half way round; with less motion asked for it is simply the
-   other way up. Without the scene the markup turns itself in CSS. While
-   the card is face down its face is inert, so its links are not reached
-   by Tab through a card that is not showing them.
+   It can be picked up, as a card in a collection is: a click or tap on it
+   (anywhere but its links) brings it forward to the middle of the screen,
+   larger, spinning once round on its way, so its back is seen as it
+   comes: brand cyan cloth with the same clouds woven into it and our lion
+   large in the middle, in a light of its own. The page behind is shaded
+   meanwhile. A click on the card or on the shade, Escape, or the page
+   being scrolled or resized sends it back the same way. The stage moves
+   it on a spring (components/creators/podium/store.ts), with the scene
+   or without. It shows nothing the card in its place does not, so there
+   is no button for it on the page; a keyboard has one, under the card,
+   that is seen when it is reached.
 
    The head keeps the leaderboard card's measures (the padding above the
-   photo and the photo's size), since the arc under the brocade is worked
-   out from them in the CSS surface. */
+   photo and the photo's size), since the sky, its clouds and the light
+   behind the photo are laid out from them in the CSS surface. */
 export function CollectibleCard(props: CollectibleCardProps) {
   return (
     <CardStage className={props.className}>
@@ -115,7 +121,7 @@ export function CollectibleCard(props: CollectibleCardProps) {
     the room beside the photo, which on a phone is a little under four rem. */
 function rankSize(text: string) {
   if (text.length <= 2) return "text-[3.25rem]";
-  if (text.length === 3) return "text-[2.25rem] min-[25rem]:text-[2.75rem]";
+  if (text.length === 3) return "text-[2rem] min-[25rem]:text-[2.75rem]";
   if (text.length <= 5) return "text-[1.5rem] min-[25rem]:text-[2rem]";
   return "text-[1.1875rem] min-[25rem]:text-[1.625rem]";
 }
@@ -124,8 +130,8 @@ function rankSize(text: string) {
 const onSomethingElse = (target: EventTarget) => target instanceof Element && !!target.closest("a, button");
 
 function Card({ card, rank, move, followers, gain, verified, channels, sample = false, controls }: CollectibleCardProps) {
-  const { attach, handlers, style, turnOver } = usePodiumCard("own", WHITE);
-  const [over, setOver] = useState(false);
+  const { attach, handlers, style, bring } = usePodiumCard("own", WHITE);
+  const [near, setNear] = useState(false);
   const article = useRef<HTMLElement | null>(null);
   const ref = useCallback(
     (element: HTMLElement | null) => {
@@ -134,11 +140,34 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
     },
     [attach],
   );
-  const turn = () => {
-    const next = !over;
-    setOver(next);
-    if (article.current) turnOver(article.current, next);
-  };
+  const carry = useCallback(
+    (next: boolean) => {
+      setNear(next);
+      if (article.current) bring(article.current, next);
+    },
+    [bring],
+  );
+  /* What sends a card back besides a click: Escape, and the page moving
+     under it. It is the ref of an element that is there only while the
+     card is forward, so it listens only then. */
+  const untilAway = useCallback(
+    (marker: HTMLElement | null) => {
+      if (!marker) return;
+      const away = () => carry(false);
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "Escape") away();
+      };
+      window.addEventListener("keydown", onKey);
+      window.addEventListener("scroll", away, { passive: true });
+      window.addEventListener("resize", away);
+      return () => {
+        window.removeEventListener("keydown", onKey);
+        window.removeEventListener("scroll", away);
+        window.removeEventListener("resize", away);
+      };
+    },
+    [carry],
+  );
   const name = card.displayName.trim();
   const type = creatorTypeLabel(card.creatorType);
   const tagline = card.tagline?.trim();
@@ -147,36 +176,32 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
 
   return (
     <>
+      {/* The shade over the page behind a card that has come forward. The
+          stage sets how dark it is as the card comes and goes. */}
+      <div
+        data-podium-veil
+        aria-hidden
+        onClick={() => carry(false)}
+        className={cn("fixed inset-0 bg-ink/60 opacity-0", near ? "cursor-zoom-out" : "pointer-events-none")}
+      />
+      {near && <span ref={untilAway} hidden />}
       <article
         ref={ref}
         {...handlers}
         onClick={(event: MouseEvent) => {
-          if (!onSomethingElse(event.target)) turn();
+          if (!onSomethingElse(event.target)) carry(!near);
         }}
         data-turns
-        data-flipped={over || undefined}
         style={style}
         aria-label={CARD_HOME.card.label}
-        className="group/lead cursor-pointer"
+        className={cn("group/lead relative z-[1]", near ? "cursor-zoom-out" : "cursor-zoom-in")}
       >
-        {/* What turns: the face and, behind it, the back. Without the
-            scene its own CSS turns it (the stage writes the transform
-            once the scene draws the card). */}
-        <div
-          data-podium-body
-          className={cn(
-            "relative rounded-[1.25rem] [transform-style:preserve-3d]",
-            "[:not([data-live])>&]:[transform:perspective(75rem)_rotateY(0deg)]",
-            "[[data-flipped]:not([data-live])>&]:[transform:perspective(75rem)_rotateY(180deg)]",
-            "motion-safe:[:not([data-live])>&]:transition-transform motion-safe:[:not([data-live])>&]:duration-700 motion-safe:[:not([data-live])>&]:ease-[cubic-bezier(0.3,0.7,0.2,1)]",
-          )}
-        >
+        {/* What turns: the face and, behind it, the back. */}
+        <div data-podium-body className="relative rounded-[1.25rem] [transform-style:preserve-3d]">
           {/* The face. A card with little on it yet is still the upright
-              shape of a card, and the silk it leaves bare is where the
-              lion shows. */}
+              shape of a card. */}
           <div
             data-podium-face
-            inert={over}
             className="relative min-h-[26rem] px-5 pt-5 pb-9 text-center [backface-visibility:hidden]"
           >
             <div
@@ -188,7 +213,7 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
               {place && (
                 <p className="absolute top-0 left-1.5 text-left">
                   <span className={cn(label, "block text-[0.6875rem] text-ink/75")}>{CARD_HOME.card.rank}</span>
-                  <span className={cn("mt-1 block font-display leading-[0.8] tabular-nums podium-numeral", rankSize(place))}>
+                  <span className={cn("mt-1 block font-display leading-[0.8] text-brand-cyan tabular-nums", rankSize(place))}>
                     {place}
                   </span>
                 </p>
@@ -228,9 +253,20 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
 
             {followers > 0 && (
               <div className="relative mt-6">
-                <p className="font-display text-[2.75rem] leading-none text-ink tabular-nums">{formatCount(followers)}</p>
+                {/* As on the leaderboard's cards: the figure to read at a
+                    glance, and under it the whole count wherever the
+                    figure is a short one. */}
+                <p
+                  aria-hidden={isShortened(followers) || undefined}
+                  className="font-display text-[2.75rem] leading-none text-ink tabular-nums"
+                >
+                  {formatFigure(followers)}
+                </p>
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-                  <p className={cn(label, "text-[0.6875rem] text-ink/75")}>followers</p>
+                  <p className={cn(label, "text-[0.6875rem] text-ink/75 tabular-nums")}>
+                    {isShortened(followers) && `${formatCount(followers)} `}
+                    followers
+                  </p>
                   {!!gain && <Change gain={gain} />}
                   {move && <RankMove row={move} words />}
                 </div>
@@ -238,7 +274,9 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
             )}
 
             {(channels.length > 0 || sample) && (
-              <ul className="relative mt-6 flex flex-wrap content-start justify-center gap-1.5">
+              // Clear of the seal in the corner, and by as much on the other
+              // side, so the channels stay in the card's middle.
+              <ul className="relative mt-6 flex flex-wrap content-start justify-center gap-1.5 px-12">
                 {sample && channels.length === 0 && (
                   <li className={cn("text-sm leading-8", prompt)}>Your channels</li>
                 )}
@@ -269,10 +307,15 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
                 })}
               </ul>
             )}
+
+            {/* The seal, as far in from the card's right and bottom edges
+                as lib/card-seal.ts says (SEAL). */}
+            <CardSeal className="right-4 bottom-4 size-11" />
           </div>
 
-          {/* The back: brand cyan and our lion. The scene draws it once it
-              draws the card; this is what shows until then, and without it. */}
+          {/* The back, seen as the card spins: brand cyan and our lion. The
+              scene draws it once it draws the card; this is what shows
+              until then, and without it. */}
           <div
             data-podium-back
             aria-hidden
@@ -280,17 +323,29 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
           >
             <div className="card-back absolute inset-0 flex items-center justify-center rounded-[1.25rem] transition-opacity duration-300 ease-out group-data-[live]/lead:opacity-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoMark.src} alt="" width={530} height={490} className="relative w-2/3" />
+              <img
+                src={logoMark.src}
+                alt=""
+                width={530}
+                height={490}
+                className="relative w-2/3 [filter:drop-shadow(0_0_0.75rem_rgb(107_204_235/0.55))]"
+              />
             </div>
           </div>
         </div>
       </article>
-      {/* The card's own controls, borderless, so they sit apart: the
-          glyphs are 1.5rem or more from each other. */}
+      {/* Under the card: what the page gives it (Edit), and the way for
+          a keyboard to bring it forward, which is seen once it is
+          reached. Borderless, so they sit apart. */}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-        <button type="button" onClick={turn} className={cardControl}>
-          <ArrowsCounterClockwiseIcon aria-hidden weight="bold" className="size-4" />
-          {over ? CARD_HOME.card.front : CARD_HOME.card.turn}
+        <button
+          type="button"
+          aria-pressed={near}
+          onClick={() => carry(!near)}
+          className={cn(cardControl, "sr-only focus-visible:not-sr-only focus-visible:flex")}
+        >
+          <ArrowsOutSimpleIcon aria-hidden weight="bold" className="size-4" />
+          {near ? CARD_HOME.card.away : CARD_HOME.card.near}
         </button>
         {controls}
       </div>

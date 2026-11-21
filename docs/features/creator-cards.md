@@ -41,9 +41,16 @@ replaces is deleted.
 
 **On their page** the card is a collectible card like the leaderboard's top
 three, drawn in WebGL where the browser can (see
-[Architecture](../architecture.md#drawing-in-3d)). It is white, with a
-damask cloud pattern on its face (`lib/card-damask.ts`), and turns over on
-a click to a brand-cyan back with the lion. A card waiting for review, or
+[Architecture](../architecture.md#drawing-in-3d)). Its face is a pale cyan
+sky of Tibetan clouds (`lib/card-damask.ts`) that clears to pearl, with the
+lion on a small holographic seal in its bottom corner (`lib/card-seal.ts`,
+`components/creator-card/card-seal.tsx`) whose colours run as the card
+tilts. The leaderboard's top three carry the same seal on the edge of the
+photo. A click brings
+it forward to the middle of the screen, larger, spinning once round on its
+way, so its brand-cyan back is seen as it comes: woven cloth with the same
+clouds and the lion in white. A click on it or beside it, Escape or a scroll
+sends it back. A card waiting for review, or
 sent back, shows its details and figures but no place on any board.
 
 ## Sharing a card

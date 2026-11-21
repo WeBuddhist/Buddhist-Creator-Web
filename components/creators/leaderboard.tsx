@@ -15,6 +15,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { CardPhoto } from "@/components/creator-card/card-photo";
+import { CardSeal } from "@/components/creator-card/card-seal";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { Flag } from "@/components/creators/flag";
 import { Change, RankMove } from "@/components/creators/movement";
@@ -32,7 +33,7 @@ import {
   type BoardViewer,
   type LeaderboardPlace,
 } from "@/lib/creators";
-import { formatCompact, formatCount } from "@/lib/format";
+import { formatCompact, formatCount, formatFigure, isShortened } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const PLACE_ICON: Record<CountedSocial, Icon> = {
@@ -339,6 +340,23 @@ const rowGrid = (moved: boolean, own = false) =>
       : "md:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_8.5rem]",
   );
 
+/* A row's figure: short where the count is long, to be read at a glance
+   down the column, with the whole count beside it on a phone and under
+   it from md, smaller, since a few followers decide a place. A screen
+   reader is given the whole count alone, with what it counts. */
+function Figure({ value, unit }: { value: number; unit: string }) {
+  const short = isShortened(value);
+  return (
+    <p className="text-base leading-[1.3] font-semibold text-foreground tabular-nums md:text-right">
+      <span aria-hidden={short || undefined}>{formatFigure(value)}</span>
+      {short && (
+        <span className="ms-2 text-xs font-normal text-muted-foreground md:ms-0 md:mt-0.5 md:block">{formatCount(value)}</span>
+      )}
+      <span className="sr-only"> {unit}</span>
+    </p>
+  );
+}
+
 function BoardRowCells({
   row,
   rank,
@@ -376,10 +394,7 @@ function BoardRowCells({
       {/* On a phone one line under the name; from md its parts are the
           row's own columns. */}
       <div className="col-start-3 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
-        <p className="text-base leading-[1.3] font-semibold text-foreground tabular-nums md:text-right">
-          {formatCount(row.followers)}
-          <span className="sr-only"> {unit}</span>
-        </p>
+        <Figure value={row.followers} unit={unit} />
         {moved && (
           <div className="empty:hidden md:flex md:justify-end md:empty:block">{!!row.gain && <Change gain={row.gain} />}</div>
         )}
@@ -407,6 +422,10 @@ function BoardRowCells({
    stage (components/creators/podium) draws the card's body behind the
    markup instead, a frame of real metal and a face that catches the
    light, and turns the two together toward the pointer. */
+/** How each place's seal was stuck on, in degrees from straight: the
+    first leans left, the second sits straight, the third leans right. */
+const SEAL_TURNS = [-14, 0, 12];
+
 function LeadCard({
   row,
   rank,
@@ -446,15 +465,19 @@ function LeadCard({
             <span className="sr-only">, {metal.metal}</span>
           </p>
           {row.countryCode && <Flag code={row.countryCode} className="absolute top-1.5 right-1.5" />}
-          <div data-podium-photo className="rounded-full [transform:translateZ(0.625rem)]">
+          <div data-podium-photo className="relative rounded-full [transform:translateZ(0.625rem)]">
             <CardPhoto src={row.photoUrl} size="card" name={row.displayName} />
+            {/* Our seal, stuck on the photo's edge, low and to the right,
+                its middle on the circle; the name starts clear of it. Each
+                was stuck on by hand, so no two sit alike. */}
+            <CardSeal className="right-1 -bottom-2 size-9" turn={SEAL_TURNS[rank - 1]} />
           </div>
         </div>
         {/* From lg, where the three stand side by side, a card is given
             more room under its photo, so it is the upright shape of a card
             to be kept; the head is the same at every width, since the
             crown's arc is measured from it. */}
-        <div className="relative mt-3.5 min-w-0 lg:mt-5">
+        <div className="relative mt-5 min-w-0 lg:mt-6">
           <p className="text-balance wrap-anywhere font-display text-[1.3125rem] leading-[1.2] text-ink">
             <bdi>{row.displayName}</bdi>
             {own && <YouTag />}
@@ -462,11 +485,20 @@ function LeadCard({
           {row.country && <p className="mt-1 text-sm leading-[1.4] text-ink/75">{row.country}</p>}
         </div>
         <div className="relative mt-4 lg:mt-7">
-          <p className="font-display text-[2.375rem] leading-none text-ink tabular-nums lg:text-[2.75rem]">
-            {formatCount(row.followers)}
+          {/* The figure to read at a glance, and under it the whole count,
+              which is what a place is decided on. A screen reader is given
+              the whole count alone. */}
+          <p
+            aria-hidden={isShortened(row.followers) || undefined}
+            className="font-display text-[2.375rem] leading-none text-ink tabular-nums lg:text-[2.75rem]"
+          >
+            {formatFigure(row.followers)}
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-            <p className={cn(label, "text-[0.6875rem] text-ink/75")}>{unit}</p>
+            <p className={cn(label, "text-[0.6875rem] text-ink/75 tabular-nums")}>
+              {isShortened(row.followers) && `${formatCount(row.followers)} `}
+              {unit}
+            </p>
             {!!row.gain && <Change gain={row.gain} />}
             <RankMove row={row} words />
           </div>
@@ -625,10 +657,7 @@ function YourPlace({
             </div>
           </div>
           <div className="col-start-3 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
-            <p className="text-base leading-[1.3] font-semibold text-foreground tabular-nums md:text-right">
-              {formatCount(row.followers)}
-              <span className="sr-only"> {unit}</span>
-            </p>
+            <Figure value={row.followers} unit={unit} />
             {moved && (
               <div className="empty:hidden md:flex md:justify-end md:empty:block">
                 {!!row.gain && <Change gain={row.gain} />}

@@ -32,6 +32,8 @@ export type EventEntry = {
   /** Static import, which carries its size and blur. Omitted entries show the placeholder. */
   image?: { src: StaticImageData; alt: string };
   featured?: true;
+  /** Listed on the program page but left off the homepage's What's on. */
+  programOnly?: true;
   /** Outcome figures, shown on past and ongoing events. */
   stats?: { value: string; label: string }[];
 };
@@ -98,6 +100,7 @@ export const ONGOING_EVENTS: EventEntry[] = [
     href: "https://webuddhist.com/plans",
     external: true,
     cta: "Join the challenge",
+    programOnly: true,
     image: {
       src: dailyTipitaka,
       alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",

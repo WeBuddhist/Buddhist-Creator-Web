@@ -15,9 +15,10 @@ import {
 import type { Icon } from "@phosphor-icons/react";
 import { ImageResponse } from "next/og";
 import { DAMASK_SIZE, DAMASK_TILE } from "@/lib/card-damask";
+import { SEAL, SEAL_INK, SEAL_LION, sealSvg } from "@/lib/card-seal";
 import { cardInitials, cardPhotoSrc, creatorTypeLabel, type CardSocial } from "@/lib/creator-card";
 import type { CardHome } from "@/lib/creator-home";
-import { formatCompact, formatCount } from "@/lib/format";
+import { formatCompact, formatCount, formatFigure, isShortened } from "@/lib/format";
 import { forLog } from "@/lib/log-error";
 import { SITE_NAME, SITE_URL } from "@/lib/navigation";
 
@@ -49,12 +50,21 @@ export const isShareFormat = (value: string): value is ShareFormat => value in S
 const INK = "#12222a";
 const CYAN = "#136986";
 const RIM = "#3393b5";
-const GROUND = "#dbe9ee"; // `mid`, the face
-const LIGHT = "#eef4f6"; // `light`, the glow behind the photo
-const LIGHT_CLEAR = "rgba(238, 244, 246, 0)"; // the same, faded out: "transparent" fades through black
-const DEEP = "#6e93a1"; // `deep`, the embroidery's edge
-const HEAD = "#c5d8df"; // `deep` 20% into `mid`, the face's top edge
-const NUMERAL = "#486069"; // `deep` 65% toward black (podium-numeral)
+const SKY = "#c6e3ee"; // `mid`, the sky at the face's head
+const HEAD = "#b9d9e6"; // `deep` 12% into `mid`, the face's top edge
+const PEARL = "#fbfdfe"; // `pale`, the satin the sky clears to
+const FOOT = "#f2f8fb"; // `light` half into `pale`, the face's foot
+const GLOW = "rgba(158, 217, 237, 0.4)"; // the rim's cyan over the face's edge
+const white = (alpha: number) => `rgba(255, 255, 255, ${alpha})`; // "transparent" would fade through black
+/* The sky clearing to pearl, eased at both ends as the card's shader eases
+   it: a straight run from one to the other shows as a band where it stops. */
+const CLEARING = [
+  [SKY, 5.85],
+  ["#cee7f1", 8.04], // 16% of the way
+  ["#e0f0f6", 10.225], // half way
+  ["#f3f9fb", 12.41], // 84%
+  [PEARL, 14.6],
+] as const;
 const GOLDEN = "#e3b94a";
 const CREAM = "#fff6e0";
 
@@ -106,8 +116,9 @@ function iconSrc(Glyph: Icon, color: string, weight: "regular" | "fill" = "regul
 const svgData = (svg: Buffer) => `data:image/svg+xml;base64,${svg.toString("base64")}`;
 const pngData = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
 
-/* What every picture uses, read once: the fonts, the white lion, and the
-   lion again in the embroidery's edge colour, which Satori cannot tint. */
+/* What every picture uses, read once: the fonts, the white lion, the
+   lion again in brand cyan for the seal in the card's corner (Satori
+   cannot tint a picture), and the seal's foil. */
 const root = process.cwd();
 const assets = (async () => {
   const [interMedium, interDisplaySemiBold, lion] = await Promise.all([
@@ -117,11 +128,18 @@ const assets = (async () => {
   ]);
   const sharp = await loadSharp();
   const { width = 530, height = 490 } = await sharp(lion).metadata();
-  const edge = await sharp({ create: { width, height, channels: 4, background: DEEP } })
+  const inked = await sharp({ create: { width, height, channels: 4, background: SEAL_INK } })
     .composite([{ input: lion, blend: "dest-in" }])
     .png()
     .toBuffer();
-  return { interMedium, interDisplaySemiBold, lion: pngData(lion), lionEdge: pngData(edge), lionRatio: height / width };
+  return {
+    interMedium,
+    interDisplaySemiBold,
+    lion: pngData(lion),
+    lionInked: pngData(inked),
+    lionRatio: height / width,
+    seal: svgData(Buffer.from(sealSvg())),
+  };
 })();
 
 /* sharp turns a WebP photo (what the card form uploads) into a PNG, which
@@ -200,7 +218,7 @@ function Label({ u, color, children, size = 0.6875 }: { u: number; color: string
 export async function cardShareImage(home: CardHome, format: ShareFormat) {
   const { width, height, u } = SHARE_FORMATS[format];
   const story = format === "story";
-  const [{ interMedium, interDisplaySemiBold, lion, lionEdge, lionRatio }, photo, flag] = await Promise.all([
+  const [{ interMedium, interDisplaySemiBold, lion, lionInked, lionRatio, seal }, photo, flag] = await Promise.all([
     assets,
     photoData(home.card.photoUrl),
     flagData(home.card.countryCode),
@@ -214,8 +232,8 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
   const cardWidth = 23 * u;
   const frame = 0.4375 * u;
   const photoSize = 6.5 * u;
-  const lionWidth = 0.84 * (cardWidth - 2 * frame);
-  const edgeNudge = Math.max(2, 0.06 * u);
+  const sealSize = SEAL.size * u;
+  const sealLion = (SEAL_LION.width / 100) * sealSize;
   const network = home.network;
 
   // Space outside the card: the brand above, the network below.
@@ -265,8 +283,9 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
             position: "relative",
             borderRadius: 1.25 * u,
             border: `${frame}px solid ${RIM}`,
-            backgroundColor: GROUND,
-            backgroundImage: `radial-gradient(circle ${11 * u}px at 50% ${5.5 * u - frame}px, ${LIGHT}, ${LIGHT_CLEAR}), linear-gradient(to bottom, ${HEAD}, ${GROUND} ${5.5 * u}px)`,
+            backgroundColor: PEARL,
+            // A light behind the photo, over a sky that clears to pearl.
+            backgroundImage: `radial-gradient(circle ${13 * u}px at 50% ${5.5 * u - frame}px, ${white(0.8)}, ${white(0.62)} 25%, ${white(0.29)} 50%, ${white(0.08)} 75%, ${white(0)}), linear-gradient(to bottom, ${HEAD}, ${CLEARING.map(([colour, rem]) => `${colour} ${rem * u}px`).join(", ")}, ${FOOT})`,
             padding: `${1.25 * u - frame}px ${1.25 * u - frame}px ${2.25 * u - frame}px`,
             color: INK,
             textAlign: "center",
@@ -274,7 +293,22 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
             boxShadow: "0 40px 80px -20px rgba(4, 30, 40, 0.55)",
           }}
         >
-          {/* The clouds woven into the face. */}
+          {/* The clouds across the sky, thinning out as it clears. */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 13.5 * u - frame,
+              backgroundImage: `url('${DAMASK_TILE}')`,
+              backgroundSize: `${DAMASK_SIZE.width * u}px ${DAMASK_SIZE.height * u}px`,
+              backgroundPosition: `${cardWidth / 2 - frame - (DAMASK_SIZE.width * u) / 2}px ${DAMASK_SIZE.top * u - frame}px`,
+              backgroundRepeat: "repeat",
+              maskImage: `linear-gradient(to bottom, black ${6 * u - frame}px, transparent)`,
+            }}
+          />
+          {/* The rim's cyan, glowing a little way in over the face's edge. */}
           <div
             style={{
               position: "absolute",
@@ -282,35 +316,26 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
               right: 0,
               top: 0,
               bottom: 0,
-              backgroundImage: `url('${DAMASK_TILE}')`,
-              backgroundSize: `${DAMASK_SIZE.width * u}px ${DAMASK_SIZE.height * u}px`,
-              backgroundPosition: `${cardWidth / 2 - frame - (DAMASK_SIZE.width * u) / 2}px ${DAMASK_SIZE.top * u - frame}px`,
-              backgroundRepeat: "repeat",
+              borderRadius: 1.25 * u - frame,
+              boxShadow: `inset 0 0 ${0.875 * u}px ${GLOW}`,
             }}
           />
-          {/* The lion, embroidered large: its edge stitched in `deep`, then the pale thread. */}
-          {[
-            [-edgeNudge, 0],
-            [edgeNudge, 0],
-            [0, -edgeNudge],
-            [0, edgeNudge],
-          ].map(([x, y], index) => (
-            <img
-              key={index}
-              alt=""
-              src={lionEdge}
-              width={lionWidth}
-              height={lionWidth * lionRatio}
-              style={{ position: "absolute", left: (cardWidth - 2 * frame - lionWidth) / 2 + x, bottom: 1.25 * u + y, opacity: 0.35 }}
-            />
-          ))}
-          <img
-            alt=""
-            src={lion}
-            width={lionWidth}
-            height={lionWidth * lionRatio}
-            style={{ position: "absolute", left: (cardWidth - 2 * frame - lionWidth) / 2, bottom: 1.25 * u, opacity: 0.85 }}
-          />
+          {/* The seal in the bottom corner: our lion on holographic foil. */}
+          <div
+            style={{
+              position: "absolute",
+              right: SEAL.inset * u - frame,
+              bottom: SEAL.inset * u - frame,
+              width: sealSize,
+              height: sealSize,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <img alt="" src={seal} width={sealSize} height={sealSize} style={{ position: "absolute", left: 0, top: 0 }} />
+            <img alt="" src={lionInked} width={sealLion} height={sealLion * lionRatio} />
+          </div>
 
           {/* The head: the place, the photo and the flag. */}
           <div style={{ display: "flex", justifyContent: "center", width: "100%", position: "relative", paddingTop: u }}>
@@ -327,7 +352,7 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
                     fontSize: rankRem(place) * u,
                     lineHeight: 0.85,
                     letterSpacing: -0.025 * rankRem(place) * u,
-                    color: NUMERAL,
+                    color: CYAN,
                   }}
                 >
                   {place}
@@ -440,11 +465,12 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
                   letterSpacing: -0.025 * 2.75 * u,
                 }}
               >
-                {formatCount(home.followers)}
+                {formatFigure(home.followers)}
               </div>
+              {/* The whole count, wherever the figure above is a short one. */}
               <div style={{ display: "flex", marginTop: 0.5 * u }}>
                 <Label u={u} color={ink(0.75)}>
-                  Followers
+                  {isShortened(home.followers) ? `${formatCount(home.followers)} Followers` : "Followers"}
                 </Label>
               </div>
             </div>
@@ -460,7 +486,8 @@ export async function cardShareImage(home: CardHome, format: ShareFormat) {
                 gap: 0.375 * u,
                 marginTop: 1.5 * u,
                 position: "relative",
-                maxWidth: 20.5 * u,
+                // Clear of the seal, and by as much on the other side.
+                maxWidth: 14.5 * u,
               }}
             >
               {home.channels.map((channel) => {

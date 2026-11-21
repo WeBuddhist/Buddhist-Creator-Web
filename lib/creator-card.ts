@@ -414,10 +414,11 @@ export const CARD_HOME = {
     label: "Your card",
     rank: "Rank",
     sample: "A sample of your card",
-    turn: "Turn the card over",
-    /* Under the card, beside the turn. */
+    /* For the keyboard: a click on the card does the same. */
+    near: "Bring the card closer",
+    away: "Put the card back",
+    /* Under the card. */
     edit: "Edit card",
-    front: "Show the front",
     details: "On your card",
     creates: "Creates",
     languages: "Publishes in",

@@ -138,7 +138,7 @@ export default function AwardsPage() {
             <div key={group.id} className={groupIndex === 0 ? "mt-16 lg:mt-20" : "mt-20 lg:mt-28"}>
               <GroupHeading group={group} />
               <InView className="art mt-8">
-                <ul className="-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto overscroll-x-contain px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+                <ul className="-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto overscroll-x-contain px-5 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
                   {group.awards.map((award, index) => (
                     <li
                       key={award.slug}

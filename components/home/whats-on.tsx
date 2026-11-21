@@ -7,12 +7,12 @@ import { ONGOING_EVENTS, UPCOMING_EVENTS } from "@/lib/events";
 import { WHATS_ON } from "@/lib/home";
 
 /* The events running now and the ones announced, straight from the program
-   page's lists, so moving an entry there moves it here. They sit on a quiet
-   sheet one step darker than the page, so the white cards stand off it.
-   Renders nothing when both lists are empty rather than an empty state on
-   the homepage. */
+   page's lists, so moving an entry there moves it here; an entry marked
+   programOnly stays on that page alone. They sit on a quiet sheet one step
+   darker than the page, so the white cards stand off it. Renders nothing
+   when both lists are empty rather than an empty state on the homepage. */
 export function WhatsOn() {
-  const events = [...ONGOING_EVENTS, ...UPCOMING_EVENTS];
+  const events = [...ONGOING_EVENTS, ...UPCOMING_EVENTS].filter((event) => !event.programOnly);
   if (events.length === 0) return null;
 
   return (

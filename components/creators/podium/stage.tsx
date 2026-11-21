@@ -121,18 +121,24 @@ export function PodiumStage({ children }: { children: ReactNode }) {
   );
 }
 
-/* The stage for one card, which can be turned over. The canvas reaches
-   past the card by the page's own gutter to either side, and by 4rem
-   above and below: a card turning over rises toward the eye, and half
-   way round its near edge stands out past its box. It takes no clicks
-   and holds nothing but the card's body, so what it lies over is not
-   hidden. */
+/* The stage for one card, which can come forward to the middle of the
+   screen, spinning once round on its way. The canvas reaches past the
+   card by the page's own gutter to either side, and by 4rem above and
+   below: a spinning card rises toward the eye, and half way round its
+   near edge stands out past its box. It takes no clicks and holds nothing
+   but the card's body, so what it lies over is not hidden.
+
+   The stage keeps its own layers: the shade the card draws over the page
+   (`data-podium-veil`, the card's own markup) lies under the canvas and
+   the card and over everything else in it. While the card is away from
+   its place the store marks the stage (`data-raised`) and it stands over
+   the whole page, the header included. */
 export function CardStage({ children, className }: { children: ReactNode; className?: string }) {
   const { store, host, box, canvas } = useStage(4);
   return (
     <StageContext value={store}>
-      <div ref={host} className={cn("relative", className)}>
-        <div ref={box} aria-hidden className="pointer-events-none absolute -inset-x-5 -inset-y-16 sm:-inset-x-6">
+      <div ref={host} className={cn("relative isolate data-[raised]:z-50", className)}>
+        <div ref={box} aria-hidden className="pointer-events-none absolute -inset-x-5 -inset-y-16 z-[1] sm:-inset-x-6">
           {canvas}
         </div>
         {children}
@@ -150,6 +156,7 @@ export function CardStage({ children, className }: { children: ReactNode; classN
    ordinary card. */
 export function usePodiumCard(key: string, tier: Tier) {
   const store = use(StageContext);
+  const bring = useCallback((element: Element, near: boolean) => store?.bring(element, near), [store]);
   const attach = useCallback(
     (element: HTMLElement | null) => {
       const body = element?.querySelector<HTMLElement>("[data-podium-body]");
@@ -176,8 +183,9 @@ export function usePodiumCard(key: string, tier: Tier) {
       "--metal-pale": metal.pale,
       "--metal-rim": metal.rim,
     } as CSSProperties,
-    /** Turn the card whose element this is over, or back. */
-    turnOver: (element: Element, over: boolean) => store?.flip(element, over),
+    /** Bring the card whose element this is forward to the middle of the
+        screen, or send it back to its place. */
+    bring,
     handlers: {
       onPointerMove: (event: PointerEvent) => {
         if (event.pointerType !== "touch") store?.point(event.currentTarget, event.clientX, event.clientY);

@@ -23,7 +23,10 @@ import { CARD, WHITE } from "./tiers";
      material;
    - the canvas never holds more pixels than MAX_PIXELS, whatever the
      screen's density, and if frames still come slowly it is drawn at a
-     lower density, and failing that given up for the plain card;
+     lower density, and failing that given up for the plain card (a card
+     that has come forward to the middle of the screen is larger than its
+     canvas was made for, so while it is there the canvas is drawn that
+     much finer, within the same limit);
    - this file, three.js with it, is fetched only once the cards are near
      the screen (stage.tsx).
 
@@ -45,7 +48,8 @@ export default function PodiumScene({ store, onLost }: { store: PodiumStore; onL
   const [quality, setQuality] = useState(1);
   useSyncExternalStore(store.subscribe, store.getVersion, store.getVersion);
   const area = Math.max(1, store.boxWidth * store.boxHeight);
-  const density = Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio, 2, Math.sqrt(MAX_PIXELS / area));
+  const screen = Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio, 2);
+  const density = Math.min(screen * store.sharpness, 3, Math.sqrt(MAX_PIXELS / area));
   // In quarter steps, so a small change of size does not rebuild the buffers.
   const dpr = Math.max(0.75, Math.round(density * quality * 4) / 4);
 
@@ -111,6 +115,11 @@ function drawFrame(store: PodiumStore, loop: Loop, state: RootState, delta: numb
   }
   const dt = Math.min(delta, 0.05);
   const rem = store.rem;
+  // The canvas was just rebuilt at another density: not this browser's pace.
+  if (store.hitch) {
+    store.hitch = false;
+    pace.skip = 12;
+  }
   const eye = CARD.perspective * rem;
   const room = store.room * rem;
 
@@ -315,7 +324,7 @@ function Body({
   const frame = CARD.frame * rem;
   const depth = CARD.depth * rem;
 
-  // Only the white card is ever turned over, so only it has a back.
+  // Only the white card ever spins, so only it has a back.
   const turns = card.tier === WHITE;
   const materials = useMemo(
     () => ({ face: makeFace(card.tier, logo), metal: makeMetal(card.tier), back: turns ? makeBack(logo) : null }),

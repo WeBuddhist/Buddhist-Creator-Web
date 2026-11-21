@@ -22,12 +22,15 @@ import { CARD, TIERS, WHITE, type Tier } from "./tiers";
    but the lion's outline.
 
    The white card, which every creator has on their own page, is the same
-   face made of silk in place of metal, and in one piece: the palest cyan
-   from its head to its foot, with no crown, Tibetan clouds woven into
-   the silk tone on tone (DAMASK), and the lion embroidered large in the
-   middle of it, in the near-white thread and
-   soft blue-grey edge a brocade on that ground would be worked in. Silk
-   mirrors little, so its share of foil is small. */
+   face in one piece, with no crown: a pale cyan sky at its head, full of
+   Tibetan clouds, that clears a little under the photo to a pearl satin
+   with the same engraved lines as the first three (PLAIN) and no lion
+   pressed into it: its lion is on a foil seal in its corner, which is
+   markup. The photo is lit from behind, and the brand cyan of the
+   rim glows a little way in over the face's edge. Its clouds are foil
+   too, so they take the studio's light and the film's colours as the
+   card turns. Its back (makeBack) is brand cyan cloth with the clouds
+   woven into it and the lion in white, in a light of its own. */
 
 /** A hex colour as the shader wants it: the numbers as written, not
     converted to linear light. */
@@ -40,6 +43,43 @@ const ROUND_BOX = /* glsl */ `
   float roundBox(vec2 p, vec2 extent, float r) {
     vec2 q = abs(p) - extent + r;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+  }
+`;
+
+/* A Tibetan cloud, for the crowns and the white card's two sides. */
+const CLOUDS = /* glsl */ `
+  float blend(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+  }
+
+  /* The curl in a cloud's head: how far the point is from a spiral line
+     wound about the head's middle, \`turn\` saying which way it winds. Far
+     off outside the part of the head the curl keeps to. */
+  float curl(vec2 from, float radius, float turn) {
+    float reach = length(from);
+    if (reach > radius * 0.74 || reach < radius * 0.1) return 1.0;
+    float pitch = radius * 0.36;
+    float arm = reach / pitch - atan(from.y, from.x) * turn / 6.2831853;
+    return (0.5 - abs(fract(arm) - 0.5)) * pitch;
+  }
+
+  /* A cloud as the thangka painters draw one: three rounded heads, each
+     with its curl, and a tail that trails off and thins. In its own
+     units, y up, about 2.4 wide and 1 high. Gives how far outside its
+     outline the point is (below zero inside) and how far from the nearest
+     curl's line. */
+  vec2 cloud(vec2 p) {
+    vec2 a = p - vec2(0.0, 0.05);
+    vec2 b = p - vec2(-0.56, -0.12);
+    vec2 c = p - vec2(0.5, -0.1);
+    float edge = blend(blend(length(a) - 0.42, length(b) - 0.29, 0.07), length(c) - 0.3, 0.07);
+    vec2 from = p - vec2(0.55, -0.26);
+    vec2 run = vec2(1.0, -0.12);
+    float along = clamp(dot(from, run) / dot(run, run), 0.0, 1.0);
+    edge = blend(edge, length(from - run * along) - mix(0.15, 0.015, along), 0.1);
+    float line = min(curl(a, 0.42, 1.0), min(curl(b, 0.29, -1.0), curl(c, 0.3, 1.0)));
+    return vec2(edge, line);
   }
 `;
 
@@ -94,39 +134,7 @@ const FACE_PARS = /* glsl */ `
     return mix(mix(under, fill, inside), uDeep, outline * 0.42);
   }
 
-  float blend(float a, float b, float k) {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
-  }
-
-  /* The curl in a cloud's head: how far the point is from a spiral line
-     wound about the head's middle, \`turn\` saying which way it winds. Far
-     off outside the part of the head the curl keeps to. */
-  float curl(vec2 from, float radius, float turn) {
-    float reach = length(from);
-    if (reach > radius * 0.74 || reach < radius * 0.1) return 1.0;
-    float pitch = radius * 0.36;
-    float arm = reach / pitch - atan(from.y, from.x) * turn / 6.2831853;
-    return (0.5 - abs(fract(arm) - 0.5)) * pitch;
-  }
-
-  /* A cloud as the thangka painters draw one: three rounded heads, each
-     with its curl, and a tail that trails off and thins. In its own
-     units, y up, about 2.4 wide and 1 high. Gives how far outside its
-     outline the point is (below zero inside) and how far from the nearest
-     curl's line. */
-  vec2 cloud(vec2 p) {
-    vec2 a = p - vec2(0.0, 0.05);
-    vec2 b = p - vec2(-0.56, -0.12);
-    vec2 c = p - vec2(0.5, -0.1);
-    float edge = blend(blend(length(a) - 0.42, length(b) - 0.29, 0.07), length(c) - 0.3, 0.07);
-    vec2 from = p - vec2(0.55, -0.26);
-    vec2 run = vec2(1.0, -0.12);
-    float along = clamp(dot(from, run) / dot(run, run), 0.0, 1.0);
-    edge = blend(edge, length(from - run * along) - mix(0.15, 0.015, along), 0.1);
-    float line = min(curl(a, 0.42, 1.0), min(curl(b, 0.29, -1.0), curl(c, 0.3, 1.0)));
-    return vec2(edge, line);
-  }
+  ${CLOUDS}
 `;
 
 /* What the crown carries behind the photo, one for each place, each
@@ -142,8 +150,7 @@ const FACE_PARS = /* glsl */ `
    passing over and under each other in turn, laid out from the photo's
    middle so it is the same on both sides.
 
-   The white card has no crown: its whole face is the crown's ground
-   (PODIUM_PLAIN), so it carries nothing here. */
+   The white card has no crown (PLAIN), so it carries nothing here. */
 const CROWNS = [
   /* glsl */ `
   float angle = atan(fromPhoto.x, -fromPhoto.y);
@@ -207,79 +214,20 @@ const CROWNS = [
   "",
 ] as const;
 
-/* How the lion is put on the satin. Each is handed `body`, how much of
-   the pixel the lion covers, and `lionAt`, `within` and `toward` (the
-   side the light comes from, which moves with the card) to read its edges
-   with.
-
-   On the three metals it is pressed in: a wash of the metal with a lit
-   edge on the light's side and a shaded one opposite, kept faint, since
-   the name and the figure are read across it.
-
-   On the white card it is embroidered: a satin-stitch fill, the threads
-   side by side on the slant, each one round (lit along its middle, shaded
-   at its sides), each stitch going down through the cloth at its ends,
-   no two neighbours ending in the same place and no two quite the same
-   tone; round every edge an outline of a deeper thread in stem stitch.
-   Silk thread shines in a band across the stitch, and the band moves as
-   the card turns. The work stands off the silk, so it is lit on the
-   light's side, shaded on the other and throws a soft shadow there. It
-   is in the colours a pattern on that ground would be: a fill that runs
-   from a little paler than the silk, between threads, to near white on
-   their crowns, so every word reads across it at least as well as on the
-   silk itself; and an edge of the card's blue-grey `deep`. The thread is
-   silk, not foil, so it keeps its colour under the light. */
-const LIONS = {
-  pressed: /* glsl */ `
+/* How the lion is put on the satin. It is handed `body`, how much of the
+   pixel the lion covers, and `lionAt`, `within` and `toward` (the side
+   the light comes from, which moves with the card) to read its edges
+   with. It is pressed in: a wash of the metal with a lit edge on the
+   light's side and a shaded one opposite, kept faint, since the name and
+   the figure are read across it. The white card has none here: its lion
+   is on the seal in its corner (components/creator-card/card-seal.tsx). */
+const LION = /* glsl */ `
   vec2 nudge = toward * 1.4 * u / uLogoBox.zw * vec2(1.0, -1.0);
   float edge = (texture2D(uLogo, lionAt - nudge).a - texture2D(uLogo, lionAt + nudge).a) * within;
   satin = mix(satin, uMid, body * 0.13);
   satin += max(edge, 0.0) * 0.1;
   satin *= 1.0 - max(-edge, 0.0) * 0.07;
-  `,
-  embroidered: /* glsl */ `
-  // The fill: satin stitch, threads laid side by side on the slant.
-  vec2 lay = vec2(q.x + q.y, q.y - q.x) * 0.70710678 / u;
-  float strand = lay.y / 2.6;
-  float which = floor(strand);
-  float stitch = fract(lay.x / 9.0 + grain(vec2(which, 7.0)));
-  float rounded = sin(fract(strand) * 3.14159265);
-  // Each stitch dips into the cloth at its two ends.
-  float held = smoothstep(0.0, 0.14, stitch) * (1.0 - smoothstep(0.86, 1.0, stitch));
-  // Where a thread is too fine for the screen: its average, not a shimmer.
-  float drawn = 1.0 - smoothstep(0.35, 0.75, fwidth(strand));
-  float relief = mix(0.62, pow(rounded, 0.7) * (0.35 + 0.65 * held), drawn);
-  // No two threads take the dye quite alike.
-  relief = clamp(relief + (grain(vec2(which, 3.0)) - 0.5) * 0.12 * drawn, 0.0, 1.0);
-  vec3 thread = mix(mix(uMid, uLight, 0.2), mix(uPale, vec3(1.0), 0.6), relief);
-  // Silk shines in a band across the stitch, and the band follows the light.
-  float shine = pow(max(0.0, 1.0 - abs(stitch - 0.5 + (uTilt.x - uTilt.y) * 0.35) * 2.2), 4.0) * rounded * held * drawn;
-  thread = mix(thread, vec3(1.0), clamp(shine * 0.6 + passing * 0.35, 0.0, 1.0));
-
-  // The outline: a deeper thread in stem stitch, short slanted stitches
-  // overlapping round every edge, which is what makes the fill read as
-  // worked rather than printed.
-  vec2 spread = 1.15 * u / uLogoBox.zw;
-  float inner = min(
-    min(texture2D(uLogo, lionAt + vec2(spread.x, 0.0)).a, texture2D(uLogo, lionAt - vec2(spread.x, 0.0)).a),
-    min(texture2D(uLogo, lionAt + vec2(0.0, spread.y)).a, texture2D(uLogo, lionAt - vec2(0.0, spread.y)).a)
-  );
-  float edging = body * (1.0 - inner * within);
-  float stem = 0.55 + 0.45 * sin(fract((q.x - q.y) / (3.2 * u)) * 3.14159265);
-  thread = mix(thread, mix(uMid, uDeep, 0.72) * (0.92 + 0.14 * stem), clamp(edging * 1.4, 0.0, 1.0) * 0.85);
-
-  // The work stands off the silk: lit on the light's side, shaded on the
-  // other, and throwing a soft shadow there.
-  vec2 nudge = toward * 1.5 * u / uLogoBox.zw * vec2(1.0, -1.0);
-  float lit = body * (1.0 - texture2D(uLogo, lionAt + nudge).a * within);
-  float shaded = body * (1.0 - texture2D(uLogo, lionAt - nudge).a * within);
-  float thrown = (1.0 - body) * (texture2D(uLogo, lionAt + nudge * 1.6).a * 0.6 + texture2D(uLogo, lionAt + nudge * 3.0).a * 0.4) * within;
-  satin *= 1.0 - 0.2 * thrown;
-  satin = mix(satin, thread, body);
-  satin += lit * 0.08;
-  satin *= 1.0 - shaded * 0.16;
-  `,
-} as const;
+`;
 
 /* Works out the face's colour (podiumBase, as written, not linear) and
    how much of the pixel is foil (podiumFoil). */
@@ -311,10 +259,12 @@ const FACE_MAIN = /* glsl */ `
   float wave = q.y + 4.0 * u * sin(q.x / (22.0 * u));
   float ridge = abs(fract(wave / (6.0 * u)) - 0.5) * 2.0;
   float line = 1.0 - smoothstep(0.0, 0.2 + fwidth(wave) / (3.0 * u), ridge);
-  satin = mix(satin, uMid, line * (PODIUM_LINES + 0.2 * passing));
+  satin = mix(satin, uMid, line * (0.15 + 0.2 * passing));
+  // How much of the pixel is a cloud of the white card's sky (PLAIN).
+  float podiumCloud = 0.0;
   PODIUM_PLAIN
 
-  // The lion, in the middle of the satin (LIONS).
+  // The lion, in the middle of the satin (LION).
   vec2 lion = (q - uLogoBox.xy) / uLogoBox.zw;
   vec2 lionAt = vec2(lion.x, 1.0 - lion.y);
   float within = step(0.0, lion.x) * step(lion.x, 1.0) * step(0.0, lion.y) * step(lion.y, 1.0);
@@ -334,6 +284,7 @@ const FACE_MAIN = /* glsl */ `
   /* The face's own edge: a keyline a little way in, as a printed card
      has, and a faint shade where it meets the frame. */
   float toEdge = roundBox(vPos, uFace.xy, uFace.z);
+  PODIUM_GLOW
   float keyline = 1.0 - smoothstep(0.5 * u, 0.5 * u + pixel, abs(toEdge + 5.0 * u));
   podiumBase = mix(podiumBase, mix(uDeep, uMid, 0.45), keyline * 0.5);
   podiumBase *= 1.0 - 0.1 * exp(toEdge / (1.5 * u));
@@ -341,7 +292,7 @@ const FACE_MAIN = /* glsl */ `
   // A little grain, so the gradients do not band.
   podiumBase += (grain(floor(q * 2.0)) - 0.5) * 0.012;
 
-  float podiumFoil = clamp(mix(line * 0.3 + body * PODIUM_LION_FOIL + keyline * 0.5, PODIUM_CROWN_FOIL, crown), 0.0, 1.0);
+  float podiumFoil = clamp(mix(line * 0.3 + body * 0.85 + keyline * 0.5 + podiumCloud, 0.8, crown), 0.0, 1.0);
   // What the foil mirrors is tinted by its own colour, so a petal stays a petal under the light.
   vec3 podiumLinear = pow(max(podiumBase, 0.0), vec3(2.2));
   diffuseColor.rgb = podiumLinear;
@@ -350,73 +301,90 @@ const FACE_MAIN = /* glsl */ `
 export type FaceMaterial = THREE.MeshPhysicalMaterial & { uniforms: Record<string, THREE.IUniform> };
 
 /** How each card's face takes the light: how much of its own colour the
-    foil keeps under what it mirrors, how strongly its film colours, how
-    much of the crown and of the lion is foil, how the lion is put on, and
-    how strongly the satin's engraved lines are drawn (on white they need
-    more to show at all). */
+    foil keeps under what it mirrors, how strongly its film colours, and
+    whether the face is in one piece (the white card). */
 const FOIL = [
-  { keep: 0.74, holo: 0.3, crown: 0.8, lion: 0.85, work: "pressed", lines: 0.15, plain: false },
-  { keep: 0.7, holo: 0.55, crown: 0.8, lion: 0.85, work: "pressed", lines: 0.15, plain: false },
-  { keep: 0.74, holo: 0.3, crown: 0.8, lion: 0.85, work: "pressed", lines: 0.15, plain: false },
-  { keep: 0.96, holo: 0.35, crown: 0.14, lion: 0.08, work: "embroidered", lines: 0.5, plain: true },
+  { keep: 0.74, holo: 0.3, plain: false },
+  { keep: 0.7, holo: 0.55, plain: false },
+  { keep: 0.74, holo: 0.3, plain: false },
+  { keep: 0.86, holo: 0.8, plain: true },
 ] as const;
 
-/* A face in one piece (`plain`): the crown's ground runs from the head to
-   the foot, and there is no crown, so no arc, lip or shade under it, and
-   no engraved lines either: on a ground this colour they ran across the
-   whole card and fought the lion. */
-const PLAIN = /* glsl */ `
-  satin = head;
-  // Nor as foil: a line that is not drawn must not mirror the studio.
-  line = 0.0;
-  crown = 0.0;
-  toCrown = 1.0e4;
-  {
-    DAMASK
-  }
-`;
+/* A face in one piece (`plain`), the white card's. There is no crown, so
+   no arc, lip or shade under one. In its place:
 
-/* What is woven into the white card's silk, tone on tone, as a damask
-   is: Tibetan clouds in staggered rows, the next row half a cloud along
-   and facing the other way, laid out from the photo's middle so the
-   pattern is the same on both sides. The clouds are woven a shade paler
-   than the ground (so every word on the card reads across them at least
-   as well as on the silk itself), edged with a hair of the blue-grey
-   `deep` and curled inside; and because a damask's figure is woven the
-   other way to its ground, it catches the light differently: paler as the
-   card turns one way, nearer the ground the other.
+   - the ground: a pale cyan sky at the head that clears, from the photo's
+     middle to a little under the name, to a pearl satin;
+   - the engraved lines, which belong to the satin and come in as the sky
+     clears;
+   - the light behind the photo, which whitens the sky round it;
+   - the clouds: in staggered rows, the next row half a cloud along and
+     facing the other way, laid out from the photo's middle so they are
+     the same on both sides. A row has one strength, so a cloud is whole
+     or fainter and never cut: full to the photo's middle, gone by the
+     fourth row under it, where the words are.
 
-   One cloud is 1.375rem to a unit, its cell 3.2 by 1.4 units. The CSS
+   Everything here is as light as the old ground or lighter, so every word
+   on the card reads at least as well as the measures in tiers.ts say.
+
+   One cloud is 1.75rem to a unit, its cell 3.2 by 1.4 units. The CSS
    surface (`podium-surface` with data-plain in app/globals.css) tiles the
    same clouds at the same measures from the same point, so the still card
    and the lit one agree. */
-const DAMASK = /* glsl */ `
-  float size = 22.0 * u;
-  vec2 g = fromPhoto / size;
-  float row = floor(g.y / 1.4 + 0.5);
-  float odd = mod(row, 2.0);
-  vec2 inCell = vec2(fract((g.x + odd * 1.6) / 3.2 + 0.5) * 3.2 - 1.6, (fract(g.y / 1.4 + 0.5) - 0.5) * 1.4);
-  inCell.x *= 1.0 - 2.0 * odd;
-  vec2 one = cloud(vec2(inCell.x, -inCell.y) + vec2(0.36, -0.03));
-  float deep = -one.x * size;
-  float inside = smoothstep(-pixel, pixel, deep);
-  float woven = 0.42 + 0.22 * clamp(uTilt.x - uTilt.y, -1.0, 1.0);
-  satin = mix(satin, mix(uLight, uPale, 0.5), inside * woven);
-  float stroke = 0.45 * u;
-  float outline = 1.0 - smoothstep(stroke, stroke + pixel, abs(deep));
-  float curled = (1.0 - smoothstep(stroke, stroke + pixel, one.y * size)) * inside;
-  satin = mix(satin, uDeep, outline * 0.16 + curled * 0.12);
+const PLAIN = /* glsl */ `
+  crown = 0.0;
+  toCrown = 1.0e4;
+  {
+    float size = 28.0 * u;
+    float clear = smoothstep(uPhoto.y + 0.2 * size, uPhoto.y + 5.2 * size, q.y);
+    vec3 sky = mix(uMid, uDeep, 0.12 * (1.0 - smoothstep(0.0, uPhoto.y, q.y)));
+    vec3 pearl = mix(uPale, uLight, smoothstep(0.5, 1.1, n.y) * 0.5);
+    line *= clear;
+    pearl = mix(pearl, mix(uMid, uDeep, 0.4), line * (0.17 + 0.2 * passing));
+    satin = mix(sky, pearl, clear);
+    float halo = exp(-pow(reach / (R * 2.0), 2.0));
+    satin = mix(satin, vec3(1.0), halo * 0.8);
+
+    vec2 g = fromPhoto / size;
+    float row = floor(g.y / 1.4 + 0.5);
+    float odd = mod(row, 2.0);
+    vec2 inCell = vec2(fract((g.x + odd * 1.6) / 3.2 + 0.5) * 3.2 - 1.6, (fract(g.y / 1.4 + 0.5) - 0.5) * 1.4);
+    float held = 1.0 - smoothstep(0.2, 3.3, row);
+    // Its shade on the sky, let go before the edge of its own patch of sky
+    // so that no patch shows as a square.
+    vec2 toPatch = vec2(1.6, 0.7) - abs(inCell);
+    float kept = smoothstep(0.0, 0.16, min(toPatch.x, toPatch.y));
+    inCell.x *= 1.0 - 2.0 * odd;
+    vec2 one = cloud(vec2(inCell.x, -inCell.y) + vec2(0.36, -0.03));
+    float deep = -one.x * size;
+    float whole = smoothstep(-pixel, pixel, deep);
+    float inside = whole * held;
+    satin *= 1.0 - 0.1 * held * kept * (1.0 - whole) * exp(min(deep, 0.0) / (3.0 * u));
+    // Each cloud is whiter at its top and rounded at its edge.
+    vec3 puff = mix(mix(uLight, uPale, 0.5), vec3(1.0), smoothstep(-0.45, 0.4, -inCell.y));
+    puff *= 1.0 - 0.07 * exp(-max(deep, 0.0) / (2.5 * u));
+    satin = mix(satin, puff, inside);
+    float stroke = 0.5 * u;
+    float outline = (1.0 - smoothstep(stroke, stroke + pixel, abs(deep))) * held;
+    float curled = (1.0 - smoothstep(stroke, stroke + pixel, one.y * size)) * inside;
+    satin = mix(satin, uDeep, outline * 0.3 + curled * 0.22);
+    podiumCloud = inside * 0.6;
+  }
+`;
+
+/* On the white card the rim's cyan glows a little way in over the edge of
+   the face, as light comes through the edge of a sheet of glass. */
+const GLOW = /* glsl */ `
+  podiumBase = mix(podiumBase, vec3(0.62, 0.85, 0.93), 0.4 * exp(toEdge / (7.0 * u)));
 `;
 
 export function makeFace(tier: Tier, logo: THREE.Texture): FaceMaterial {
   const metal = TIERS[tier];
   const foil = FOIL[tier];
-  const main = FACE_MAIN.replace("PODIUM_CROWN_FOIL", foil.crown.toFixed(2))
-    .replace("PODIUM_LION_FOIL", foil.lion.toFixed(2))
-    .replace("PODIUM_LINES", foil.lines.toFixed(2))
-    .replace("PODIUM_CROWN", CROWNS[tier])
-    .replace("PODIUM_LION", LIONS[foil.work])
-    .replace("PODIUM_PLAIN", foil.plain ? PLAIN.replace("DAMASK", DAMASK) : "");
+  const main = FACE_MAIN.replace("PODIUM_CROWN", CROWNS[tier])
+    .replace("PODIUM_LION", foil.plain ? "body = 0.0;" : LION)
+    .replace("PODIUM_PLAIN", foil.plain ? PLAIN : "")
+    .replace("PODIUM_GLOW", foil.plain ? GLOW : "");
   // The lion is seen at a slant whenever the card turns.
   logo.anisotropy = 4;
   const uniforms: Record<string, THREE.IUniform> = {
@@ -475,8 +443,6 @@ export function makeFace(tier: Tier, logo: THREE.Texture): FaceMaterial {
       );
   };
   material.customProgramCacheKey = () => `podium-face-${tier}`;
-  // layOut gives a face in one piece the larger lion.
-  material.userData.plain = foil.plain;
   return Object.assign(material, { uniforms });
 }
 
@@ -516,14 +482,27 @@ export function makeMetal(tier: Tier): THREE.MeshStandardMaterial {
 }
 
 /* The back of a card that can be turned over (the white card): brand
-   cyan, a little lighter in the middle as if lit from in front, with a
-   keyline round it as the face has, and our lion large in the middle in
-   white, raised (lit on one edge, shaded on the other, a soft shadow
-   under it) and with a little foil in it, so it glints as the card
-   turns. All of it is under a light satin coat.
-   Like the face, its colours are its own light, so the cyan holds
-   whatever the studio does. It is drawn on the inside of the frame's
-   back, and is only ever seen with the card turned over. */
+   cyan cloth, lit from its middle.
+
+   - The cloth is a plain weave, each thread round and passing over and
+     under the ones it crosses, no two quite the same tone. It is drawn
+     only where the screen has the pixels for it: finer than that it would
+     shimmer, so there it is left out.
+   - Tibetan clouds are woven into it a tone lighter, the same clouds at
+     the same measures as the face's, laid out from the card's middle.
+     They are fainter behind the lion, and they are foil, so they catch
+     the studio's light as the card turns.
+   - Our lion is in the middle in white, raised (lit on one edge, shaded
+     on the other, a soft shadow under it), and in a light of its own:
+     its outline, blurred, laid on the cloth round it. The blur is the
+     lion's texture read at its small sizes (mipmaps), so it costs two
+     reads and no second pass.
+   - A keyline runs round it a little way in, as on the face.
+
+   All of it is under a light satin coat. Like the face, its colours are
+   its own light, so the cyan holds whatever the studio does. It is drawn
+   on the inside of the frame's back, and is only ever seen with the card
+   turned over. */
 const BACK_PARS = /* glsl */ `
   uniform vec2 uSize;
   uniform vec3 uFace;
@@ -537,6 +516,8 @@ const BACK_PARS = /* glsl */ `
   float grain(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
+
+  ${CLOUDS}
 `;
 
 const BACK_MAIN = /* glsl */ `
@@ -545,13 +526,54 @@ const BACK_MAIN = /* glsl */ `
   float pixel = fwidth(q.x);
 
   // Brand cyan, lighter toward the middle, darker toward the edges.
-  vec2 middle = (q - uSize * 0.5) / uSize.x;
+  vec2 fromMiddle = q - uSize * 0.5;
+  vec2 middle = fromMiddle / uSize.x;
   float glow = exp(-dot(middle, middle) * 3.2);
   vec3 backBase = mix(vec3(0.051, 0.349, 0.451), vec3(0.106, 0.482, 0.604), glow);
 
-  // The lion, raised off the cyan.
+  // The weave.
+  float pitch = 3.0 * u;
+  vec2 thread = q / pitch;
+  float drawn = 1.0 - smoothstep(0.3, 0.55, pixel / pitch);
+  float warpOver = step(0.0, sin(thread.x * 3.14159265) * sin(thread.y * 3.14159265));
+  float rounded = mix(sin(fract(thread.y) * 3.14159265), sin(fract(thread.x) * 3.14159265), warpOver);
+  float dye = grain(vec2(floor(thread.x), 3.0)) + grain(vec2(7.0, floor(thread.y))) - 1.0;
+  backBase *= 1.0 + drawn * ((rounded - 0.64) * 0.13 + dye * 0.05);
+
+  // The clouds woven into it, fainter behind the lion, and kept inside
+  // the keyline, which leaves the cloth plain in a band round the edge.
+  float toEdge = roundBox(vPos, uFace.xy, uFace.z);
+  float backCloud;
+  {
+    float size = 28.0 * u;
+    vec2 g = fromMiddle / size;
+    float row = floor(g.y / 1.4 + 0.5);
+    float odd = mod(row, 2.0);
+    vec2 inCell = vec2(fract((g.x + odd * 1.6) / 3.2 + 0.5) * 3.2 - 1.6, (fract(g.y / 1.4 + 0.5) - 0.5) * 1.4);
+    inCell.x *= 1.0 - 2.0 * odd;
+    vec2 one = cloud(vec2(inCell.x, -inCell.y) + vec2(0.36, -0.03));
+    float deep = -one.x * size;
+    float inside = smoothstep(-pixel, pixel, deep);
+    float away = 0.16 + 0.84 * smoothstep(0.14, 0.52, length(middle * vec2(1.0, 0.85)));
+    away *= 1.0 - smoothstep(-8.0 * u, -7.0 * u, toEdge);
+    backBase = mix(backBase, vec3(0.17, 0.57, 0.7), inside * 0.42 * away);
+    float stroke = 0.5 * u;
+    float outline = 1.0 - smoothstep(stroke, stroke + pixel, abs(deep));
+    float curled = (1.0 - smoothstep(stroke, stroke + pixel, one.y * size)) * inside;
+    backBase = mix(backBase, vec3(0.5, 0.79, 0.87), (outline * 0.34 + curled * 0.26) * away);
+    backCloud = inside * away;
+  }
+
+  // The lion's own light on the cloth round it.
   vec2 lion = (q - uLogoBox.xy) / uLogoBox.zw;
   vec2 lionAt = vec2(lion.x, 1.0 - lion.y);
+  float outside = max(max(-lion.x, lion.x - 1.0), max(-lion.y, lion.y - 1.0));
+  // At named sizes, so the light is as wide on every screen's density.
+  float aura = mix(textureLod(uLogo, lionAt, 3.6).a, textureLod(uLogo, lionAt, 5.6).a, 0.6);
+  aura *= 1.0 - smoothstep(0.0, 0.3, outside);
+  backBase += vec3(0.42, 0.8, 0.92) * aura * 0.46;
+
+  // The lion, raised off the cyan.
   float within = step(0.0, lion.x) * step(lion.x, 1.0) * step(0.0, lion.y) * step(lion.y, 1.0);
   vec2 nudge = vec2(-0.55, -0.8) * 1.6 * u / uLogoBox.zw * vec2(1.0, -1.0);
   float body = texture2D(uLogo, lionAt).a * within;
@@ -559,18 +581,17 @@ const BACK_MAIN = /* glsl */ `
   float shaded = body * (1.0 - texture2D(uLogo, lionAt - nudge).a * within);
   float thrown = (1.0 - body) * texture2D(uLogo, lionAt + nudge * 2.4).a * within;
   backBase *= 1.0 - 0.28 * thrown;
-  backBase = mix(backBase, vec3(0.955, 0.975, 0.98), body * 0.94);
+  backBase = mix(backBase, vec3(0.965, 0.985, 0.99), body * 0.96);
   backBase += lit * 0.04;
-  backBase *= 1.0 - shaded * 0.12;
+  backBase *= 1.0 - shaded * 0.1;
 
   // The keyline a little way in, and a faint shade where the back meets the frame.
-  float toEdge = roundBox(vPos, uFace.xy, uFace.z);
   float keyline = 1.0 - smoothstep(0.6 * u, 0.6 * u + pixel, abs(toEdge + 7.0 * u));
   backBase = mix(backBase, vec3(0.55, 0.78, 0.85), keyline * 0.55);
   backBase *= 1.0 - 0.14 * exp(toEdge / (2.0 * u));
 
   backBase += (grain(floor(q * 2.0)) - 0.5) * 0.012;
-  float backFoil = clamp(body * 0.45 + keyline * 0.4, 0.0, 1.0);
+  float backFoil = clamp(body * 0.45 + keyline * 0.4 + backCloud * 0.45, 0.0, 1.0);
   vec3 backLinear = pow(max(backBase, 0.0), vec3(2.2));
   diffuseColor.rgb = backLinear;
 `;
@@ -635,9 +656,7 @@ export type Measures = { w: number; h: number; px: number; py: number; pr: numbe
 
 /* Tell a card's face its measures: where the crown's arc is, where the
    photo is, and where the lion sits, which is in the middle of the satin,
-   under the words, as a watermark is in the middle of a page. On a face
-   in one piece the lion is the one figure on it, so it is larger, nearly
-   the width of the face. */
+   under the words, as a watermark is in the middle of a page. */
 export function layOut(face: FaceMaterial, { w, h, px, py, pr, rem }: Measures) {
   const unit = rem / 16;
   const radius = CARD.radius * rem;
@@ -646,8 +665,7 @@ export function layOut(face: FaceMaterial, { w, h, px, py, pr, rem }: Measures) 
   // The satin runs from under the photo to the frame at the card's foot.
   const satinTop = py + pr;
   const satinHeight = h - frame - satinTop;
-  const plain = face.userData.plain === true;
-  const lion = Math.min(w * (plain ? 0.84 : 0.66), satinHeight * (plain ? 0.94 : 0.86) * (530 / 490));
+  const lion = Math.min(w * 0.66, satinHeight * 0.86 * (530 / 490));
   const lionHeight = lion * (490 / 530);
   const on = face.uniforms;
   on.uSize.value.set(w, h);

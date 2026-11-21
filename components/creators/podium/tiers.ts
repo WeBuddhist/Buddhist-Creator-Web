@@ -1,8 +1,9 @@
 /* What a card is made of, as the card's CSS and the WebGL scene both use
    it, so the still card and the lit one are the same colours. The first
    three are the metals of the leaderboard's first places. The fourth is
-   no place's: it is the card every creator has, on their own page, and it
-   is silk in the palest cyan with a rim of brand cyan, a step lighter.
+   no place's: it is the card every creator has, on their own page: a pale
+   cyan sky at its head that clears to pearl, with a rim of brand cyan, a
+   step lighter.
 
    `mid` is the metal itself (the rank tokens in app/globals.css), `deep`
    its shadow, for lines; `light` and `pale` are the satin the words sit
@@ -12,15 +13,19 @@
    or more on the gold, 7.2:1 on the silver and 5.7:1 on the bronze `mid`,
    and more on everything lighter.
 
-   On the white card `mid` is the ground of its whole face, the palest
-   cyan, and `deep` the line its embroidery is edged with. On that ground
-   ink measures 13.1:1, ink at 75% 6.4:1, brand cyan 5.0:1 and the green
-   and red of a week's change 5.3:1 and 5.4:1. */
+   On the white card `mid` is the sky at the head of its face, `pale` the
+   pearl the sky clears to, and `deep` its lines: round the clouds and in
+   the satin. The head is `mid` with 12% of `deep` at
+   its very top, the darkest ground on the face: there ink at 75% (the
+   Rank label) measures 5.7:1 and brand cyan (the place, set large) 4.2:1.
+   Where the small label over the name sits the sky is half cleared or
+   more, and brand cyan measures 5.3:1 or better; on the pearl ink at 75%
+   measures 7.1:1. */
 export const TIERS = [
   { metal: "gold", deep: "#b0760b", mid: "#f2b130", light: "#fbdc8e", pale: "#fff6dc", rim: "#f2b130", sheen: "#f6c350" },
   { metal: "silver", deep: "#6f7a87", mid: "#a3adb8", light: "#d9dfe6", pale: "#f5f7f9", rim: "#a3adb8", sheen: "#cdd4dc" },
   { metal: "bronze", deep: "#96562a", mid: "#cf8a4f", light: "#efc7a3", pale: "#fcefe4", rim: "#cf8a4f", sheen: "#dd9d68" },
-  { metal: "white", deep: "#6e93a1", mid: "#dbe9ee", light: "#eef4f6", pale: "#fbfcfc", rim: "#3393b5", sheen: "#0a485f" },
+  { metal: "white", deep: "#5b93a8", mid: "#c6e3ee", light: "#e9f3f7", pale: "#fbfdfe", rim: "#3393b5", sheen: "#0a485f" },
 ] as const;
 
 /** 0 is first place, 1 second, 2 third; WHITE is every creator's own card. */
