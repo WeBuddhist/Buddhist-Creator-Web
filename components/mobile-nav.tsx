@@ -102,6 +102,8 @@ export function MobileNav() {
                         className={cn(
                           "animate-in fade-in slide-in-from-right-2 fill-mode-both duration-300 ease-out",
                           "motion-reduce:slide-in-from-right-0",
+                          // A group stands apart from the plain links around it.
+                          item.children && "my-3",
                         )}
                       >
                         {item.children ? (
@@ -134,7 +136,7 @@ export function MobileNav() {
                         {item.children && (
                           <ul
                             aria-labelledby={`mobile-nav-group-${index}`}
-                            className="mb-2 flex flex-col"
+                            className="mt-1 flex flex-col gap-1.5"
                           >
                             {item.children.map((child) => {
                               const childActive =

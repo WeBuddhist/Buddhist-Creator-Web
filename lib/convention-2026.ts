@@ -3,7 +3,7 @@
 
 import collaboratorShechen from "@/public/collaborator/collaborator-shechen.png";
 import collaboratorKhyentseFoundation from "@/public/collaborator/collaborator-khyentse-foundation.png";
-import collaboratorIndrajala from "@/public/collaborator/collaborator-indrajala.png";
+import collaboratorWeBuddhist from "@/public/collaborator/collaborator-webuddhist.png";
 import collaboratorPartner from "@/public/collaborator/collaborator-partner.png";
 import awardQuinthupPemaBhutia from "@/public/convention/2026/award-quinthup-pema-bhutia.webp";
 import awardChhewangDorjee from "@/public/convention/2026/award-chhewang-dorjee.webp";
@@ -563,7 +563,7 @@ export const TESTIMONIALS = [
 export const COLLABORATORS = [
   { name: "Shechen Monastery", logo: collaboratorShechen, href: null },
   { name: "Khyentse Foundation", logo: collaboratorKhyentseFoundation, href: null },
-  { name: "Indrajala", logo: collaboratorIndrajala, href: null },
+  { name: "Indrajala", logo: collaboratorWeBuddhist, href: null },
   { name: "Sherab", logo: collaboratorPartner, href: "https://www.sherab.org" },
   { name: "Dharmaduta Services", logo: null, href: "https://dharmaduta.in/" },
 ] as const;

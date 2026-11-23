@@ -71,6 +71,7 @@ export const ONGOING_EVENTS: EventEntry[] = [
       alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
     },
   },
+<<<<<<< Updated upstream
   {
     title: "Daily Tipitaka",
     date: { label: "Daily" },
@@ -84,6 +85,8 @@ export const ONGOING_EVENTS: EventEntry[] = [
       alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",
     },
   },
+=======
+>>>>>>> Stashed changes
 ];
 
 export const UPCOMING_EVENTS: EventEntry[] = [
@@ -181,17 +184,12 @@ export const PAST_EVENTS: EventEntry[] = [
     ],
   },
   {
-    title: "Bodhicharyavatara Challenge",
+    title: "Daily Tipitaka",
     location: "Online",
-    description: "The Bodhicharyavatara (A Guide to the Bodhisattva’s Way of Life) is available on our WeBuddhist app. To help more people discover it, we collaborated with four creators who talked about the text in four different languages, so the teaching could reach people in the language they are most comfortable with.",
+    description: "A daily reading of the Pali canon, one passage at a time, shared with monastics and lay practitioners around the world.",
     image: {
-      src: bodhisattvaChallenge,
-      alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
+      src: dailyTipitaka,
+      alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",
     },
-    stats: [
-      { value: "45K+", label: "Views" },
-      { value: "4K+", label: "Likes" },
-      { value: "650+", label: "Shares" },
-    ],
   },
 ];
