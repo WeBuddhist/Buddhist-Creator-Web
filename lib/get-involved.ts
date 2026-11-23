@@ -4,7 +4,6 @@
 
 import type { StaticImageData } from "next/image";
 import bodhisattvaChallenge from "@/public/events/bodhisattva-challenge.webp";
-import dailyTipitaka from "@/public/events/daily-tipitaka.webp";
 import collaboratorShechenWide from "@/public/collaborator/collaborator-shechen-wide.webp";
 import collaboratorKhyentseFoundationTrimmed from "@/public/collaborator/collaborator-khyentse-foundation-trimmed.webp";
 import collaboratorIndrajalaWide from "@/public/collaborator/collaborator-indrajala-wide.webp";
@@ -27,7 +26,7 @@ export const GET_INVOLVED_PAGE = {
 export type Challenge = {
   title: string;
   body: string;
-  /** Where the card goes. Both challenges run on WeBuddhist. */
+  /** Where the card goes. The challenges run on WeBuddhist. */
   href: string;
   /** Static import, which carries its size and blur. Omitted entries show the placeholder. */
   image?: { src: StaticImageData; alt: string };
@@ -46,7 +45,7 @@ export const CREATOR = {
   eyebrow: "As a creator",
   title: "Join a challenge, or bring your own content to the community",
   description:
-    "Two challenges are open right now, and every convention and award season is another chance to create alongside the community.",
+    "A challenge is open right now, and every convention and award season is another chance to create alongside the community.",
   challenges: [
     {
       title: "Bodhisattva Challenge",
@@ -55,15 +54,6 @@ export const CREATOR = {
       image: {
         src: bodhisattvaChallenge,
         alt: "Illustration of a figure with hands joined in prayer, filled with golden lotus flowers, before sunlit dunes",
-      },
-    },
-    {
-      title: "Daily Tipitaka",
-      body: "A daily reading of the Pali canon, one passage at a time, shared with monastics and lay practitioners around the world.",
-      href: "https://webuddhist.com/plans",
-      image: {
-        src: dailyTipitaka,
-        alt: "Illustration of monks and lay practitioners seated in a row reading scriptures beneath a Dharma wheel",
       },
     },
   ] as Challenge[],

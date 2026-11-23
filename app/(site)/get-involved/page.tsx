@@ -66,7 +66,13 @@ export default function GetInvolvedPage() {
             description={CREATOR.description}
           />
 
-          <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:gap-6">
+          {/* A lone challenge runs the full width rather than half a row. */}
+          <ul
+            className={cn(
+              "mt-12 grid gap-4 lg:mt-16 lg:gap-6",
+              CREATOR.challenges.length > 1 && "sm:grid-cols-2",
+            )}
+          >
             {CREATOR.challenges.map(({ title, body, href, image }) => (
               <li key={title} className={card}>
                 {/* The whole card is the link; the title carries the
