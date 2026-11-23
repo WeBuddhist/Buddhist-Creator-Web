@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
    reading: a filled triangle and the number, green for up and red for
    down. "New" for a first appearance, a dash for the same place, and
    nothing when last week has no place to compare with. `words` spells
-   the unit out ("2 places"), for where no column head says it. */
+   the unit out ("2 places"), for a card, where no column head says it;
+   there a creator who has held their place is given no mark at all. */
 export function RankMove({
   row,
   words = false,
@@ -31,16 +32,11 @@ export function RankMove({
   }
   if (row.climbed === null) return null;
   if (row.climbed === 0) {
+    if (words) return null;
     return (
       <span className={cn(small, "text-muted-foreground")}>
-        {words ? (
-          "Same place"
-        ) : (
-          <>
-            <span aria-hidden>–</span>
-            <span className="sr-only">Same place as last week</span>
-          </>
-        )}
+        <span aria-hidden>–</span>
+        <span className="sr-only">Same place as last week</span>
       </span>
     );
   }
@@ -65,23 +61,55 @@ export function RankMove({
   );
 }
 
+/** The words that say what a change is measured from. The creator's own
+    page names the same figure so (app/(site)/creator-card/card-home.tsx). */
+export const SINCE = "since last week";
+
 /* How far a figure has moved since last week's reading: followers gained
    in green, lost in red. The arrow and the words for a screen reader say
-   which, so colour is never the only sign. */
-export function Change({ gain }: { gain: number }) {
+   which, so colour is never the only sign.
+
+   A bare number beside a count does not say what it is, so the figure
+   carries its words, "since last week", wherever nothing else says them:
+   `since="always"` on a card, and `since="narrow"` in a row of the board,
+   whose column head says them from md and is not shown below that. The
+   words are in the page's quiet ink (`quiet`), not the figure's colour. */
+export function Change({
+  gain,
+  since,
+  quiet = "text-muted-foreground",
+}: {
+  gain: number;
+  since?: "always" | "narrow";
+  quiet?: string;
+}) {
   const up = gain > 0;
   const Arrow = up ? ArrowUpIcon : ArrowDownIcon;
   return (
+    // Where the two do not fit on a line (a narrow phone), the words go
+    // under the number whole.
     <p
       className={cn(
-        "flex items-center gap-0.5 text-sm leading-[1.3] font-medium tabular-nums",
+        "flex flex-wrap items-center gap-x-1.5 text-sm leading-[1.3] font-medium tabular-nums",
         up ? "text-status-accepted-text" : "text-status-rejected-text",
       )}
     >
-      <Arrow aria-hidden weight="bold" className="size-3.5" />
-      <span className="sr-only">{up ? "Up " : "Down "}</span>
-      {formatCount(Math.abs(gain))}
-      <span className="sr-only"> followers since last week</span>
+      <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
+        <Arrow aria-hidden weight="bold" className="size-3.5" />
+        <span className="sr-only">{up ? "Up " : "Down "}</span>
+        {formatCount(Math.abs(gain))}
+        <span className="sr-only"> followers </span>
+      </span>
+      <span
+        className={cn(
+          "font-normal whitespace-nowrap",
+          quiet,
+          !since && "sr-only",
+          since === "narrow" && "md:sr-only",
+        )}
+      >
+        {SINCE}
+      </span>
     </p>
   );
 }

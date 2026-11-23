@@ -18,7 +18,7 @@ import { CardPhoto } from "@/components/creator-card/card-photo";
 import { CardSeal } from "@/components/creator-card/card-seal";
 import { framedCard, framedCardInner, label } from "@/components/convention/section-heading";
 import { Flag } from "@/components/creators/flag";
-import { Change, RankMove } from "@/components/creators/movement";
+import { Change, RankMove, SINCE } from "@/components/creators/movement";
 import { PodiumStage, usePodiumCard } from "@/components/creators/podium/stage";
 import type { Tier } from "@/components/creators/podium/tiers";
 import { Button } from "@/components/ui/button";
@@ -58,8 +58,8 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
 /* The leaderboard: one tab for all channels together and one for each
    place a count is kept for. A board opens on its first ten creators;
    the list under the first three is a window of a fixed height, and the
-   rest of the board, up to its first hundred, is brought in a stretch at
-   a time as the window is scrolled.
+   rest of the board, every creator with a figure on it, is brought in a
+   stretch at a time as the window is scrolled.
 
    The first three stand apart as cards made to be kept: gold, silver and
    bronze, each with the photo, the flag, the figure set large and each
@@ -70,7 +70,8 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
    creator also carries what the week did: beside the rank, the places
    gained or lost on the board (a triangle, or "New" for a first
    appearance), and beside the figure, the followers gained or lost (an
-   arrow). Up is green and down is red, and each has its sign and its
+   arrow), which says "since last week" in the column's head or beside
+   the number. Up is green and down is red, and each has its sign and its
    words for a screen reader, so colour is never the only carrier.
 
    Rank order is the order in the markup, on every screen. On a phone a
@@ -251,7 +252,7 @@ function BoardPanel({ board, viewer }: { board: Board; viewer: BoardViewer }) {
                 <span className="text-center">Rank</span>
                 <span className="col-span-2">Creator</span>
                 <span className="text-right">{unit}</span>
-                {moved && <span className="text-right">Change</span>}
+                {moved && <span className="text-right text-balance">{SINCE}</span>}
                 <span className="pl-[0.4375rem]">Channels</span>
               </div>
               <ol role="list" start={4}>
@@ -335,8 +336,10 @@ const rowGrid = (moved: boolean, own = false) =>
   cn(
     "grid items-center gap-x-3 px-4 sm:px-5 md:gap-x-5 md:px-6",
     own ? "grid-cols-[3rem_auto_minmax(0,1fr)]" : "grid-cols-[2.25rem_auto_minmax(0,1fr)]",
+    // The change's column is as wide as its head, "Since last week", from
+    // lg; at md the head takes two lines and the name keeps its room.
     moved
-      ? "md:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_5.5rem_8.5rem]"
+      ? "md:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_5.5rem_8.5rem] lg:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_8.5rem_8.5rem]"
       : "md:grid-cols-[3rem_3rem_minmax(0,1fr)_7.5rem_8.5rem]",
   );
 
@@ -396,7 +399,9 @@ function BoardRowCells({
       <div className="col-start-3 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
         <Figure value={row.followers} unit={unit} />
         {moved && (
-          <div className="empty:hidden md:flex md:justify-end md:empty:block">{!!row.gain && <Change gain={row.gain} />}</div>
+          <div className="empty:hidden md:flex md:justify-end md:empty:block">
+            {!!row.gain && <Change gain={row.gain} since="narrow" />}
+          </div>
         )}
         {/* On a phone the channels of the board of all channels take a
             line of their own, pulled left by the icon's inset so the
@@ -494,12 +499,14 @@ function LeadCard({
           >
             {formatFigure(row.followers)}
           </p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-            <p className={cn(label, "text-[0.6875rem] text-ink/75 tabular-nums")}>
-              {isShortened(row.followers) && `${formatCount(row.followers)} `}
-              {unit}
-            </p>
-            {!!row.gain && <Change gain={row.gain} />}
+          <p className={cn(label, "mt-2 text-[0.6875rem] text-ink/75 tabular-nums")}>
+            {isShortened(row.followers) && `${formatCount(row.followers)} `}
+            {unit}
+          </p>
+          {/* What the week did, on a line of its own: the followers gained
+              or lost, in words, and the places moved when there are any. */}
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 empty:hidden">
+            {!!row.gain && <Change gain={row.gain} since="always" quiet="text-ink/75" />}
             <RankMove row={row} words />
           </div>
         </div>
@@ -660,7 +667,7 @@ function YourPlace({
             <Figure value={row.followers} unit={unit} />
             {moved && (
               <div className="empty:hidden md:flex md:justify-end md:empty:block">
-                {!!row.gain && <Change gain={row.gain} />}
+                {!!row.gain && <Change gain={row.gain} since="narrow" />}
               </div>
             )}
             {/* The creator's own channels: from md only, to keep the place

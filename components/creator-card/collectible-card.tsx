@@ -262,12 +262,14 @@ function Card({ card, rank, move, followers, gain, verified, channels, sample = 
                 >
                   {formatFigure(followers)}
                 </p>
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-                  <p className={cn(label, "text-[0.6875rem] text-ink/75 tabular-nums")}>
-                    {isShortened(followers) && `${formatCount(followers)} `}
-                    followers
-                  </p>
-                  {!!gain && <Change gain={gain} />}
+                <p className={cn(label, "mt-2 text-[0.6875rem] text-ink/75 tabular-nums")}>
+                  {isShortened(followers) && `${formatCount(followers)} `}
+                  followers
+                </p>
+                {/* As on the leaderboard's cards: what the week did, on a
+                    line of its own and in words. */}
+                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 empty:hidden">
+                  {!!gain && <Change gain={gain} since="always" quiet="text-ink/75" />}
                   {move && <RankMove row={move} words />}
                 </div>
               </div>

@@ -20,8 +20,8 @@ export const CREATORS_PAGE = {
 
 /* The leaderboard: the creators with the largest audiences, in all their
    counted places together and in each one. It opens on its first ten, and
-   the list brings in the rest, up to a hundred, as it is scrolled. It is
-   on the home page and at the top of this one. */
+   the list brings in the rest, every creator with a figure, as it is
+   scrolled. It is on the home page and at the top of this one. */
 export const CREATORS_LEADERBOARD = {
   eyebrow: "Leaderboard",
   title: "The most followed creators",
@@ -31,7 +31,7 @@ export const CREATORS_LEADERBOARD = {
   updated: "Last updated",
   empty: "The leaderboard appears here after our first weekly reading of the counts.",
   change:
-    "Changes are since last week's reading: the triangle by a rank is places gained or lost on the board, and the arrow by a count is followers gained or lost.",
+    "An arrow shows the followers a creator has gained or lost since last week's reading. The triangle under a rank shows places gained or lost on the board.",
   /* The end of the list while there is more of the board to bring in. */
   more: "Load more creators",
   loading: "Loading more creators…",
@@ -91,11 +91,10 @@ export const CREATORS_LEADERBOARD = {
   },
 } as const;
 
-/** How many creators a board opens on, how many each further stretch
-    brings in, and how many it shows at most. */
+/** How many creators a board opens on, and how many each further stretch
+    brings in. A board has no end but its last creator. */
 export const LEADERBOARD_OPENING = 10;
-export const LEADERBOARD_PAGE = 30;
-export const LEADERBOARD_SIZE = 100;
+export const LEADERBOARD_PAGE = 50;
 
 /** Where the browser asks for the next stretch of a board:
     `?place=youtube&offset=10`. */
@@ -134,14 +133,14 @@ export type Board = {
   place: LeaderboardPlace;
   /** Its first creators, LEADERBOARD_OPENING at most. */
   rows: BoardRow[];
-  /** How many creators the whole board has, LEADERBOARD_SIZE at most. */
+  /** How many creators the whole board has. */
   size: number;
 };
 
 /** Where one creator stands on one board, however far down it they are. */
 export type Standing = {
   rank: number;
-  /** How many creators the board ranks in all, past the hundred it shows. */
+  /** How many creators the board ranks in all. */
   outOf: number;
   row: BoardRow;
 };

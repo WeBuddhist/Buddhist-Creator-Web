@@ -75,7 +75,7 @@ export function CardPhoto({
       alt=""
       width={pixels}
       height={pixels}
-      // A row is one of up to a hundred, most of them far down the page.
+      // A row is one of hundreds, most of them far down the page.
       loading={size === "row" ? "lazy" : undefined}
       decoding="async"
       referrerPolicy="no-referrer"

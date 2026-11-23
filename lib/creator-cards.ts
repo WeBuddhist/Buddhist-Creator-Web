@@ -22,7 +22,6 @@ import {
 } from "@/lib/creator-card";
 import {
   LEADERBOARD_PLACES,
-  LEADERBOARD_SIZE,
   type BoardSource,
   type CreatorsView,
   type LeaderboardPlace,
@@ -1048,7 +1047,7 @@ export type LeaderboardRow = {
 export type Leaderboard = {
   /** The boards asked for, each with its first `limit` creators. */
   boards: Partial<Record<LeaderboardPlace, LeaderboardRow[]>>;
-  /** How many creators each whole board has, LEADERBOARD_SIZE at most. */
+  /** How many creators each whole board has. */
   sizes: Record<LeaderboardPlace, number>;
   /** When the counts were last read (lastReadingDay). */
   readAt: Date | null;
@@ -1058,8 +1057,7 @@ export type Leaderboard = {
   standings: Partial<Record<LeaderboardPlace, LeaderboardStanding>>;
 };
 
-/** One card's place on one board: among everybody with a figure there,
-    not only the hundred a board shows. */
+/** One card's place on one board, among everybody with a figure there. */
 export type LeaderboardStanding = {
   rank: number;
   /** How many creators have a figure there. */
@@ -1277,27 +1275,26 @@ const figureOf = (card: BoardCard, place: LeaderboardPlace) =>
   place === "all" ? Number(card.totalFollowers) : (card[FOLLOWER_COLUMN[place]] ?? 0);
 
 /** The boards, and with `standingOf` the place one card has on them: a
-    creator's own, which may be far below the hundred a board shows.
+    creator's own, which may be far below the creators asked for.
     `offset` and `limit` take a stretch of each board, for the list that
-    grows as it is scrolled; nothing past the hundredth place is given. */
+    grows as it is scrolled; without a `limit` a board is given whole,
+    every creator with a figure on it. */
 export async function creatorLeaderboard(
   options: { places?: readonly LeaderboardPlace[]; limit?: number; offset?: number; standingOf?: string } = {},
 ): Promise<Leaderboard> {
   const places = options.places ?? LEADERBOARD_PLACES;
-  const offset = Math.min(Math.max(0, options.offset ?? 0), LEADERBOARD_SIZE);
-  const limit = Math.max(0, Math.min(options.limit ?? LEADERBOARD_SIZE, LEADERBOARD_SIZE - offset));
+  const offset = Math.max(0, options.offset ?? 0);
+  const limit = options.limit === undefined ? undefined : Math.max(0, options.limit);
   const approved = eq(creatorCards.status, "approved");
   const cards = () => db().select(boardCard).from(creatorCards).leftJoin(users, eq(users.id, creatorCards.userId));
   const top = (place: LeaderboardPlace): Promise<BoardCard[]> => {
     const figure = boardFigure(place);
-    return (
-      cards()
-        .where(and(approved, sql`${figure} > 0`))
-        // As the directory orders: the name and the id settle a tie.
-        .orderBy(desc(figure), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
-        .limit(limit)
-        .offset(offset)
-    );
+    const stretch = cards()
+      .where(and(approved, sql`${figure} > 0`))
+      // As the directory orders: the name and the id settle a tie.
+      .orderBy(desc(figure), asc(sql`lower(${creatorCards.displayName})`), asc(creatorCards.id))
+      .offset(offset);
+    return limit === undefined ? stretch : stretch.limit(limit);
   };
   const onBoard = (place: LeaderboardPlace) => sql<number>`count(*) filter (where ${boardFigure(place)} > 0)::int`;
   const [lists, [counts], [{ week }], [own = null]] = await Promise.all([
@@ -1395,9 +1392,10 @@ export async function creatorLeaderboard(
     ]),
   ) as Partial<Record<LeaderboardPlace, LeaderboardRow[]>>;
 
-  const sizes = Object.fromEntries(
-    LEADERBOARD_PLACES.map((place) => [place, Math.min(counts[place], LEADERBOARD_SIZE)]),
-  ) as Record<LeaderboardPlace, number>;
+  const sizes = Object.fromEntries(LEADERBOARD_PLACES.map((place) => [place, counts[place]])) as Record<
+    LeaderboardPlace,
+    number
+  >;
 
   const standings = Object.fromEntries(
     places.flatMap((place) => {

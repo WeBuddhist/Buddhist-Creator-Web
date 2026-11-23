@@ -677,7 +677,7 @@ function ChannelRow({ channel, status, first }: { channel: HomeChannel; status: 
           </p>
           {(!!channel.gain || channel.standing) && (
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 md:justify-end">
-              {!!channel.gain && <Change gain={channel.gain} />}
+              {!!channel.gain && <Change gain={channel.gain} since="always" />}
               {channel.standing && (
                 <p className="text-sm leading-[1.3] text-muted-foreground tabular-nums">
                   <span className="sr-only">Rank </span>#{formatCount(channel.standing.rank)} of{" "}
