@@ -5,14 +5,14 @@ import awardTashiChosgon from "@/public/convention/2026/award-tashi-chosgon.webp
 import awardTenzinChime from "@/public/convention/2026/award-tenzin-chime.webp";
 import mahabodhiGathering from "@/public/photos/mahabodhi-gathering.webp";
 import artCollageBuddha from "@/public/awards/art-collage-buddha.webp";
-import musicMonk from "@/public/awards/music-monk.webp";
+import musicSingingBowl from "@/public/awards/music-singing-bowl.webp";
 import poemMilarepa from "@/public/awards/poem-milarepa.webp";
 import workshopCamera from "@/public/photos/workshop-camera.webp";
 
 /* The photograph behind each award's card (lib/awards-2027.ts). An award
    the convention gave in 2026 shows that year's winner receiving it; a new
-   one shows the kind of work it is for (Best Music: a monk singing with a
-   guitar; Best Painting: a seated Buddha made of a collage of stickers;
+   one shows the kind of work it is for (Best Music: hands playing a singing
+   bowl engraved with Om Mani Padme Hum; Best Painting: a seated Buddha made of a collage of stickers;
    Best Poem: a painting of Milarepa, the yogi remembered for his songs;
    all three pictures the team chose; Best Photography: pilgrims at
    prayer before the Mahabodhi Temple, the homepage's photograph).
@@ -42,9 +42,9 @@ export const AWARD_PHOTOS: Record<AwardSlug, AwardPhoto> = {
     position: "42% 50%",
   },
   "best-music": {
-    src: musicMonk,
-    alt: "A monk in saffron robes singing and playing an acoustic guitar on stage, a bass player behind him.",
-    position: "40% 18%",
+    src: musicSingingBowl,
+    alt: "Hands playing a Tibetan singing bowl engraved with the mantra Om Mani Padme Hum, the wooden striker held against its rim.",
+    position: "50% 60%",
   },
   "best-painting": {
     src: artCollageBuddha,
